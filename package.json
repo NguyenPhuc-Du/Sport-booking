@@ -8,7 +8,6 @@
   },
   "author": "",
   "license": "ISC",
-  "description": "",
   "dependencies": {
     "body-parser": "^2.3.0",
     "cookie-parser": "^1.4.7",
@@ -17,9 +16,19 @@
     "express-flash": "^0.0.2",
     "express-session": "^1.19.0",
     "method-override": "^3.0.0",
+    "moongoose": "^0.0.5",
     "pug": "^3.0.4"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NguyenPhuc-Du/Sport-booking.git"
+  },
+  "bugs": {
+    "url": "https://github.com/NguyenPhuc-Du/Sport-booking/issues"
+  },
+  "homepage": "https://github.com/NguyenPhuc-Du/Sport-booking#readme",
+  "description": ""
 }
