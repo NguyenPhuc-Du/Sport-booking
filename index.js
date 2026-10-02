@@ -5,6 +5,7 @@ const cookieParser = require("cookie-parser");
 const session = require("express-session");
 const flash = require("express-flash");
 const routeAdmin = require("./routes/admin/index.route");
+const route = require("./routes/client/index.route");
 
 
 require("dotenv").config();
@@ -37,6 +38,7 @@ app.use(flash());
 app.use(express.static(`${__dirname}/public`));
 
 //Routes
+route(app);
 routeAdmin(app);
 
 

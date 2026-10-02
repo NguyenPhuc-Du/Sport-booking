@@ -1,0 +1,305 @@
+/* Dùng lại biến :root, .sz-brand, .sz-logo, .sz-title... từ style.css */
+
+.sz-login-body {
+  min-height: 100vh;
+}
+
+.sz-login {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(380px, 5fr) 6fr;
+}
+
+/* ===== Cột trái ===== */
+.sz-login-hero {
+  background: var(--dark);
+  color: #fff;
+  padding: 40px 48px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 40px;
+  position: relative;
+  overflow: hidden;
+}
+
+.sz-login-hero::after {
+  /* vạch sân mờ ở góc, gợi hình sân thể thao */
+  content: "";
+  position: absolute;
+  right: -90px;
+  bottom: -90px;
+  width: 340px;
+  height: 340px;
+  border: 2px solid rgba(16, 185, 129, 0.25);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.sz-login-hero .sz-brand {
+  color: #fff;
+}
+
+.sz-login-hero .sz-pro {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: var(--green-2);
+}
+
+.sz-login-hero .sz-brand-sub {
+  color: #94a3b8;
+}
+
+.sz-login-hero-body h2 {
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  line-height: 1.2;
+  margin: 0 0 14px;
+  max-width: 420px;
+}
+
+.sz-login-hero-body > p {
+  color: #94a3b8;
+  font-size: 15px;
+  line-height: 1.65;
+  max-width: 400px;
+  margin: 0 0 32px;
+}
+
+.sz-login-points {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.sz-login-points li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 600;
+  font-size: 14.5px;
+  color: #e2e8f0;
+}
+
+.sz-login-points i {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--green-2);
+  font-size: 16px;
+  flex: none;
+}
+
+.sz-login-hero-foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+/* ===== Cột phải ===== */
+.sz-login-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 32px;
+  background: var(--bg);
+}
+
+.sz-login-card {
+  width: 100%;
+  max-width: 440px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  padding: 36px 36px 32px;
+}
+
+.sz-login-card .sz-subtitle {
+  margin-bottom: 26px;
+}
+
+.sz-alert {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: 14px;
+  font-weight: 600;
+  font-size: 13.5px;
+  margin-bottom: 20px;
+}
+
+.sz-alert-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+}
+
+.sz-field {
+  margin-bottom: 18px;
+}
+
+.sz-field label {
+  display: block;
+  font-weight: 700;
+  font-size: 13.5px;
+  margin-bottom: 8px;
+  color: #334155;
+}
+
+.sz-field-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.sz-input {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.sz-input > i:first-child {
+  position: absolute;
+  left: 16px;
+  font-size: 16px;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.sz-input input {
+  width: 100%;
+  height: 50px;
+  padding: 0 46px 0 44px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #f8fafc;
+  font: inherit;
+  font-weight: 500;
+  color: var(--ink);
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+}
+
+.sz-input input::placeholder {
+  color: #94a3b8;
+}
+
+.sz-input input:focus {
+  outline: none;
+  background: #fff;
+  border-color: var(--green-2);
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
+}
+
+.sz-eye {
+  position: absolute;
+  right: 6px;
+  width: 38px;
+  height: 38px;
+  border: 0;
+  background: transparent;
+  border-radius: 10px;
+  color: #64748b;
+  font-size: 17px;
+}
+
+.sz-eye:hover {
+  background: #f1f5f9;
+}
+
+.sz-eye:focus-visible,
+.sz-btn-primary:focus-visible,
+.sz-link:focus-visible {
+  outline: 3px solid rgba(16, 185, 129, 0.45);
+  outline-offset: 2px;
+}
+
+.sz-link {
+  color: var(--green);
+  font-weight: 700;
+  font-size: 13.5px;
+  text-decoration: none;
+}
+
+.sz-link:hover {
+  text-decoration: underline;
+}
+
+.sz-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 0 22px;
+  font-weight: 500;
+  font-size: 13.5px;
+  color: #475569;
+  cursor: pointer;
+}
+
+.sz-check input {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--green);
+}
+
+.sz-btn-primary {
+  width: 100%;
+  height: 50px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--green);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  font-size: 15px;
+  box-shadow: 0 6px 14px rgba(5, 150, 105, 0.25);
+  transition: background 0.15s;
+}
+
+.sz-btn-primary:hover {
+  background: #047857;
+}
+
+.sz-login-alt {
+  text-align: center;
+  margin: 22px 0 0;
+  color: var(--muted);
+  font-size: 13.5px;
+}
+
+.sz-login-panel .sz-copy {
+  margin-top: 22px;
+}
+
+/* ===== Mobile ===== */
+@media (max-width: 991px) {
+  .sz-login {
+    grid-template-columns: 1fr;
+  }
+
+  .sz-login-hero {
+    padding: 24px;
+    gap: 0;
+  }
+
+  .sz-login-hero-body,
+  .sz-login-hero-foot,
+  .sz-login-hero::after {
+    display: none;
+  }
+
+  .sz-login-card {
+    padding: 28px 22px 24px;
+  }
+}
