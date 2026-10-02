@@ -1,10 +1,10 @@
-const monsgoose = require("mongoose");
+const mongoose = require("mongoose");
 
 module.exports.connect = async () => {
     try {
-        await monsgoose.connect(process.env.MONGODB_URL);
+        await mongoose.connect(process.env.MONGODB_URL);
         console.log("Connected");
     } catch (error) {
-        console.log("Failed Connected");
+        console.log("Failed Connected:", error.message);
     }
 }

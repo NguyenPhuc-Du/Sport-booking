@@ -16,7 +16,7 @@
     "express-flash": "^0.0.2",
     "express-session": "^1.19.0",
     "method-override": "^3.0.0",
-    "moongoose": "^0.0.5",
+    "mongoose": "^9.10.1",
     "pug": "^3.0.4"
   },
   "devDependencies": {
