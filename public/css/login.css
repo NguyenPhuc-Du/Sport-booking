@@ -18,7 +18,7 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 40px;
+  gap: 32px;
   position: relative;
   overflow: hidden;
 }
@@ -36,35 +36,65 @@
   pointer-events: none;
 }
 
-.sz-login-hero .sz-brand {
-  color: #fff;
+.sz-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  white-space: nowrap;
 }
-
 .sz-login-hero .sz-pro {
   background: rgba(16, 185, 129, 0.15);
   border-color: rgba(16, 185, 129, 0.4);
   color: var(--green-2);
 }
 
-.sz-login-hero .sz-brand-sub {
+.sz-pro {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: var(--green-2, #10b981);
+  letter-spacing: 0.5px;
+}
+
+.sz-brand-text {
+  display: flex;
+  flex-direction: column;
+  color: #f1f5f9;
+}
+
+.sz-brand-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.sz-brand-sub {
+  font-size: 12.5px;
   color: #94a3b8;
+  white-space: nowrap;
 }
 
 .sz-login-hero-body h2 {
-  font-size: 34px;
+  font-size: 32px;
   font-weight: 800;
-  letter-spacing: -1px;
-  line-height: 1.2;
-  margin: 0 0 14px;
-  max-width: 420px;
+  letter-spacing: -0.5px;
+  line-height: 1.25;
+  margin: 0 0 12px;
 }
 
 .sz-login-hero-body > p {
   color: #94a3b8;
-  font-size: 15px;
-  line-height: 1.65;
-  max-width: 400px;
-  margin: 0 0 32px;
+  font-size: 14.5px;
+  line-height: 1.6;
+  margin: 0 0 28px;
 }
 
 .sz-login-points {
@@ -81,19 +111,20 @@
   align-items: center;
   gap: 12px;
   font-weight: 600;
-  font-size: 14.5px;
+  font-size: 14px;
   color: #e2e8f0;
+  white-space: nowrap;
 }
 
 .sz-login-points i {
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   border-radius: 10px;
   display: grid;
   place-items: center;
   background: rgba(16, 185, 129, 0.15);
-  color: var(--green-2);
-  font-size: 16px;
+  color: var(--green-2, #10b981);
+  font-size: 15px;
   flex: none;
 }
 
@@ -104,6 +135,7 @@
   font-size: 13px;
   font-weight: 600;
   color: #94a3b8;
+  white-space: nowrap;
 }
 
 /* ===== Cột phải ===== */
