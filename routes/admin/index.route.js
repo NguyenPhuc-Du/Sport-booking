@@ -11,24 +11,22 @@ const voucherRoutes = require("./voucher.route");
 module.exports = (app) => {
   const PATH_ADMIN = systemConfig.prefixAdmin;
 
-<<<<<<< HEAD
   app.use(PATH_ADMIN + "/accounts", accountRoutes);
   app.use(PATH_ADMIN + "/vouchers", voucherRoutes);
-=======
-module.exports = (app) => {
-  const PATH_ADMIN = systemConfig.prefixAdmin;
+  module.exports = (app) => {
+    const PATH_ADMIN = systemConfig.prefixAdmin;
 
-  app.use(PATH_ADMIN, localsAdmin);
+    app.use(PATH_ADMIN, localsAdmin);
 
-  app.get(PATH_ADMIN, (req, res) => {
-    res.redirect(PATH_ADMIN + "/dashboard");
-  });
+    app.get(PATH_ADMIN, (req, res) => {
+      res.redirect(PATH_ADMIN + "/dashboard");
+    });
 
-  app.use(PATH_ADMIN + "/dashboard", dashboardRoutes);
-  app.use(PATH_ADMIN + "/facilities", facilityRoutes);
-  app.use(PATH_ADMIN + "/bookings", bookingRoutes);
-  app.use(PATH_ADMIN + "/finance", financeRoutes);
-  app.use(PATH_ADMIN + "/users", userRoutes);
-  app.use(PATH_ADMIN + "/accounts", accountRoutes);
->>>>>>> 3692642a6e9868713aed4bbae7c5f4d1057648e5
+    app.use(PATH_ADMIN + "/dashboard", dashboardRoutes);
+    app.use(PATH_ADMIN + "/facilities", facilityRoutes);
+    app.use(PATH_ADMIN + "/bookings", bookingRoutes);
+    app.use(PATH_ADMIN + "/finance", financeRoutes);
+    app.use(PATH_ADMIN + "/users", userRoutes);
+    app.use(PATH_ADMIN + "/accounts", accountRoutes);
+  };
 };
