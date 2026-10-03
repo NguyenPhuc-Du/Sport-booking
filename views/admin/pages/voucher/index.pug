@@ -42,33 +42,36 @@ block main
               th Thời hạn
               th Trạng thái
           tbody
-            tr
-              td
-                span.vc-code SPORTNEW50
-              td Giảm 50.000đ cho đơn đầu tiên
-              td
-                span.vc-discount 50.000đ
-              td 200.000đ
-              td.vc-usage
-                span.vc-usage-text 168 / 500
-                .vc-bar
-                  .vc-bar-fill(style="width: 33.6%")
-              td
-                span.vc-date 2026-09-01 - 2026-10-31
-              td
-                span.vc-status Đang chạy
-            tr
-              td
-                span.vc-code PEAKVIP10
-              td Ưu đãi Giờ Vàng Giảm 10%
-              td
-                span.vc-discount 10%
-              td 300.000đ
-              td.vc-usage
-                span.vc-usage-text 94 / 300
-                .vc-bar
-                  .vc-bar-fill(style="width: 31.3%")
-              td
-                span.vc-date 2026-09-10 - 2026-10-15
-              td
-                span.vc-status Đang chạy
+            for item in voucher
+                tr
+                td
+                    span.vc-code #{item.code}
+                td #{item.name}
+                td
+                    span.vc-discount #{item.max_discount}
+                td #{item.min_oder_amount}
+                td.vc-usage
+                    span.vc-usage-text #{item.used_count}/#{item.quantity}                 
+                    .vc-bar-fill(style="width: 33.6%")
+                td
+                    span.vc-date #{item.start_date} - #{item.end_date}
+                td
+                    if(item.status=="active")
+                        span.vc-status Đang chạy
+                    else 
+                        span.vc-status Ngưng hoạt động
+            //- tr
+            //-   td
+            //-     span.vc-code PEAKVIP10
+            //-   td Ưu đãi Giờ Vàng Giảm 10%
+            //-   td
+            //-     span.vc-discount 10%
+            //-   td 300.000đ
+            //-   td.vc-usage
+            //-     span.vc-usage-text 94 / 300
+            //-     .vc-bar
+            //-       .vc-bar-fill(style="width: 31.3%")
+            //-   td
+            //-     span.vc-date 2026-09-10 - 2026-10-15
+            //-   td
+            //-     span.vc-status Đang chạy
