@@ -2,31 +2,34 @@ aside.sz-sidebar
   .sz-facility
     .d-flex.justify-content-between.align-items-center
       small.sz-facility-label CƠ SỞ ĐANG QUẢN LÝ
-      span.sz-dot-green
+      span.sz-dot-green(aria-hidden="true")
     .sz-facility-name SportPro Complex - Cầu Giấy
     .sz-facility-plan
       i.bi.bi-shield-check
       |  Gói Pro Club • Đang kích hoạt
+
   .sz-menu-title PHÂN HỆ QUẢN TRỊ
-  nav.sz-menu
-    a.sz-menu-item.active(href="#")
+  nav.sz-menu(aria-label="Menu quản trị")
+    a.sz-menu-item(href=`${prefixAdmin}/dashboard` class=(activeMenu === "dashboard" ? "active" : undefined))
       i.bi.bi-grid
       span.sz-menu-text Tổng quan & Thống kê
-    a.sz-menu-item(href="#")
+    a.sz-menu-item(href=`${prefixAdmin}/facilities` class=(activeMenu === "facilities" ? "active" : undefined))
       i.bi.bi-buildings
       span.sz-menu-text Quản lý Cơ sở & Sân
-    a.sz-menu-item(href="#")
+    a.sz-menu-item(href=`${prefixAdmin}/bookings` class=(activeMenu === "bookings" ? "active" : undefined))
       i.bi.bi-calendar-check
       span.sz-menu-text Lịch đặt & Sơ đồ Timeline
       span.sz-menu-badge TRỰC QUAN
-    a.sz-menu-item(href="#")
+    a.sz-menu-item(href=`${prefixAdmin}/finance` class=(activeMenu === "finance" ? "active" : undefined))
       i.bi.bi-credit-card-2-front
       span.sz-menu-text Tài chính & Khuyến mãi
-    a.sz-menu-item(href="#")
+    a.sz-menu-item(href=`${prefixAdmin}/users` class=(activeMenu === "users" ? "active" : undefined))
       i.bi.bi-people
       span.sz-menu-text Người dùng & Phân quyền
+      span.sz-menu-badge.sz-menu-badge-admin ADMIN
+
   .sz-sidebar-bottom
-    a.sz-open-customer(href="#")
+    a.sz-open-customer(href="/auth/login")
       i.bi.bi-box-arrow-up-right
       span Mở Giao diện Khách hàng
       i.bi.bi-chevron-right.ms-auto

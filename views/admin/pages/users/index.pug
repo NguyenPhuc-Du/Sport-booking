@@ -1,0 +1,94 @@
+extends ../../layouts/default.pug
+
+block main
+  .mb-4
+    h1.sz-title Quản trị Hệ thống & Phân quyền RBAC
+    p.sz-subtitle Giám sát tài khoản người dùng, nhật ký check-in điện tử và phê duyệt cơ sở.
+
+  .sz-tabs.mb-4
+    a.sz-tab(href=`${prefixAdmin}/users?tab=users` class=(activeTab === "users" ? "active" : undefined)) Danh sách người dùng (#{users.length})
+    a.sz-tab(href=`${prefixAdmin}/users?tab=checkins` class=(activeTab === "checkins" ? "active" : undefined)) Nhật ký Check-in sân (#{checkins.length})
+    a.sz-tab(href=`${prefixAdmin}/users?tab=approvals` class=(activeTab === "approvals" ? "active" : undefined)) Phê duyệt sân mới
+
+  if activeTab === "users"
+    .sz-card.sz-panel
+      .d-flex.justify-content-between.align-items-center.flex-wrap.gap-2.mb-3
+        h2.sz-panel-title Quản lý Tài khoản & Phân quyền
+        input.sz-input.sz-input-search#userSearch(type="search" placeholder="Tìm tên, SĐT, Email...")
+      .table-responsive
+        table.sz-table#usersTable
+          thead
+            tr
+              th NGƯỜI DÙNG
+              th SỐ ĐIỆN THOẠI
+              th EMAIL
+              th SỐ DƯ VÍ
+              th VAI TRÒ HIỆN TẠI
+              th ĐỔI VAI TRÒ
+          tbody
+            each u in users
+              tr
+                td
+                  .sz-user-cell
+                    img(src=`https://i.pravatar.cc/80?img=${u.avatar}` alt=u.name)
+                    div
+                      strong= u.name
+                      small= u.id
+                td= u.phone
+                td= u.email
+                td
+                  strong= u.wallet
+                td
+                  span.sz-role(class=`role-${u.role.toLowerCase()}`)= u.role
+                td
+                  select.sz-select.sz-select-sm
+                    option(selected=u.role === "CUSTOMER") CUSTOMER (Khách)
+                    option(selected=u.role === "OWNER") OWNER (Chủ sân)
+                    option(selected=u.role === "ADMIN") ADMIN (Hệ thống)
+
+  else if activeTab === "checkins"
+    .sz-card.sz-panel
+      h2.sz-panel-title Nhật ký Check-in Vào sân
+      p.sz-panel-sub.mb-3 Lịch sử quét mã QR tại quầy / ứng dụng nhân viên.
+      .table-responsive
+        table.sz-table
+          thead
+            tr
+              th MÃ NHẬT KÝ
+              th ĐƠN ĐẶT SÂN
+              th SÂN THI ĐẤU
+              th THỜI ĐIỂM QUÉT
+              th NHÂN VIÊN QUÉT
+              th PHƯƠNG THỨC
+          tbody
+            each c in checkins
+              tr
+                td
+                  code.sz-code= c.id
+                td
+                  a.sz-link(href=`${prefixAdmin}/bookings`)= c.order
+                td= c.court
+                td= c.time
+                td= c.staff
+                td
+                  span.sz-badge.sz-badge-ok= c.method
+
+  else
+    .sz-card.sz-panel
+      h2.sz-panel-title Danh sách Cơ sở Chờ phê duyệt
+      p.sz-panel-sub.mb-3 Hồ sơ chủ sân gửi để mở vận hành trên SportZone.
+      if approvals.length
+        each a in approvals
+          .sz-approve-card
+            .sz-approve-info
+              .d-flex.align-items-center.gap-2.mb-1
+                strong= a.name
+                span.sz-badge.sz-badge-warn= a.status
+              p.mb-1= a.address
+              p.sz-muted Quy mô: #{a.scale} · Chủ sân: #{a.owner}
+            button.sz-btn.sz-btn-green(type="button")
+              i.bi.bi-check2-circle
+              | Phê duyệt mở sân
+        p.sz-empty Không còn cơ sở nào khác trong hàng chờ hôm nay.
+      else
+        p.sz-empty Không có hồ sơ chờ duyệt.
