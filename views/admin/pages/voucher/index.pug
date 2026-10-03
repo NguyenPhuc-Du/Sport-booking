@@ -41,6 +41,7 @@ block main
               th Đã dùng / Giới hạn
               th Thời hạn
               th Trạng thái
+              th Hành động
           tbody
             for item in voucher
                 tr
@@ -48,18 +49,29 @@ block main
                     span.vc-code #{item.code}
                 td #{item.name}
                 td
-                    span.vc-discount #{item.max_discount}
-                td #{item.min_oder_amount}
+                    if(item.discount_type === "FIXED")
+                        span.vc-discount #{item.display_value}
+                    else 
+                        span.vc-discount #{item.discount_value}%
+                td #{item.display_minorder}
                 td.vc-usage
                     span.vc-usage-text #{item.used_count}/#{item.quantity}                 
                     .vc-bar-fill(style="width: 33.6%")
                 td
                     span.vc-date #{item.start_date} - #{item.end_date}
                 td
-                    if(item.status=="active")
-                        span.vc-status Đang chạy
+                    if(item.status=="ACTIVE")
+                       span(class="btn btn-success cursor-btn" style="font-size: small") hoạt động
+                    else if(item.status=="EXPIRED")
+                        span(class="btn btn-secondary cursor-btn " style="font-size: small") Hết lượt dùng
                     else 
-                        span.vc-status Ngưng hoạt động
+                        sspan(class="btn btn-danger cursor-btn " style="font-size: small") Ngưng hoạt động 
+                td 
+                    a(
+                        href=`${prefixAdmin}/products/edit/${item.id}`
+                        class="btn btn-warning btn-sm"
+                    ) Sửa
+                    button(class="btn btn-danger btn-sm ml-1" button-delete data-id=item.id) Xóa
             //- tr
             //-   td
             //-     span.vc-code PEAKVIP10
