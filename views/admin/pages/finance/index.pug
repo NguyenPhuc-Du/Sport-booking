@@ -1,0 +1,55 @@
+extends ../../layouts/default.pug
+
+block main
+  .d-flex.justify-content-between.align-items-start.flex-wrap.gap-3.mb-4
+    div
+      h1.sz-title Tài chính, Đối soát & Khuyến mãi
+      p.sz-subtitle Quản trị chiến dịch mã ưu đãi, đối soát hoa hồng 5% và gói phần mềm SaaS.
+    button.sz-btn.sz-btn-green(type="button")
+      i.bi.bi-download
+      | Yêu cầu rút tiền (#{withdrawable})
+
+  .sz-tabs.mb-4#financeTabs
+    button.sz-tab.active(type="button") Chiến dịch Voucher (#{vouchers.length})
+    button.sz-tab(type="button") Đối soát & Hoa hồng sàn (4)
+    button.sz-tab(type="button")
+      i.bi.bi-crown.me-1
+      | Gói phần mềm SaaS
+
+  .sz-card.sz-panel
+    .d-flex.justify-content-between.align-items-start.flex-wrap.gap-2.mb-3
+      div
+        h2.sz-panel-title Mã giảm giá đang kích hoạt
+        p.sz-panel-sub Kích cầu người chơi vào các khung giờ vắng hoặc tri ân hội viên.
+      button.sz-btn.sz-btn-green(type="button")
+        i.bi.bi-plus-lg
+        | Tạo Voucher mới
+
+    .table-responsive
+      table.sz-table
+        thead
+          tr
+            th MÃ CODE
+            th CHƯƠNG TRÌNH
+            th MỨC GIẢM
+            th ĐƠN TỐI THIỂU
+            th ĐÃ DÙNG / GIỚI HẠN
+            th THỜI HẠN
+            th TRẠNG THÁI
+        tbody
+          each v in vouchers
+            tr
+              td
+                code.sz-code= v.code
+              td= v.program
+              td
+                strong= v.discount
+              td= v.minOrder
+              td
+                .sz-usage
+                  span #{v.used}/#{v.limit}
+                  .sz-mini-track
+                    .sz-mini-fill(style=`width:${Math.round((v.used / v.limit) * 100)}%`)
+              td #{v.from} – #{v.to}
+              td
+                span.sz-badge.sz-badge-ok Đang chạy
