@@ -3,15 +3,18 @@ extends ../../layouts/default.pug
 block main
   .d-flex.justify-content-between.align-items-start.flex-wrap.gap-3.mb-4
     div
-      h1.sz-title Tài chính & Khuyến mãi
-      p.sz-subtitle Quản trị chiến dịch mã ưu đãi và theo dõi doanh thu / đối soát của cơ sở.
+      h1.sz-title Tài chính, Đối soát & Khuyến mãi
+      p.sz-subtitle Quản trị chiến dịch mã ưu đãi, đối soát hoa hồng 5% và gói phần mềm SaaS.
     button.sz-btn.sz-btn-green(type="button")
       i.bi.bi-download
       | Yêu cầu rút tiền (#{withdrawable})
 
   .sz-tabs.mb-4#financeTabs
     button.sz-tab.active(type="button") Chiến dịch Voucher (#{vouchers.length})
-    button.sz-tab(type="button") Đối soát doanh thu (4)
+    button.sz-tab(type="button") Đối soát & Hoa hồng sàn (4)
+    button.sz-tab(type="button")
+      i.bi.bi-crown.me-1
+      | Gói phần mềm SaaS
 
   .sz-card.sz-panel
     .d-flex.justify-content-between.align-items-start.flex-wrap.gap-2.mb-3

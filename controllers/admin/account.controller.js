@@ -1,7 +1,4 @@
-
-// [GET] /admin/accounts/index
+// [GET] /admin/accounts
 module.exports.index = async (req, res) => {
-    res.render("admin/pages/accounts/index", {
-        pageTitle: "Trang tài khoản"
-    });
-}
+  res.redirect(res.locals.prefixAdmin + "/users");
+};

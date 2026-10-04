@@ -4,7 +4,6 @@ module.exports.index = async (req, res) => {
     activeMenu: "finance",
     activeTab: "vouchers",
     withdrawable: "1.601.700đ",
-    // Chủ sân: voucher + đối soát — không có gói SaaS
     vouchers: [
       { code: "SPORTNEW50", program: "Ưu đãi khách mới", discount: "50.000đ", minOrder: "200.000đ", used: 168, limit: 500, from: "2026-09-01", to: "2026-10-31", status: "running" },
       { code: "GOLDTIME20", program: "Giờ vàng giảm 20%", discount: "20%", minOrder: "150.000đ", used: 92, limit: 300, from: "2026-09-10", to: "2026-11-15", status: "running" },

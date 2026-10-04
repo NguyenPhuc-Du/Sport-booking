@@ -13,9 +13,7 @@ module.exports.index = async (req, res) => {
   });
   console.log(voucher);
   res.render("admin/pages/voucher/index", {
-    pageTitle: "Tài chính & Khuyến mãi",
-    activeMenu: "finance",
+    pageTitle: "Trang Khuyến mãi",
     voucher: voucher,
   });
-
 };

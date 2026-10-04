@@ -7,6 +7,7 @@ block main
       p.sz-subtitle
         | Cơ sở:&nbsp;
         strong SportPro Complex - Cầu Giấy
+        |  · Dữ liệu cập nhật realtime
     .sz-range#rangeTabs
       button.active(type="button") 7 ngày qua
       button(type="button") Tháng này
@@ -18,6 +19,7 @@ block main
         .sz-card.sz-stat
           .d-flex.justify-content-between.align-items-start
             span.sz-stat-label= s.label
+            span.sz-stat-icon(class=s.tone): i.bi(class=s.icon)
           .sz-stat-value= s.value
           .sz-stat-note(class=s.noteClass)= s.note
 
@@ -34,9 +36,13 @@ block main
         #barChart.sz-chart(aria-label="Biểu đồ doanh thu tuần")
 
     .col-12.col-xl-5
-      .sz-card.sz-panel.h-100 
+      .sz-card.sz-panel.h-100
         h2.sz-panel-title Phân bổ khung giờ cao điểm
+        p.sz-panel-sub Tỷ lệ lấp đầy theo khung giờ
         #peakList.sz-peak-list
+        .sz-tip
+          i.bi.bi-stars.me-2
+          | Khuyến nghị tối ưu doanh thu: tạo voucher giảm 20% cho khung 11h–14h để lấp đầy slot trống.
 
   .row.g-3
     .col-12.col-xl-6
