@@ -1,0 +1,80 @@
+extends ../../layouts/default.pug
+
+block main
+  section.sz-section
+    .d-flex.justify-content-between.align-items-center.flex-wrap.gap-2.mb-3
+      a.sz-back(href=`/facilities/${facility.id}`)
+        i.bi.bi-arrow-left
+        | Quay lại #{facility.name}
+
+    .sz-card.sz-panel.mb-3
+      .d-flex.justify-content-between.align-items-start.flex-wrap.gap-2.mb-3
+        div
+          h1.sz-title Sơ đồ Lịch & Chọn khung giờ đặt sân
+          p.sz-subtitle Chọn ngày, sân con và khung giờ còn trống để giữ chỗ tức thì.
+        .sz-slot-legend
+          span
+            i.dot.is-free
+            | Còn trống
+          span
+            i.dot.is-pick
+            | Đang chọn
+          span
+            i.dot.is-peak
+            | Giờ vàng
+          span
+            i.dot.is-locked
+            | Đã đặt / Khóa
+
+      h3.sz-amenity-title CHỌN NGÀY CHƠI
+      .sz-date-row#dateRow
+        each d in dates
+          button.sz-date-card(type="button" class=(d.active ? "active" : undefined))
+            strong= d.label
+            small= d.sub
+            if d.tag
+              span.sz-date-tag= d.tag
+
+      h3.sz-amenity-title.mt-4 LỌC THEO SÂN CON (#{courts.length} SÂN)
+      .sz-court-filters#courtFilters
+        button.sz-amenity-chip.active(type="button") Tất cả sân
+        each c in courts
+          button.sz-amenity-chip(type="button")= c.name
+
+    .sz-card.sz-panel
+      .d-flex.justify-content-between.align-items-start.flex-wrap.gap-2.mb-3
+        div
+          h2.sz-panel-title= court.name
+          p.sz-panel-sub= court.surface
+        span.sz-badge.sz-badge-ok Chuẩn: #{court.capacity}
+
+      .sz-slot-grid#slotGrid
+        each slot in slots
+          button.sz-slot(
+            type="button"
+            class=(slot.peak ? "is-peak" : "") + (slot.locked ? " is-locked" : "")
+            disabled=slot.locked
+            data-price=slot.price
+          )
+            strong= slot.time
+            if slot.peak
+              span.sz-peak-tag GIỜ VÀNG
+            span.sz-slot-price= slot.price
+
+      .sz-booking-bar
+        .sz-booking-summary
+          span#selectedSlotText Chưa chọn khung giờ
+          strong#selectedPrice —
+        button.sz-btn.sz-btn-green(type="button" id="confirmBooking")
+          i.bi.bi-check2-circle
+          | Xác nhận đặt sân
+
+    .sz-card.sz-panel.mt-3
+      .d-flex.justify-content-between.align-items-center.flex-wrap.gap-2
+        div
+          h2.sz-panel-title Đánh giá từ người chơi (0)
+          p.sz-panel-sub Người chơi thực tế sau khi hoàn thành buổi tập
+        .sz-facility-rating
+          i.bi.bi-star-fill
+          strong #{facility.rating}
+          span #{facility.reviews} lượt xếp hạng

@@ -1,0 +1,71 @@
+extends ../../layouts/default.pug
+
+block main
+  section.sz-hero
+    .sz-hero-inner
+      span.sz-hero-badge Nền tảng đặt sân thể thao trực tiếp số 2 Việt Nam
+      h1.sz-hero-title Đặt sân chuẩn thi đấu,
+        br
+        | Giữ chỗ tức thì trong 30 giây.
+      p.sz-hero-sub
+
+      form.sz-hero-search(action="/" method="get")
+        .sz-hero-field
+          i.bi.bi-geo-alt
+          input(type="text" name="q" placeholder="Tên sân, đường phố hoặc quận...")
+        .sz-hero-field
+          i.bi.bi-buildings
+          select(name="city")
+            option Tất cả Thành phố
+            option Hà Nội
+            option TP. Hồ Chí Minh
+        .sz-hero-field
+          i.bi.bi-star
+          select(name="sort")
+            option Đánh giá cao nhất
+            option Gần bạn nhất
+            option Giá tốt nhất
+        button.sz-btn.sz-btn-green(type="submit")
+          i.bi.bi-search
+          | Tìm sân
+
+  section.sz-section
+    .sz-section-head
+      h2.sz-section-title Chọn bộ môn thể thao
+        span.sz-count  (#{facilities.length} cơ sở phù hợp)
+
+    .sz-sport-tabs#sportTabs
+      each s in sports
+        button.sz-sport-tab(type="button" class=(s.active ? "active" : undefined) data-sport=s.id)
+          i.bi(class=s.icon)
+          span= s.label
+
+    .sz-amenity-block
+      h3.sz-amenity-title Tiện ích đi kèm
+      .sz-amenity-list#amenityList
+        each a in amenities
+          button.sz-amenity-chip(type="button")= a
+
+    .sz-facility-grid
+      each f in facilities
+        article.sz-facility-card
+          a.sz-facility-media(href=`/facilities/${f.id}`)
+            img(src=f.image alt=f.name)
+            if f.badge
+              span.sz-facility-badge= f.badge
+          .sz-facility-body
+            .sz-facility-rating
+              i.bi.bi-star-fill
+              strong #{f.rating}
+              span (#{f.reviews} đánh giá)
+            h3.sz-facility-name
+              a(href=`/facilities/${f.id}`)= f.name
+            p.sz-facility-loc
+              i.bi.bi-geo-alt
+              | #{f.location}
+            .sz-facility-tags
+              each sport in f.sports
+                span= sport
+            a.sz-btn.sz-btn-green.sz-btn-sm(href=`/facilities/${f.id}/booking`)
+              i.bi.bi-calendar2-check
+              | Đặt sân ngay

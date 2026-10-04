@@ -6,8 +6,18 @@ header.sz-header
         span
           span.sz-brand-name Sport
             span.text-green Zone
+            span.sz-pro PRO
           small.sz-brand-sub Hệ thống Đặt & Quản lý Sân
-
+      .sz-switch#roleSwitch
+        a.sz-switch-btn(href="/" class=(panelRole === "customer" ? "active" : undefined))
+          i.bi.bi-person
+          | Khách hàng (Đặt sân)
+        a.sz-switch-btn(href="/owner/dashboard" class=(panelRole === "owner" ? "active" : undefined))
+          i.bi.bi-buildings
+          | Chủ sân
+        a.sz-switch-btn(href="/admin/dashboard" class=(panelRole === "admin" ? "active" : undefined))
+          i.bi.bi-shield-lock
+          | Quản trị
     .d-flex.align-items-center.gap-3.gap-lg-4
       if panelRole === "admin"
         .sz-role-pill
@@ -28,7 +38,7 @@ header.sz-header
         button.sz-bell(type="button" aria-label="Thông báo")
           i.bi.bi-bell
           span.sz-bell-dot
-        .sz-user
+        a.sz-user(href="/owner/profile")
           img(src="https://i.pravatar.cc/100?img=5" alt="Avatar chủ sân")
           div
             .sz-user-name Trần Thu Hà

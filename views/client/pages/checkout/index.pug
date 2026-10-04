@@ -1,0 +1,77 @@
+extends ../../layouts/default.pug
+
+block main
+  section.sz-section
+    .d-flex.justify-content-between.align-items-center.flex-wrap.gap-2.mb-3
+      a.sz-back(href="/facilities/sportpro-cau-giay/booking")
+        i.bi.bi-arrow-left
+        | Quay lại trang sân
+      a.sz-link.text-danger(href="#")
+        i.bi.bi-trash
+        |  Xóa toàn bộ giỏ
+
+    .sz-checkout-grid
+      .sz-checkout-left
+        .sz-card.sz-panel.mb-3
+          h2.sz-panel-title Khung giờ đã chọn
+          .sz-cart-item.mt-3
+            div
+              .sz-cart-facility= booking.facility
+              strong= booking.court
+              p.sz-muted Ngày #{booking.date} · #{booking.time}
+            .sz-cart-price
+              strong= booking.price
+              button.sz-icon-btn(type="button" aria-label="Xóa")
+                i.bi.bi-trash
+
+        .sz-card.sz-panel.mb-3
+          h2.sz-panel-title Thông tin người nhận sân
+          p.sz-panel-sub.mb-3 Mã QR vé điện tử và thông báo xác nhận sẽ được gửi qua SĐT & Email này.
+          .row.g-3
+            .col-md-6
+              label.sz-label Họ và tên
+              input.sz-input(type="text" value=user.name)
+            .col-md-6
+              label.sz-label Số điện thoại
+              input.sz-input(type="tel" value=user.phone)
+            .col-12
+              label.sz-label Email nhận vé điện tử
+              input.sz-input(type="email" value=user.email)
+            .col-12
+              label.sz-label Ghi chú cho ban quản lý sân (Không bắt buộc)
+              textarea.sz-input.sz-textarea(rows="3" placeholder="Ví dụ: mượn vợt, chuẩn bị cầu...")
+
+      .sz-checkout-right
+        .sz-card.sz-panel.mb-3
+          h2.sz-panel-title Mã giảm giá
+          .sz-voucher-row
+            input.sz-input(type="text" placeholder="Nhập mã ưu đãi...")
+            button.sz-btn.sz-btn-dark(type="button") Áp dụng
+          .sz-voucher-tags.mt-2
+            each v in vouchers
+              button.sz-amenity-chip(type="button")= v
+
+        .sz-card.sz-panel.mb-3
+          h2.sz-panel-title Phương thức thanh toán
+          .sz-pay-list#payList
+            each p in payments
+              label.sz-pay-item(class=(p.active ? "active" : undefined))
+                input(type="radio" name="payment" value=p.id checked=p.active)
+                div
+                  strong= p.title
+                  p= p.desc
+
+        .sz-cost-card
+          h3 TÓM TẮT CHI PHÍ
+          .sz-cost-row
+            span Tiền thuê sân (1 slot)
+            strong= booking.price
+          .sz-cost-row
+            span Phí dịch vụ SportZone
+            strong Miễn phí 0đ
+          .sz-cost-total
+            span Tổng thanh toán
+            strong= cartTotal
+          button.sz-btn.sz-btn-green.w-100#checkoutConfirm(type="button")
+            i.bi.bi-shield-check
+            | Xác nhận & Hoàn tất Đặt sân
