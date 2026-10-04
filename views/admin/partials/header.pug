@@ -12,7 +12,7 @@ header.sz-header
         a.sz-switch-btn(href="/auth/login" data-role="customer")
           i.bi.bi-person
           | Khách hàng (Đặt sân)
-        button.sz-switch-btn.active(type="button" data-role="owner")
+        a.sz-switch-btn(href="/owner/dashboard" class=(panelRole === "owner" ? "active" : undefined))
           i.bi.bi-buildings
           | Chủ sân & Quản trị
     .d-flex.align-items-center.gap-3.gap-lg-4

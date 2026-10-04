@@ -1,0 +1,44 @@
+extends ../../layouts/default.pug
+
+block main
+  .mb-4
+    h1.sz-title Phân quyền hệ thống RBAC
+    p.sz-subtitle Gán vai trò CUSTOMER / OWNER / ADMIN cho toàn bộ tài khoản trên SportZone.
+
+  .sz-card.sz-panel
+    .d-flex.justify-content-between.align-items-center.flex-wrap.gap-2.mb-3
+      div
+        h2.sz-panel-title Danh sách tài khoản
+        p.sz-panel-sub Chỉ Super Admin được đổi vai trò hệ thống
+      input.sz-input.sz-input-search#userSearch(type="search" placeholder="Tìm tên, SĐT, Email...")
+
+    .table-responsive
+      table.sz-table#usersTable
+        thead
+          tr
+            th NGƯỜI DÙNG
+            th SỐ ĐIỆN THOẠI
+            th EMAIL
+            th SỐ DƯ VÍ
+            th VAI TRÒ HIỆN TẠI
+            th ĐỔI VAI TRÒ
+        tbody
+          each u in users
+            tr
+              td
+                .sz-user-cell
+                  img(src=`https://i.pravatar.cc/80?img=${u.avatar}` alt=u.name)
+                  div
+                    strong= u.name
+                    small= u.id
+              td= u.phone
+              td= u.email
+              td
+                strong= u.wallet
+              td
+                span.sz-role(class=`role-${u.role.toLowerCase()}`)= u.role
+              td
+                select.sz-select.sz-select-sm
+                  option(selected=u.role === "CUSTOMER") CUSTOMER (Khách)
+                  option(selected=u.role === "OWNER") OWNER (Chủ sân)
+                  option(selected=u.role === "ADMIN") ADMIN (Hệ thống)
