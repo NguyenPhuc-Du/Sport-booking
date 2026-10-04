@@ -1,0 +1,72 @@
+extends ../../layouts/default.pug
+
+block main
+  .d-flex.justify-content-between.align-items-start.flex-wrap.gap-3.mb-4
+    div
+      h1.sz-title Doanh thu hoa hồng nền tảng
+      p.sz-subtitle Theo dõi hoa hồng 5% từ chủ sân và phí giao dịch từ người dùng toàn hệ thống.
+    .sz-range#rangeTabs
+      button.active(type="button") 7 ngày qua
+      button(type="button") Tháng này
+      button(type="button") Quý 3/2026
+
+  .row.g-3.mb-3
+    each s in stats
+      .col-12.col-sm-6.col-xl-3
+        .sz-card.sz-stat
+          .d-flex.justify-content-between.align-items-start
+            span.sz-stat-label= s.label
+          .sz-stat-value= s.value
+          .sz-stat-note(class=s.noteClass)= s.note
+
+  .row.g-3
+    .col-12.col-xl-7
+      .sz-card.sz-panel
+        .d-flex.justify-content-between.align-items-center.mb-3
+          div
+            h2.sz-panel-title Hoa hồng từ chủ sân
+            p.sz-panel-sub Tỷ lệ sàn 5% trên GMV từng cơ sở
+        .table-responsive
+          table.sz-table
+            thead
+              tr
+                th CƠ SỞ
+                th CHỦ SÂN
+                th LƯỢT ĐẶT
+                th GMV
+                th TỶ LỆ
+                th HOA HỒNG
+            tbody
+              each row in ownerCommissions
+                tr
+                  td
+                    strong= row.facility
+                  td= row.owner
+                  td= row.bookings
+                  td= row.gmv
+                  td= row.rate
+                  td
+                    strong.note-green= row.commission
+
+    .col-12.col-xl-5
+      .sz-card.sz-panel
+        h2.sz-panel-title Phí từ người dùng
+        p.sz-panel-sub.mb-3 Phí dịch vụ theo giao dịch đặt sân
+        .table-responsive
+          table.sz-table
+            thead
+              tr
+                th NGƯỜI DÙNG
+                th ĐƠN
+                th DOANH SỐ
+                th PHÍ
+            tbody
+              each u in userFees
+                tr
+                  td
+                    strong= u.user
+                    .sz-muted #{u.method}
+                  td= u.orders
+                  td= u.volume
+                  td
+                    strong= u.fee

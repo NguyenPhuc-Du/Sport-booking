@@ -1,0 +1,66 @@
+extends ../../layouts/default.pug
+
+block main
+  .d-flex.justify-content-between.align-items-start.flex-wrap.gap-3.mb-4
+    div
+      h1.sz-title Quản lý Đặt sân & Lịch thi đấu
+      p.sz-subtitle Theo dõi sơ đồ timeline theo giờ, check-in QR và đặt tại chỗ cho từng sân.
+    .d-flex.gap-2.flex-wrap
+      button.sz-btn.sz-btn-green(type="button")
+        i.bi.bi-qr-code-scan
+        | Quét QR Check-in
+      button.sz-btn.sz-btn-dark(type="button")
+        i.bi.bi-plus-lg
+        | Đặt tại chỗ
+
+  .sz-card.sz-filter-bar.mb-3
+    .row.g-2.align-items-center
+      .col-12.col-md-3
+        label.sz-label(for="bookingDate") Ngày xem
+        input#bookingDate.sz-input(type="text" value=dateDisplay readonly)
+      .col-12.col-md-5
+        label.sz-label(for="bookingSearch") Tìm kiếm
+        input#bookingSearch.sz-input(type="search" placeholder="Mã đơn SPZ-, tên khách, SĐT...")
+      .col-12.col-md-4
+        label.sz-label Xem dạng
+        .sz-seg#viewToggle
+          button.sz-seg-btn.active(type="button" data-view="timeline") Sơ đồ Timeline
+          button.sz-seg-btn(type="button" data-view="table") Danh sách bảng
+
+  .sz-card.sz-panel
+    .d-flex.justify-content-between.align-items-center.flex-wrap.gap-2.mb-3
+      h2.sz-panel-title Sơ đồ phân bổ khung giờ các sân ngày: #{dateLabel}
+      .sz-status-legend
+        span
+          i.dot.is-paid
+          | Đã thanh toán
+        span
+          i.dot.is-pending
+          | Chờ duyệt / cọc
+        span
+          i.dot.is-done
+          | Hoàn thành
+
+    .sz-timeline-wrap
+      .sz-timeline
+        .sz-timeline-head
+          .sz-timeline-court-col Sân
+          each h in hours
+            .sz-timeline-hour #{h}:00
+        each row in rows
+          .sz-timeline-row(class=(row.status === "maintenance" ? "is-maint" : ""))
+            .sz-timeline-court-col
+              strong= row.name
+              if row.status === "open"
+                small.sz-open Đang mở
+              else
+                small.sz-maint
+                  i.bi.bi-exclamation-triangle
+                  |  Đang bảo trì
+            each h in hours
+              - const slot = row.slots[h]
+              .sz-timeline-cell
+                if slot
+                  .sz-slot
+                    span= slot.name
+                    small #{slot.id}

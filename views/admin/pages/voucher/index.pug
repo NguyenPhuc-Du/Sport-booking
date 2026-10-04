@@ -1,0 +1,87 @@
+extends ../../layouts/default.pug
+
+block main
+  .vc-page
+    .vc-head
+      div
+        h1.vc-title Tài chính &amp; Khuyến mãi
+        p.vc-sub Quản trị chiến dịch mã ưu đãi và đối soát doanh thu cơ sở
+      a.vc-btn(href="#")
+        i.bi.bi-download
+        | Yêu cầu rút tiền (1.601.700đ)
+
+    .vc-tabs
+      a.vc-tab.active(href="#")
+        i.bi.bi-ticket-perforated
+        | Chiến dịch Voucher (3)
+      a.vc-tab(href="#")
+        i.bi.bi-credit-card-2-front
+        | Đối soát doanh thu (4)
+
+
+    .vc-card
+      .vc-card-head
+        div
+          h2.vc-card-title Mã giảm giá đang kích hoạt
+          p.vc-card-sub Kích cầu người chơi vào các khung giờ vàng hoặc tri ân hội viên
+        a.vc-btn.vc-btn-sm(href="#")
+          i.bi.bi-plus-lg
+          | Tạo Voucher mới
+
+      .vc-table-wrap
+        table.vc-table
+          thead
+            tr
+              th Mã code
+              th Chương trình
+              th Mức giảm
+              th Đơn tối thiểu
+              th Đã dùng / Giới hạn
+              th Thời hạn
+              th Trạng thái
+              th Hành động
+          tbody
+            for item in voucher
+                tr
+                td
+                    span.vc-code #{item.code}
+                td #{item.name}
+                td
+                    if(item.discount_type === "FIXED")
+                        span.vc-discount #{item.display_value}
+                    else 
+                        span.vc-discount #{item.discount_value}%
+                td #{item.display_minorder}
+                td.vc-usage
+                    span.vc-usage-text #{item.used_count}/#{item.quantity}                 
+                    .vc-bar-fill(style="width: 33.6%")
+                td
+                    span.vc-date #{item.start_date} - #{item.end_date}
+                td
+                    if(item.status=="ACTIVE")
+                       span(class="btn btn-success cursor-btn" style="font-size: small") hoạt động
+                    else if(item.status=="EXPIRED")
+                        span(class="btn btn-secondary cursor-btn " style="font-size: small") Hết lượt dùng
+                    else 
+                        sspan(class="btn btn-danger cursor-btn " style="font-size: small") Ngưng hoạt động 
+                td 
+                    a(
+                        href=`${prefixAdmin}/products/edit/${item.id}`
+                        class="btn btn-warning btn-sm"
+                    ) Sửa
+                    button(class="btn btn-danger btn-sm ml-1" button-delete data-id=item.id) Xóa
+            //- tr
+            //-   td
+            //-     span.vc-code PEAKVIP10
+            //-   td Ưu đãi Giờ Vàng Giảm 10%
+            //-   td
+            //-     span.vc-discount 10%
+            //-   td 300.000đ
+            //-   td.vc-usage
+            //-     span.vc-usage-text 94 / 300
+            //-     .vc-bar
+            //-       .vc-bar-fill(style="width: 31.3%")
+            //-   td
+            //-     span.vc-date 2026-09-10 - 2026-10-15
+            //-   td
+            //-     span.vc-status Đang chạy

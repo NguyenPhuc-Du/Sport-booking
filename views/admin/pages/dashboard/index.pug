@@ -1,0 +1,79 @@
+extends ../../layouts/default.pug
+
+block main
+  .d-flex.justify-content-between.align-items-start.flex-wrap.gap-3.mb-4
+    div
+      h1.sz-title Tổng quan Hoạt động & Doanh thu
+      p.sz-subtitle
+        | Cơ sở:&nbsp;
+        strong SportPro Complex - Cầu Giấy
+    .sz-range#rangeTabs
+      button.active(type="button") 7 ngày qua
+      button(type="button") Tháng này
+      button(type="button") Quý 3/2026
+
+  .row.g-3.mb-3
+    each s in stats
+      .col-12.col-sm-6.col-xl-3
+        .sz-card.sz-stat
+          .d-flex.justify-content-between.align-items-start
+            span.sz-stat-label= s.label
+          .sz-stat-value= s.value
+          .sz-stat-note(class=s.noteClass)= s.note
+
+  .row.g-3.mb-3
+    .col-12.col-xl-7
+      .sz-card.sz-panel.h-100
+        .d-flex.justify-content-between.align-items-start.flex-wrap.gap-2
+          div
+            h2.sz-panel-title Biểu đồ doanh thu 7 ngày qua
+            p.sz-panel-sub Đơn vị: triệu đồng
+          .sz-legend
+            span.sz-legend-dot
+            |  Doanh thu ngày
+        #barChart.sz-chart(aria-label="Biểu đồ doanh thu tuần")
+
+    .col-12.col-xl-5
+      .sz-card.sz-panel.h-100 
+        h2.sz-panel-title Phân bổ khung giờ cao điểm
+        #peakList.sz-peak-list
+
+  .row.g-3
+    .col-12.col-xl-6
+      .sz-card.sz-panel
+        .d-flex.justify-content-between.align-items-center.mb-3
+          div
+            h2.sz-panel-title Sân có doanh thu cao nhất
+            p.sz-panel-sub Top sân theo doanh thu tuần
+          a.sz-link(href=`${prefixAdmin}/facilities`) Quản lý sân →
+        ul.sz-rank-list
+          each c in topCourts
+            li.sz-rank-item
+              span.sz-rank-num= c.rank
+              .sz-rank-body
+                .sz-rank-name= c.name
+                .sz-rank-meta= `${c.sport} · ${c.bookings} lượt đặt`
+                .sz-mini-track
+                  .sz-mini-fill(style=`width:${c.fill}%`)
+                .sz-rank-fill Lấp đầy #{c.fill}%
+              .sz-rank-money= c.revenue
+
+    .col-12.col-xl-6
+      .sz-card.sz-panel
+        .d-flex.justify-content-between.align-items-center.mb-3
+          div
+            h2.sz-panel-title Đơn đặt sân mới nhất
+            p.sz-panel-sub 4 giao dịch gần đây
+          a.sz-link(href=`${prefixAdmin}/bookings`) Xem tất cả (4) →
+        ul.sz-booking-list
+          each b in latestBookings
+            li.sz-booking-item
+              .sz-booking-top
+                span.sz-booking-code= `${b.code} · ${b.pay}`
+                span.sz-status(class=`is-${b.status}`)= b.statusLabel
+              .sz-booking-main
+                strong= b.customer
+                span · #{b.court}
+              .sz-booking-bottom
+                span= b.time
+                strong= b.amount

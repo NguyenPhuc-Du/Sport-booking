@@ -1,7 +1,7 @@
 header.sz-header
   .sz-header-inner
-    .d-flex.align-items-center.gap-4
-      a.sz-brand(href="#")
+    .d-flex.align-items-center.gap-4.flex-wrap
+      a.sz-brand(href=panelHome || "/owner/dashboard")
         span.sz-logo: i.bi.bi-calendar3
         span
           span.sz-brand-name Sport
@@ -9,27 +9,37 @@ header.sz-header
             span.sz-pro PRO
           small.sz-brand-sub Hệ thống Đặt & Quản lý Sân
       .sz-switch#roleSwitch
-        button.sz-switch-btn(type="button" data-role="customer")
+        a.sz-switch-btn(href="/auth/login" class=(panelRole === "customer" ? "active" : undefined))
           i.bi.bi-person
           | Khách hàng (Đặt sân)
-        button.sz-switch-btn.active(type="button" data-role="owner")
+        a.sz-switch-btn(href="/owner/dashboard" class=(panelRole === "owner" ? "active" : undefined))
           i.bi.bi-buildings
-          | Chủ sân & Quản trị
-    .d-flex.align-items-center.gap-4
-      .dropdown
-        button.sz-role-pill.dropdown-toggle(type="button" data-bs-toggle="dropdown")
-          span.dot
-          i.bi.bi-shop
           | Chủ sân
-          i.bi.bi-chevron-down.ms-1
-        ul.dropdown-menu.dropdown-menu-end
-          li: a.dropdown-item(href="#") Chủ sân
-          li: a.dropdown-item(href="#") Quản lý
-      button.sz-bell(type="button" aria-label="Thông báo")
-        i.bi.bi-bell
-        span.sz-bell-dot
-      .sz-user
-        img(src="https://i.pravatar.cc/100?img=12" alt="Avatar")
-        div
-          .sz-user-name Trần Văn Hoàng
-          .sz-user-wallet Ví: 14.250.000đ
+        a.sz-switch-btn(href="/admin/dashboard" class=(panelRole === "admin" ? "active" : undefined))
+          i.bi.bi-shield-lock
+          | Quản trị
+    .d-flex.align-items-center.gap-3.gap-lg-4
+      if panelRole === "admin"
+        .sz-role-pill
+          span.dot
+          | Super Admin
+        button.sz-bell(type="button" aria-label="Thông báo")
+          i.bi.bi-bell
+          span.sz-bell-dot
+        .sz-user
+          img(src="https://i.pravatar.cc/100?img=12" alt="Avatar admin")
+          div
+            .sz-user-name Lê Thanh Bình
+            .sz-user-wallet Hệ thống
+      else
+        .sz-role-pill
+          span.dot
+          | Chủ sân
+        button.sz-bell(type="button" aria-label="Thông báo")
+          i.bi.bi-bell
+          span.sz-bell-dot
+        .sz-user
+          img(src="https://i.pravatar.cc/100?img=5" alt="Avatar chủ sân")
+          div
+            .sz-user-name Trần Thu Hà
+            .sz-user-wallet Ví: 14.250.000đ
