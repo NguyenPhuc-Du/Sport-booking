@@ -1,29 +1,35 @@
 header.sz-header
   .sz-header-inner
     .d-flex.align-items-center.gap-4.flex-wrap
-      a.sz-brand(href=`${prefixAdmin}/dashboard`)
+      a.sz-brand(href=panelHome || "/owner/dashboard")
         span.sz-logo: i.bi.bi-calendar3
         span
           span.sz-brand-name Sport
             span.text-green Zone
-            span.sz-pro PRO
           small.sz-brand-sub Hệ thống Đặt & Quản lý Sân
-      .sz-switch#roleSwitch
-        a.sz-switch-btn(href="/auth/login" data-role="customer")
-          i.bi.bi-person
-          | Khách hàng (Đặt sân)
-        a.sz-switch-btn(href="/owner/dashboard" class=(panelRole === "owner" ? "active" : undefined))
-          i.bi.bi-buildings
-          | Chủ sân & Quản trị
+
     .d-flex.align-items-center.gap-3.gap-lg-4
-      .sz-role-pill
-        span.dot
-        | Super Admin
-      button.sz-bell(type="button" aria-label="Thông báo")
-        i.bi.bi-bell
-        span.sz-bell-dot
-      .sz-user
-        img(src="https://i.pravatar.cc/100?img=12" alt="Avatar Lê Thanh Bình")
-        div
-          .sz-user-name Lê Thanh Bình (Super)
-          .sz-user-wallet Ví: 0đ
+      if panelRole === "admin"
+        .sz-role-pill
+          span.dot
+          | Super Admin
+        button.sz-bell(type="button" aria-label="Thông báo")
+          i.bi.bi-bell
+          span.sz-bell-dot
+        .sz-user
+          img(src="https://i.pravatar.cc/100?img=12" alt="Avatar admin")
+          div
+            .sz-user-name Lê Thanh Bình
+            .sz-user-wallet Hệ thống
+      else
+        .sz-role-pill
+          span.dot
+          | Chủ sân
+        button.sz-bell(type="button" aria-label="Thông báo")
+          i.bi.bi-bell
+          span.sz-bell-dot
+        .sz-user
+          img(src="https://i.pravatar.cc/100?img=5" alt="Avatar chủ sân")
+          div
+            .sz-user-name Trần Thu Hà
+            .sz-user-wallet Ví: 14.250.000đ
