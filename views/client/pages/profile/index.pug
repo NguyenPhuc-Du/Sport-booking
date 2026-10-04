@@ -1,0 +1,151 @@
+extends ../../layouts/default.pug
+
+block main
+  section.sz-section
+    .sz-card.sz-profile-hero
+      .sz-profile-left
+        .sz-avatar-wrap
+          img#userAvatarPreview(src=user.avatar alt=user.name)
+          label.sz-avatar-edit(for="userAvatarInput" title="Đổi ảnh đại diện")
+            i.bi.bi-camera
+          input#userAvatarInput.d-none(type="file" accept="image/*")
+        div
+          .d-flex.align-items-center.flex-wrap.gap-2
+            h1.sz-title.mb-0= user.name
+            span.sz-badge.sz-badge-ok= user.badge
+          p.sz-muted.mb-1 #{user.email} · #{user.phone}
+          p.sz-muted.mb-0 Tham gia hệ thống từ tháng #{user.joined}.
+      a.sz-wallet-chip(href="/wallet" title="Nạp tiền vào ví")
+        span.sz-wallet-chip-icon
+          i.bi.bi-wallet2
+        span.sz-wallet-chip-body
+          small Số dư ví
+          strong= user.wallet
+        span.sz-wallet-chip-cta
+          | Nạp
+          i.bi.bi-chevron-right
+
+    if saved
+      .sz-tip.mt-3.mb-0
+        i.bi.bi-check2-circle.me-2
+        | Đã lưu thông tin tài khoản (demo UI).
+
+    .sz-profile-tabs.mt-4
+      a.sz-profile-tab(href="/profile?tab=bookings" class=(activeTab === "bookings" ? "active" : undefined))
+        i.bi.bi-calendar2-check
+        | Lịch sử đặt sân (#{bookingCounts.all})
+      a.sz-profile-tab(href="/profile?tab=notifications" class=(activeTab === "notifications" ? "active" : undefined))
+        i.bi.bi-bell
+        | Thông báo (#{notifications.length})
+      a.sz-profile-tab(href="/profile?tab=reviews" class=(activeTab === "reviews" ? "active" : undefined))
+        i.bi.bi-star
+        | Đánh giá đã gửi (#{reviews.length})
+      a.sz-profile-tab(href="/profile?tab=settings" class=(activeTab === "settings" ? "active" : undefined))
+        i.bi.bi-person-gear
+        | Hồ sơ & Avatar
+
+    if activeTab === "bookings"
+      .sz-tabs.mt-3.mb-3
+        a.sz-tab(href="/profile?tab=bookings&filter=all" class=(filter === "all" ? "active" : undefined)) Tất cả (#{bookingCounts.all})
+        a.sz-tab(href="/profile?tab=bookings&filter=upcoming" class=(filter === "upcoming" ? "active" : undefined)) Sắp diễn ra (#{bookingCounts.upcoming})
+        a.sz-tab(href="/profile?tab=bookings&filter=completed" class=(filter === "completed" ? "active" : undefined)) Đã hoàn thành (#{bookingCounts.completed})
+        a.sz-tab(href="/profile?tab=bookings&filter=cancelled" class=(filter === "cancelled" ? "active" : undefined)) Đã hủy (#{bookingCounts.cancelled})
+
+      if bookings.length
+        .sz-booking-history
+          each b in bookings
+            article.sz-history-card
+              .sz-history-top
+                div
+                  .d-flex.align-items-center.gap-2.mb-1
+                    code.sz-code= b.code
+                    span.sz-status(class=`is-${b.status === "upcoming" ? "approved" : "done"}`)= b.statusLabel
+                  h3.sz-panel-title.mb-0= b.facility
+                div.text-end
+                  small.sz-muted Tổng tiền
+                  .sz-history-amount= b.amount
+              .sz-history-body
+                span.sz-rank-num 1
+                div
+                  strong= b.court
+                  p.sz-muted.mb-0 Ngày #{b.date} · #{b.time}
+                strong= b.courtPrice
+              .sz-history-foot
+                span.sz-muted Đặt lúc: #{b.bookedAt}
+                .d-flex.gap-2
+                  button.sz-btn.sz-btn-dark.sz-btn-sm(type="button")
+                    i.bi.bi-qr-code
+                    | Xem vé QR
+                  if b.status === "completed"
+                    button.sz-btn.sz-btn-sm.sz-btn-rate(type="button")
+                      i.bi.bi-star
+                      | Đánh giá sân
+      else
+        .sz-empty-state
+          i.bi.bi-calendar-x
+          h3 Chưa có lịch đặt sân ở mục này
+          p Các lượt đặt mới sẽ hiển thị tại đây kèm mã QR check-in.
+
+    else if activeTab === "notifications"
+      .sz-card.sz-panel.mt-3
+        .d-flex.justify-content-between.align-items-start.flex-wrap.gap-2.mb-3
+          div
+            h2.sz-panel-title Trung tâm thông báo
+            p.sz-panel-sub Nhắc nhở giờ chơi, khuyến mãi độc quyền và cập nhật đơn
+          a.sz-link(href="#") Đánh dấu tất cả là đã đọc
+        ul.sz-noti-list
+          each n in notifications
+            li.sz-noti-item
+              span.sz-noti-icon(class=`is-${n.type}`): i.bi(
+                class=(n.type === "success" ? "bi-check2" : n.type === "promo" ? "bi-stars" : n.type === "remind" ? "bi-clock" : "bi-bell")
+              )
+              div
+                strong= n.title
+                p= n.text
+              small= n.date
+
+    else if activeTab === "reviews"
+      .sz-card.sz-panel.mt-3
+        h2.sz-panel-title.mb-3 Đánh giá và phản hồi của bạn
+        each r in reviews
+          .sz-review-card
+            .d-flex.justify-content-between.align-items-center.mb-2
+              strong= r.facility
+              span.sz-facility-rating
+                i.bi.bi-star-fill
+                strong= r.rating
+            p.sz-review-text= r.text
+            .sz-review-scores
+              span Mặt sân: #{r.surface}★
+              span Vệ sinh: #{r.clean}★
+              span Dịch vụ: #{r.service}★
+
+    else
+      .sz-card.sz-panel.mt-3
+        h2.sz-panel-title Cập nhật hồ sơ & ảnh đại diện
+        p.sz-panel-sub.mb-3 Thay avatar, tên, SĐT và email nhận vé điện tử.
+        form(action="/profile/update" method="POST")
+          .row.g-3
+            .col-md-4
+              .sz-avatar-editor
+                img#settingsAvatarPreview(src=user.avatar alt=user.name)
+                label.sz-btn.sz-btn-green.sz-btn-sm(for="settingsAvatarInput")
+                  i.bi.bi-image
+                  | Chọn ảnh mới
+                input#settingsAvatarInput.d-none(type="file" accept="image/*")
+                input#settingsAvatarUrl(type="hidden" name="avatar" value=user.avatar)
+            .col-md-8
+              .row.g-3
+                .col-md-6
+                  label.sz-label Họ và tên
+                  input.sz-input(type="text" name="name" value=user.name required)
+                .col-md-6
+                  label.sz-label Số điện thoại
+                  input.sz-input(type="tel" name="phone" value=user.phone required)
+                .col-12
+                  label.sz-label Email
+                  input.sz-input(type="email" name="email" value=user.email required)
+                .col-12
+                  button.sz-btn.sz-btn-green(type="submit")
+                    i.bi.bi-save
+                    | Lưu thông tin

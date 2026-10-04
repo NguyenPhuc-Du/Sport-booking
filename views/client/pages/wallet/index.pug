@@ -1,0 +1,64 @@
+extends ../../layouts/default.pug
+
+block main
+  section.sz-section
+    .d-flex.justify-content-between.align-items-center.flex-wrap.gap-2.mb-3
+      a.sz-back(href="/profile")
+        i.bi.bi-arrow-left
+        | Quay lại hồ sơ
+      span.sz-muted Nạp tiền · Ví SportZone
+
+    if toppedUp
+      .sz-tip.mb-3
+        i.bi.bi-check2-circle.me-2
+        | Nạp tiền thành công (demo UI). Số dư sẽ cập nhật sau khi thanh toán thật.
+
+    .sz-wallet-page
+      .sz-wallet-page-left
+        .sz-card.sz-panel.sz-wallet-balance-card
+          .sz-wallet-balance-row
+            span.sz-wallet-chip-icon
+              i.bi.bi-wallet2
+            div
+              small.sz-muted Số dư hiện tại
+              .sz-wallet-balance-value= user.wallet
+          p.sz-panel-sub.mb-0 Tiền trong ví dùng để thanh toán đặt sân nhanh, không mất phí dịch vụ.
+
+        .sz-card.sz-panel.mt-3
+          h2.sz-panel-title Chọn số tiền nạp
+          p.sz-panel-sub.mb-3 Chọn nhanh hoặc nhập số tiền tùy chỉnh (tối thiểu 50.000đ).
+          .sz-amount-grid#amountGrid
+            each a in amounts
+              button.sz-amount-btn(type="button" data-amount=a)= a.toLocaleString("vi-VN") + "đ"
+          label.sz-label.mt-3 Số tiền khác
+          .sz-amount-custom
+            input#customAmount.sz-input(type="number" min="50000" step="10000" placeholder="Nhập số tiền...")
+            span đ
+
+      .sz-wallet-page-right
+        .sz-card.sz-panel.mb-3
+          h2.sz-panel-title Phương thức nạp
+          .sz-pay-list#payList
+            each p in methods
+              label.sz-pay-item(class=(p.active ? "active" : undefined))
+                input(type="radio" name="topupMethod" value=p.id checked=p.active)
+                div
+                  strong= p.title
+                  p= p.desc
+
+        form#topUpForm(action="/wallet/top-up" method="POST")
+          input#topUpAmount(type="hidden" name="amount" value="200000")
+          .sz-cost-card
+            h3 TÓM TẮT NẠP TIỀN
+            .sz-cost-row
+              span Số dư hiện tại
+              strong= user.wallet
+            .sz-cost-row
+              span Số tiền nạp
+              strong#summaryAmount 200.000đ
+            .sz-cost-total
+              span Thanh toán
+              strong#summaryPay 200.000đ
+            button.sz-btn.sz-btn-green.w-100(type="submit")
+              i.bi.bi-lightning-charge-fill
+              | Xác nhận nạp tiền

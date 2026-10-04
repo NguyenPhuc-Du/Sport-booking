@@ -1,0 +1,48 @@
+extends ../../layouts/default.pug
+
+block script
+  script(src="/admin/js/owner-profile.js")
+
+block main
+  .mb-4
+    h1.sz-title Hồ sơ Chủ sân
+    p.sz-subtitle Cập nhật ảnh đại diện và thông tin liên hệ hiển thị trên hệ thống SportZone.
+
+  if saved
+    .sz-tip.mb-3
+      i.bi.bi-check2-circle.me-2
+      | Đã lưu hồ sơ chủ sân (demo UI).
+
+  .sz-card.sz-panel
+    form(action=`${prefixAdmin}/profile/update` method="POST")
+      .row.g-4
+        .col-md-4
+          .sz-avatar-editor
+            img#ownerAvatarPreview(src=owner.avatar alt=owner.name)
+            label.sz-btn.sz-btn-green.sz-btn-sm(for="ownerAvatarInput")
+              i.bi.bi-camera
+              | Đổi avatar
+            input#ownerAvatarInput.d-none(type="file" accept="image/*")
+            input#ownerAvatarUrl(type="hidden" name="avatar" value=owner.avatar)
+            p.sz-muted.mt-2.mb-0 #{owner.plan} · Tham gia #{owner.joined}
+        .col-md-8
+          .row.g-3
+            .col-md-6
+              label.sz-label Họ và tên
+              input.sz-input(type="text" name="name" value=owner.name required)
+            .col-md-6
+              label.sz-label Số điện thoại
+              input.sz-input(type="tel" name="phone" value=owner.phone required)
+            .col-md-6
+              label.sz-label Email
+              input.sz-input(type="email" name="email" value=owner.email required)
+            .col-md-6
+              label.sz-label Cơ sở đang quản lý
+              input.sz-input(type="text" name="facility" value=owner.facility)
+            .col-12
+              label.sz-label Số dư ví
+              input.sz-input(type="text" value=owner.wallet readonly)
+            .col-12
+              button.sz-btn.sz-btn-green(type="submit")
+                i.bi.bi-save
+                | Lưu hồ sơ chủ sân
