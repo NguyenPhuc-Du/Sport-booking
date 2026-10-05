@@ -21,11 +21,12 @@ module.exports = (app) => {
   app.use(PATH + "/facilities", facilityRoutes);
   app.use(PATH + "/bookings", bookingRoutes);
   app.use(PATH + "/finance", financeRoutes);
-  app.use(PATH + "/vouchers", voucherRoutes);
   app.use(PATH + "/profile", ownerProfileRoutes);
 
   // Giữ tương thích link cũ của chủ sân (không đụng /admin/dashboard của platform)
-  app.get("/admin/facilities", (req, res) => res.redirect(PATH + "/facilities"));
+  app.get("/admin/facilities", (req, res) =>
+    res.redirect(PATH + "/facilities"),
+  );
   app.get("/admin/bookings", (req, res) => res.redirect(PATH + "/bookings"));
   app.get("/admin/finance", (req, res) => res.redirect(PATH + "/finance"));
 };
