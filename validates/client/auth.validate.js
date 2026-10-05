@@ -1,4 +1,5 @@
 const User = require("../../models/user.model");
+const bcrypt = require("bcrypt");
 
 module.exports.registerPost = async (req, res,next ) =>{
     if(!req.body.fullName || !req.body.fullName.trim()){
@@ -56,6 +57,33 @@ module.exports.registerPost = async (req, res,next ) =>{
         } else {
             req.flash("error", "Số điện thoại này đã được đăng ký!");
         }
+        res.redirect(req.get("Referrer"));
+        return;
+    }
+
+    next();
+}
+
+module.exports.loginPost = async(req, res, next) => {
+    const {
+        email,
+        password
+    } = req.body;
+
+    const isExistUser = await User.findOne({
+        email: email
+    }).lean();
+
+    if(!isExistUser) {
+        req.flash("error", "Email đăng nhập không chính xác");
+        res.redirect(req.get("Referrer"));
+        return;
+    }
+
+    const isTruePass = await bcrypt.compare(password, isExistUser.password_hash);
+
+    if(!isTruePass) {
+        req.flash("error", "Mật khẩu không chính xác");
         res.redirect(req.get("Referrer"));
         return;
     }
