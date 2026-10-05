@@ -8,6 +8,10 @@ module.exports.login = async (req, res) =>{
     });
 }
 
+module.exports.loginPost = async (req, res) => {
+    res.redirect("/");
+}
+
 module.exports.register = (req, res) => {
     res.render("client/pages/auth/register", {
         pageTitle: "Đăng kí"
