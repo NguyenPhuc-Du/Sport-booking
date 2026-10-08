@@ -1,0 +1,272 @@
+/* ===== Tokens (đồng bộ màu với dashboard SportZone) ===== */
+:root {
+  --green-600: #0e9b6a;
+  --green-700: #0b8359;
+  --green-400: #19c58b;
+  --ink-900: #0c1c1a;
+  --ink-500: #5f726e;
+  --ink-300: #a9b8b4;
+  --line: #dbe6e1;
+  --bg: #eef6f2;
+  --surface: #ffffff;
+  --danger: #d6361f;
+  --danger-bg: #fdecea;
+  --radius-lg: 24px;
+  --radius-md: 14px;
+  --font: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { height: 100%; }
+body {
+  min-height: 100%;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font);
+  color: var(--ink-900);
+  background:
+    radial-gradient(700px 420px at 50% 0%, #f9fdfb 0%, transparent 70%),
+    var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+[hidden] { display: none !important; }
+
+/* ===== Thanh đầu trang ===== */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px clamp(20px, 6vw, 120px);
+  background: rgba(255, 255, 255, .7);
+  border-bottom: 1px solid var(--line);
+  backdrop-filter: blur(6px);
+}
+.brand { display: flex; flex-direction: column; text-decoration: none; color: inherit; }
+.brand-name { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; }
+.brand-name span { color: var(--green-400); }
+.brand-sub { margin-top: 2px; font-size: 12.5px; color: var(--ink-500); }
+
+.role-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green-400); display: inline-block; flex: none; }
+
+/* ===== Khu vực chính: một cột, căn giữa ===== */
+.stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px 24px;
+}
+
+.card {
+  width: 100%;
+  max-width: 460px;
+  padding: 20px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 24px 60px -32px rgba(12, 28, 26, .28);
+}
+
+/* Khối tối "Admin Console" */
+.console {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
+  border-radius: 18px;
+  background: var(--ink-900);
+  color: #fff;
+}
+.console-icon {
+  flex: none;
+  width: 44px; height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: rgba(25, 197, 139, .14);
+  color: var(--green-400);
+  font-size: 22px;
+}
+.console-text { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.console-text strong { font-size: 18px; font-weight: 800; letter-spacing: -0.01em; }
+.console-text span { font-size: 13px; font-weight: 600; color: var(--green-400); }
+
+.card-body { padding: 28px 8px 8px; }
+
+h1 {
+  margin: 0 0 8px;
+  font-size: 30px;
+  line-height: 1.15;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+.lead { margin: 0 0 24px; color: var(--ink-500); font-size: 15px; line-height: 1.55; }
+
+/* ---------- Alert ---------- */
+.alert {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  margin-bottom: 18px;
+  border-radius: 12px;
+  background: var(--danger-bg);
+  color: var(--danger);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+.alert i { flex: none; font-size: 18px; line-height: 1.2; }
+
+/* ---------- Field ---------- */
+.field { margin-bottom: 18px; }
+.field > label { display: block; margin-bottom: 8px; font-size: 14px; font-weight: 700; }
+
+.control {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 54px;
+  background: var(--surface);
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-md);
+  transition: border-color .15s, box-shadow .15s;
+}
+.control:hover { border-color: var(--ink-300); }
+.control:focus-within {
+  border-color: var(--green-600);
+  box-shadow: 0 0 0 4px rgba(14, 155, 106, .14);
+}
+.control .ico {
+  position: absolute;
+  left: 16px;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--ink-300);
+  pointer-events: none;
+  transition: color .15s;
+}
+.control:focus-within .ico { color: var(--green-600); }
+
+.control input {
+  width: 100%;
+  height: 100%;
+  padding: 0 48px 0 46px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 15px;
+  color: var(--ink-900);
+}
+.control input::placeholder { color: var(--ink-300); }
+
+.control:has(input:user-invalid) { border-color: var(--danger); }
+.control:has(input:user-invalid):focus-within { box-shadow: 0 0 0 4px rgba(214, 54, 31, .12); }
+
+.eye {
+  position: absolute;
+  right: 8px;
+  width: 38px; height: 38px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink-500);
+  cursor: pointer;
+}
+.eye i { font-size: 18px; line-height: 1; }
+.eye:hover { background: #eef3f1; color: var(--ink-900); }
+.eye:focus-visible { outline: 3px solid rgba(14, 155, 106, .35); }
+
+/* ---------- Checkbox ---------- */
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 2px 0 22px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.check input { position: absolute; opacity: 0; width: 0; height: 0; }
+.check .box {
+  width: 20px; height: 20px;
+  border: 1.5px solid var(--ink-300);
+  border-radius: 6px;
+  background: var(--surface);
+  display: grid;
+  place-items: center;
+  transition: background .15s, border-color .15s;
+}
+.check .box::after {
+  content: "";
+  width: 9px; height: 5px;
+  border-left: 2px solid #fff;
+  border-bottom: 2px solid #fff;
+  transform: rotate(-45deg) translate(1px, -1px) scale(0);
+  transition: transform .15s;
+}
+.check input:checked + .box { background: var(--green-600); border-color: var(--green-600); }
+.check input:checked + .box::after { transform: rotate(-45deg) translate(1px, -1px) scale(1); }
+.check input:focus-visible + .box { box-shadow: 0 0 0 4px rgba(14, 155, 106, .2); }
+
+/* ---------- Button ---------- */
+.btn {
+  width: 100%;
+  height: 56px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--green-600);
+  color: #fff;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 10px 22px -10px rgba(14, 155, 106, .75);
+  transition: background .15s, transform .08s;
+}
+.btn:hover { background: var(--green-700); }
+.btn:active { transform: translateY(1px); }
+.btn:focus-visible { outline: 3px solid rgba(14, 155, 106, .35); outline-offset: 3px; }
+
+/* ---------- Ghi chú + footer ---------- */
+.note {
+  max-width: 420px;
+  margin: 20px 0 0;
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--ink-500);
+}
+.foot { padding: 16px 20px 24px; text-align: center; font-size: 12.5px; color: var(--ink-300); }
+
+/* ===== Responsive ===== */
+@media (max-width: 520px) {
+  .brand-sub { display: none; }
+  .stage { padding-top: 24px; }
+  .card { padding: 14px; border-radius: 20px; }
+  .console { padding: 14px 16px; }
+  .card-body { padding: 24px 4px 4px; }
+  h1 { font-size: 26px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}

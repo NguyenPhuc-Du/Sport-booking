@@ -1,0 +1,72 @@
+doctype html
+html(lang="vi")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport" content="width=device-width, initial-scale=1")
+    meta(name="robots" content="noindex, nofollow")
+    title Đăng nhập quản trị · SportZone
+    link(rel="preconnect" href="https://fonts.googleapis.com")
+    link(rel="preconnect" href="https://fonts.gstatic.com" crossorigin)
+    link(href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet")
+    link(rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css")
+    link(rel="stylesheet" href="/admin/css/auth.css")
+  body
+    //- Thanh đầu trang giống dashboard
+    header.topbar
+      a.brand(href="/admin/login")
+        span.brand-name
+          | Sport
+          span Zone
+        span.brand-sub Hệ thống Đặt & Quản lý Sân
+      span.role-chip
+        i.dot
+        | Admin
+
+    main.stage
+      section.card
+        //- Khối tối giống thẻ "Admin Console" ở sidebar dashboard
+        div.console
+          div.console-icon
+            i.bi.bi-shield-lock
+          div.console-text
+            strong Admin Console
+            span Quản trị toàn hệ thống
+          i.dot
+
+        div.card-body
+          h1 Đăng nhập quản trị
+          p.lead Dùng tài khoản quản trị do hệ thống cấp để tiếp tục.
+
+          //- Lỗi do server trả về (render lại trang với biến error)
+          if error
+            div.alert(role="alert")
+              i.bi.bi-exclamation-circle
+              span= error
+
+          form(method="post" action="/admin/login" autocomplete="on")
+            //- CSRF (bật nếu dùng csurf): input(type="hidden" name="_csrf" value=csrfToken)
+
+            div.field
+              label(for="email") Email quản trị
+              div.control
+                i.bi.bi-envelope.ico(aria-hidden="true")
+                input#email(type="email" name="email" value=email placeholder="admin@sportzone.vn" autocomplete="username" required autofocus)
+
+            div.field
+              label(for="password") Mật khẩu
+              div.control
+                i.bi.bi-lock.ico(aria-hidden="true")
+                input#password(type="password" name="password" placeholder="Nhập mật khẩu" autocomplete="current-password" required minlength="6")
+                button.eye(type="button" data-toggle-password="#password" aria-label="Hiện mật khẩu")
+                  i.bi.bi-eye
+
+            label.check
+              input(type="checkbox" name="remember")
+              span.box
+              span Ghi nhớ đăng nhập
+
+            button.btn(type="submit") Vào Admin Console
+
+      p.note Tài khoản admin do hệ thống cấp, không có chức năng đăng ký. Quên mật khẩu? Liên hệ quản trị hệ thống.
+
+    script(src="/js/auth.js")
