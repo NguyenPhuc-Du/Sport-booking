@@ -9,7 +9,13 @@ module.exports.login = async (req, res) =>{
 }
 
 module.exports.loginPost = async (req, res) => {
-    res.redirect("/");
+    const role = res.locals.user.role;
+
+    if(role == "OWNER"){
+        res.redirect("/owner/dashboard");
+    } else if (role == "USER") {
+        res.redirect("/");
+    }
 }
 
 module.exports.register = (req, res) => {
@@ -34,7 +40,8 @@ module.exports.registerPost = async (req, res) => {
             fullName,
             phone,
             email,
-            password_hash: hashedPassword
+            password_hash: hashedPassword,
+            role: "USER"
         });
 
         req.flash("success", "Đăng kí thành công");

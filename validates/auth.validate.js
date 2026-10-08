@@ -1,4 +1,4 @@
-const User = require("../../models/user.model");
+const User = require("../models/user.model");
 const bcrypt = require("bcrypt");
 
 module.exports.registerPost = async (req, res,next ) =>{
@@ -87,6 +87,8 @@ module.exports.loginPost = async(req, res, next) => {
         res.redirect(req.get("Referrer"));
         return;
     }
+
+    res.locals.user = isExistUser;
 
     next();
 }
