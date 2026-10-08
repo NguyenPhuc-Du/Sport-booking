@@ -1,4 +1,4 @@
-const Voucher = require("../../models/voucher.model");
+const Voucher = require("../../models/finance.model");
 module.exports.index = async (req, res) => {
   const voucher = await Voucher.find({}).lean();
   voucher.forEach((item) => {
@@ -12,7 +12,7 @@ module.exports.index = async (req, res) => {
     }).format(item.min_order_amount);
   });
   console.log(voucher);
-  res.render("admin/pages/voucher/index", {
+  res.render("admin/pages/finance/index", {
     pageTitle: "Trang Khuyến mãi",
     voucher: voucher,
   });

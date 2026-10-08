@@ -5,7 +5,6 @@ const dashboardRoutes = require("../admin/dashboard.route");
 const facilityRoutes = require("../admin/facility.route");
 const bookingRoutes = require("../admin/booking.route");
 const financeRoutes = require("../admin/finance.route");
-const voucherRoutes = require("../admin/voucher.route");
 const ownerProfileRoutes = require("../admin/owner-profile.route");
 
 module.exports = (app) => {
