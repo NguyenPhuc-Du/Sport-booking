@@ -49,5 +49,28 @@ module.exports.delete = async (req, res) => {
   }
 };
 module.exports.edit = async (req, res) => {
-  res.send("ok");
+  const id = req.params.id;
+  const voucher = await Voucher.findOne({ _id: id }).lean();
+  const formatDateTimeLocal = (dateObj) => {
+    if (!dateObj) return "";
+    return new Date(dateObj).toISOString().slice(0, 16);
+  };
+  voucher.start_date_formatted = formatDateTimeLocal(voucher.start_date);
+  voucher.end_date_formatted = formatDateTimeLocal(voucher.end_date);
+  res.render("admin/pages/finance/edit", {
+    pageTitle: "Trang Khuyến mãi",
+    voucher: voucher,
+  });
+};
+module.exports.editPatch = async (req, res) => {
+  req.body.discount_value = parseInt(req.body.discount_value);
+  req.body.max_discount = parseInt(req.body.max_discount);
+  req.body.min_order_amount = parseInt(req.body.min_order_amount);
+  req.body.quantity = parseInt(req.body.quantity);
+  req.body.start_date = new Date(req.body.start_date);
+  req.body.end_date = new Date(req.body.end_date); // Lấy giá trị end_
+  const id = req.params.id;
+  await Voucher.updateOne({ _id: id }, req.body);
+  req.flash("success", "Sửa đổi voucher thành công");
+  res.redirect(req.get("Referer"));
 };

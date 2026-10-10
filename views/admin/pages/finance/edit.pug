@@ -1,0 +1,125 @@
+extends ../../layouts/default.pug
+include ../../../mixins/alert.pug
+block main
+  +alert-success(5000)
+  .vc-modal-page
+    .vc-modal
+      .vc-modal-head
+        h1.vc-modal-title Tạo mã Voucher khuyến mãi
+        a.vc-modal-close(href=`${prefixAdmin}/finance` aria-label="Đóng")
+          i.bi.bi-x-lg
+
+      form(class="vc-modal-form" action=`${prefixAdmin}/finance/edit/${voucher._id}?_method=PATCH` id="form-edit-voucher" method="POST")
+        .vc-field
+          label.vc-label(for="voucherCode")
+            | Mã khuyến mãi (Code)
+            span.vc-req *
+          input#voucherCode.vc-input(
+            type="text"
+            name="code"
+            placeholder="VÍ DỤ: SUMMER2026"
+            required
+            value= voucher.code
+          )
+
+        .vc-field
+          label.vc-label(for="voucherName")
+            | Tiêu đề chiến dịch
+            span.vc-req *
+          input#voucherName.vc-input(
+            type="text"
+            name="name"
+            placeholder="Giảm 15% cho người chơi mới"
+            required
+            value= voucher.name
+          )
+
+        .vc-field
+          label.vc-label(for="venueId")
+            | Cơ sở / Venue ID
+            span.vc-req *
+          input#venueId.vc-input(
+            type="text"
+            name="venue_id"
+            placeholder="ObjectId của venue (vd: 66f1a2b3c4d5e6f789012345)"
+            required
+            value= voucher.venue_id
+          )
+
+        .vc-field-row
+          .vc-field
+            label.vc-label(for="discountType")
+              | Loại giảm giá
+              span.vc-req *
+            .vc-select-wrap
+              select#discountType.vc-input.vc-select(name="discount_type" required)
+                option(value="percent" selected = (voucher.discount_type==="percent")) Theo phần trăm (%)
+                option(value="fixed" selected = (voucher.discount_type==="fixed")) Số tiền cố định (VNĐ)
+          .vc-field
+            label.vc-label(for="discountValue")
+              | Giá trị giảm
+              span.vc-req *
+            input#discountValue.vc-input(
+              type="number"
+              name="discount_value"
+              min="0"
+              required
+              value= voucher.discount_value
+            )
+
+        .vc-field-row
+          .vc-field
+            label.vc-label(for="minOrder") Đơn tối thiểu (VNĐ)
+            input#minOrder.vc-input(
+              type="number"
+              name="min_order_amount"
+              min="0"
+              value= voucher.min_order_amount
+            )
+          .vc-field
+            label.vc-label(for="maxDiscount") Giảm tối đa (VNĐ)
+            input#maxDiscount.vc-input(
+              type="number"
+              name="max_discount"
+              min="0"
+            value= voucher.max_discount
+            )
+
+        .vc-field
+          label.vc-label(for="quantity")
+            | Giới hạn số lượt dùng
+            span.vc-req *
+          input#quantity.vc-input(
+            type="number"
+            name="quantity"
+            min="1"
+            required
+            value= voucher.quantity
+          )
+
+        .vc-field-row
+          .vc-field
+            label.vc-label(for="startDate")
+              | Ngày bắt đầu
+              span.vc-req *
+            input#startDate.vc-input(
+              type="datetime-local"
+              name="start_date"
+              required
+              value= voucher.start_date_formatted
+            )
+          .vc-field
+            label.vc-label(for="endDate")
+              | Ngày kết thúc
+              span.vc-req *
+            input#endDate.vc-input(
+              type="datetime-local"
+              name="end_date"
+              required
+              value= voucher.end_date_formatted
+            )
+
+        .vc-modal-foot
+          a.vc-btn-cancel(href=`${prefixAdmin}/finance`) Hủy
+          button.vc-btn-submit(type="submit") Sửa
+    script(src="/js/script.js")
