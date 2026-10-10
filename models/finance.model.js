@@ -23,6 +23,11 @@ const voucherSchema = new mongoose.Schema(
       required: true,
       enum: ["percent", "fixed"],
     },
+    deleted: {
+      type: Boolean,
+      required: true,
+      default: false,
+    },
     discount_value: {
       type: Number,
       required: true,
