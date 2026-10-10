@@ -1,6 +1,6 @@
-const bcrypt = require("bcrypt");
 const User = require("../../models/user.model");
 const UserRole = require("../../models/user-role.model");
+const jwt = require("jsonwebtoken");
 
 module.exports.login = async (req, res) =>{
     res.render("client/pages/auth/login", {
@@ -9,13 +9,39 @@ module.exports.login = async (req, res) =>{
 }
 
 module.exports.loginPost = async (req, res) => {
-    const role = res.locals.user.role;
+    const email = req.body.email;
 
-    if(role == "OWNER"){
-        res.redirect("/owner/dashboard");
-    } else if (role == "USER") {
-        res.redirect("/");
+    const user = await User.findOne({
+        email: email,
+        status: "active"
+    }).select("-password_hash").lean();
+
+    const recordUser = {
+        id: user._id,
+        email: email,
+        phone: user.phone
     }
+
+    const accessToken = jwt.sign(
+        recordUser,
+        process.env.JWT_SECRET,
+        {
+            expiresIn: "1h"
+        }
+    )
+
+    res.cookie("access_token", accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 60 * 60 * 1000,
+    });
+
+    if(user.role == "OWNER"){
+        return res.redirect("/owner/dashboard");
+    } 
+
+    return res.redirect("/");
 }
 
 module.exports.register = (req, res) => {

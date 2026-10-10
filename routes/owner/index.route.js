@@ -13,6 +13,14 @@ const authMiddleware = require("../../middlewares/auth.middleware");
 module.exports = (app) => {
   const PATH = systemConfig.prefixOwner;
 
+  app.use(PATH, authMiddleware.requireAuth);
+  app.use(PATH, (req, res, next) => {
+    if (res.locals.user.role !== "OWNER") {
+      return res.redirect("/");
+    }
+    next();
+  });
+
   app.use(PATH, localsOwner);
 
   app.get(PATH, (req, res) => {

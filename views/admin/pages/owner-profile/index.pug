@@ -18,18 +18,18 @@ block main
       .row.g-4
         .col-md-4
           .sz-avatar-editor
-            img#ownerAvatarPreview(src=owner.avatar alt=owner.name)
+            img#ownerAvatarPreview(src=owner.avatar_url alt=owner.fullName)
             label.sz-btn.sz-btn-green.sz-btn-sm(for="ownerAvatarInput")
               i.bi.bi-camera
               | Đổi avatar
             input#ownerAvatarInput.d-none(type="file" accept="image/*")
-            input#ownerAvatarUrl(type="hidden" name="avatar" value=owner.avatar)
-            p.sz-muted.mt-2.mb-0 #{owner.plan} · Tham gia #{owner.joined}
+            input#ownerAvatarUrl(type="hidden" name="avatar_url" value=owner.avatar_url || "")
+            p.sz-muted.mt-2.mb-0 #{owner.role} · Tham gia #{owner.createdAt ? new Date(owner.createdAt).toLocaleDateString("vi-VN") : ""}
         .col-md-8
           .row.g-3
             .col-md-6
               label.sz-label Họ và tên
-              input.sz-input(type="text" name="name" value=owner.name required)
+              input.sz-input(type="text" name="fullName" value=owner.fullName required)
             .col-md-6
               label.sz-label Số điện thoại
               input.sz-input(type="tel" name="phone" value=owner.phone required)
