@@ -21,21 +21,19 @@ module.exports.updatePatch = async (req, res, next) => {
     return;
   }
 
-  const isDuplicate = await User.findOne(
-    {
-      _id: {
-        $ne: id,
-      },
+  const isDuplicate = await User.findOne({
+    _id: {
+      $ne: id,
+    },
     $or: [
-        {
-            email: email.trim()
-        },
-        {
-            phone
-        }
-    ]
-}
-  );
+      {
+        email: email.trim(),
+      },
+      {
+        phone,
+      },
+    ],
+  });
 
   if (isDuplicate) {
     req.flash("error", "Thông tin bị trùng");
