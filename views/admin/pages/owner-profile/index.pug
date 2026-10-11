@@ -8,13 +8,8 @@ block main
     h1.sz-title Hồ sơ Chủ sân
     p.sz-subtitle Cập nhật ảnh đại diện và thông tin liên hệ hiển thị trên hệ thống SportZone.
 
-  if saved
-    .sz-tip.mb-3
-      i.bi.bi-check2-circle.me-2
-      | Đã lưu hồ sơ chủ sân (demo UI).
-
   .sz-card.sz-panel
-    form(action=`${prefixAdmin}/profile/update` method="POST")
+    form(action=`${prefixOwner}/profile/update` method="POST")
       .row.g-4
         .col-md-4
           .sz-avatar-editor
@@ -24,7 +19,7 @@ block main
               | Đổi avatar
             input#ownerAvatarInput.d-none(type="file" accept="image/*")
             input#ownerAvatarUrl(type="hidden" name="avatar_url" value=owner.avatar_url || "")
-            p.sz-muted.mt-2.mb-0 #{owner.role} · Tham gia #{owner.createdAt ? new Date(owner.createdAt).toLocaleDateString("vi-VN") : ""}
+            p.sz-muted.mt-2.mb-0 Tham gia #{owner.createdAt ? new Date(owner.createdAt).toLocaleDateString("vi-VN") : ""}
         .col-md-8
           .row.g-3
             .col-md-6
