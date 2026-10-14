@@ -71,11 +71,12 @@ module.exports.loginPost = async(req, res, next) => {
     } = req.body;
 
     const isExistUser = await User.findOne({
-        email: email
+        email: email,
+        status: "active"
     }).lean();
 
     if(!isExistUser) {
-        req.flash("error", "Email đăng nhập không chính xác");
+        req.flash("error", "Email đăng nhập không chính xác hoặc đã bị khóa");
         res.redirect(req.get("Referrer"));
         return;
     }
@@ -87,8 +88,6 @@ module.exports.loginPost = async(req, res, next) => {
         res.redirect(req.get("Referrer"));
         return;
     }
-
-    res.locals.user = isExistUser;
 
     next();
 }

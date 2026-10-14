@@ -1,21 +1,40 @@
+const User = require("../../models/user.model");
+
 module.exports.index = async (req, res) => {
+  const ownerId = res.locals.user.id;
+
+  const owner = await User.findOne({
+    _id: ownerId,
+  });
+
   res.render("admin/pages/owner-profile/index", {
     pageTitle: "Hồ sơ chủ sân",
     activeMenu: "profile",
-    saved: req.query.saved === "1",
-    owner: {
-      name: "Trần Thu Hà",
-      phone: "0912 888 999",
-      email: "ha.tt@sportpro.vn",
-      wallet: "14.250.000đ",
-      avatar: "https://i.pravatar.cc/160?img=5",
-      facility: "SportPro Complex - Cầu Giấy",
-      plan: "Gói Pro Club",
-      joined: "03/2025",
-    },
+    owner: owner,
   });
 };
 
 module.exports.update = async (req, res) => {
-  res.redirect("/owner/profile?saved=1");
+  try {
+    const id = res.locals.user.id;
+
+    const { email, phone, fullName } = req.body;
+
+    await User.updateOne(
+      {
+        _id: id,
+      },
+      {
+        email,
+        phone,
+        fullName,
+      },
+    );
+
+    req.flash("success", "Cập nhật thông tin thành công");
+    res.redirect(req.get("Referrer"));
+  } catch (error) {
+    req.flash("error", "Cập nhật thông tin thất bại");
+    res.redirect(req.get("Referrer"));
+  }
 };

@@ -16,6 +16,7 @@
     "express": "^5.2.1",
     "express-flash": "^0.0.2",
     "express-session": "^1.19.0",
+    "jsonwebtoken": "^9.0.3",
     "method-override": "^3.0.0",
     "mongoose": "^9.10.1",
     "pug": "^3.0.4"
