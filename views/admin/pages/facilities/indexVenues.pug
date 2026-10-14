@@ -1,0 +1,77 @@
+extends ../../layouts/default.pug
+
+block head
+  link(rel="stylesheet" href="/admin/css/facilities.css")
+
+block main
+  .fv-page
+    .fv-head
+      div
+        h1.fv-title Quản lý Cơ sở &amp; Cụm sân
+        p.fv-sub Cấu hình sân con, phân định khung giờ giờ vàng và điều phối lịch bảo dưỡng.
+      .fv-head-actions
+        .fv-filter
+          i.bi.bi-buildings.fv-filter-icon
+          select.fv-select(name="venue_filter")
+            option Star Basketball &amp; Futsal Dome
+            option SportPro Complex - Cầu Giấy
+            option Arena Tây Hồ Premium
+        a.fv-btn-add(href=`${prefixAdmin}/facilities/venues/create`)
+          i.bi.bi-plus-lg
+          | Thêm cơ sở
+
+    .fv-tabs
+      a.fv-tab(href=`${prefixAdmin}/facilities`) Sân con (6)
+      a.fv-tab(href="#") Bảng giá &amp; Giờ vàng (5)
+      a.fv-tab(href="#") Khóa slot bảo trì (2)
+      a.fv-tab.active(href=`${prefixAdmin}/facilities/venues`)
+        i.bi.bi-buildings
+        | Danh sách cơ sở (5)
+
+    -
+      var coverImages = [
+        "https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=900&q=80",
+        "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=900&q=80",
+        "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=900&q=80",
+        "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=900&q=80",
+        "https://images.unsplash.com/photo-1461896836934-ffe607ba6851?w=900&q=80"
+      ]
+
+    .fv-grid
+      each item, index in venues
+        article.fv-card
+          .fv-card-media
+            img(
+              src=coverImages[index % coverImages.length]
+              alt=item.name
+            )
+            span.fv-rating
+              i.bi.bi-star-fill
+              | 4.9
+          .fv-card-body
+            h2.fv-card-name #{item.name}
+            p.fv-address
+              i.bi.bi-geo-alt
+              | #{item.address}
+            .fv-card-foot
+              span
+                | Giờ mở cửa:
+                |
+                strong #{item.open_time} - #{item.close_time}
+              span
+                | Giá:
+                |
+                strong 110.000đ - 240.000đ
+            .fv-card-actions
+              a.fv-btn-edit(
+                href=`${prefixAdmin}/facilities/venues/edit/${item.id}`
+              )
+                i.bi.bi-pencil-square
+                | Sửa
+              button.fv-btn-del(
+                type="button"
+                button-delete
+                data-id=item.id
+              )
+                i.bi.bi-trash3
+                | Xóa
