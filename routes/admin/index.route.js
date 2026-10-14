@@ -3,6 +3,7 @@ const localsAdmin = require("../../middlewares/admin/locals.middleware");
 
 const platformDashboardRoutes = require("./platform-dashboard.route");
 const platformPermissionsRoutes = require("./platform-permissions.route");
+const authRoutes = require("./auth.route");
 
 module.exports = (app) => {
   const PATH_ADMIN = systemConfig.prefixAdmin;
@@ -16,4 +17,6 @@ module.exports = (app) => {
   app.use(PATH_ADMIN + "/dashboard", platformDashboardRoutes);
   app.use(PATH_ADMIN + "/permissions", platformPermissionsRoutes);
   app.use(PATH_ADMIN + "/users", platformPermissionsRoutes);
+
+  app.use(PATH_ADMIN + "/auth", authRoutes);
 };

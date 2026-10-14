@@ -7,6 +7,8 @@ const bookingRoutes = require("../admin/booking.route");
 const financeRoutes = require("../admin/finance.route");
 const ownerProfileRoutes = require("../admin/owner-profile.route");
 
+const authMiddleware = require("../../middlewares/auth.middleware");
+
 module.exports = (app) => {
   const PATH = systemConfig.prefixOwner;
 
