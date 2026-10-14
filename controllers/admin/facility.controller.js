@@ -1,4 +1,4 @@
-const Venues = require("../../models/venues.model");
+const Venues = require("../../models/facilities.model");
 const prefixAdmin = require("../../config/system");
 module.exports.index = async (req, res) => {
   res.render("admin/pages/facilities/index", {
@@ -69,4 +69,10 @@ module.exports.createVenues = async (req, res) => {
   res.render("admin/pages/facilities/createVenues", {
     pageTitle: "Cơ sở",
   });
+};
+module.exports.createVenuesPost = async (req, res) => {
+  const venues = new Venues(req.body);
+  await venues.save();
+  req.flash("success", "Thêm cơ sở thành công");
+  res.redirect(req.get("Referer"));
 };

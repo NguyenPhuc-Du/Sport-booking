@@ -1,6 +1,7 @@
 extends ../../layouts/default.pug
-
+include ../../../mixins/alert.pug
 block head
+  +alert-success(5000)
   link(rel="stylesheet" href="/admin/css/facilities.css")
 
 block main
@@ -11,7 +12,10 @@ block main
         a.fv-modal-close(href=`${prefixAdmin}/facilities/venues` aria-label="Đóng")
           i.bi.bi-x-lg
 
-      form.fv-modal-form#form-create-venue
+      form( action=`${prefixAdmin}/facilities/venues/create`
+        id="form-create-product"
+        method="POST"
+        enctype="multipart/form-data")
         .fv-field
           label.fv-label(for="venueName")
             | Tên cơ sở
@@ -48,7 +52,24 @@ block main
                 disabled
               )
                 option(value="") -- Chọn phường / xã --
-
+        .fv-field
+            div(class="form-group" upload-image)
+                label.fv-label Ảnh cơ sở
+                    .fv-image-actions
+                    label.fv-btn-upload(for="venueImageInput")
+                        i.bi.bi-upload
+                        | Chọn ảnh
+                    input#venueImageInput.d-none(
+                        type="file"
+                        name="image_url"
+                        accept="image/*"
+                        upload-image-input
+                    )
+                    img(
+                        src=""
+                        upload-image-preview
+                        class="image-preview"
+                        )
         .fv-field-row
           .fv-field
             label.fv-label(for="openTime") Giờ mở cửa
@@ -93,3 +114,4 @@ block main
 
 block script
   script(src="/admin/js/vn-address.js")
+  script(src="/js/script.js")

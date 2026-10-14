@@ -1,4 +1,5 @@
-const express = require('express');
+const express = require("express");
+require("dotenv").config();
 const bodyParser = require("body-parser");
 const methodOverride = require("method-override");
 const cookieParser = require("cookie-parser");
@@ -7,9 +8,6 @@ const flash = require("express-flash");
 const route = require("./routes/client/index.route");
 const routeOwner = require("./routes/owner/index.route");
 const routeAdmin = require("./routes/admin/index.route");
-
-
-require("dotenv").config();
 
 const database = require("./config/database");
 database.connect();
@@ -20,19 +18,21 @@ const port = process.env.PORT;
 app.use(methodOverride("_method"));
 
 // parse application/x-www-form-urlencoded
-app.use(bodyParser.urlencoded({extended: false}));
+app.use(bodyParser.urlencoded({ extended: false }));
 
-app.set("views","./views");
-app.set("view engine","pug");
+app.set("views", "./views");
+app.set("view engine", "pug");
 
 //Flash
 app.use(cookieParser("GEIWGEPQINGEQP"));
-app.use(session({
-  secret: "GEIWGEPQINGEQP",
-  resave: false,
-  saveUninitialized: true,
-  cookie: { maxAge: 60000 }
-}));
+app.use(
+  session({
+    secret: "GEIWGEPQINGEQP",
+    resave: false,
+    saveUninitialized: true,
+    cookie: { maxAge: 60000 },
+  }),
+);
 app.use(flash());
 //End Flash
 
@@ -42,7 +42,6 @@ app.use(express.static(`${__dirname}/public`));
 route(app);
 routeOwner(app);
 routeAdmin(app);
-
 
 app.listen(port, () => {
   console.log(`app listening on port ${port}`);
