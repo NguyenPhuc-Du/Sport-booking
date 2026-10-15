@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 
-const controller = require("../../controllers/admin/finance.controller");
+const controller = require("../../controllers/admin/price-rule.controller");
 
 router.get("/", controller.index);
 
