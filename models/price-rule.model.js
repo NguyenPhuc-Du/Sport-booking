@@ -1,6 +1,11 @@
 const mongoose = require("mongoose");
 
 const priceRuleSchema = new mongoose.Schema({
+    name: {
+        type: String,
+        trim: true,
+        required: true
+    },
     court: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Court"
@@ -31,6 +36,12 @@ const priceRuleSchema = new mongoose.Schema({
         type: Date,
         required: true
     },
+    status: {
+        type: String,
+        enum: ["active", "inactive"],
+        required: true,
+        default: "active"
+    }
 },{
     timestamps: true
 });
