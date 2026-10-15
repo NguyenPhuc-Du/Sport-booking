@@ -1,0 +1,69 @@
+extends ../../layouts/default.pug
+
+block main
+  section.sz-section.sz-detail-top
+    .d-flex.justify-content-between.align-items-center.flex-wrap.gap-2.mb-4
+      a.sz-back(href="/")
+        i.bi.bi-arrow-left
+        | Quay lại danh sách cơ sở
+      button.sz-btn.sz-btn-ghost(type="button")
+        i.bi.bi-share
+        | Chia sẻ
+
+    .sz-detail-grid
+      .sz-detail-gallery
+        .sz-detail-main-img
+          img(src=facility.images[0] alt=facility.name)
+        .sz-detail-thumbs
+          each img, idx in facility.images.slice(1)
+            img(src=img alt=`Ảnh ${idx + 2}`)
+
+      .sz-detail-info
+        .d-flex.flex-wrap.gap-2.mb-2
+          span.sz-badge.sz-badge-ok= facility.badge
+          span.sz-facility-rating
+            i.bi.bi-star-fill
+            strong #{facility.rating}
+            span (#{facility.reviews} đánh giá)
+
+        h1.sz-title= facility.name
+
+        ul.sz-detail-meta
+          li
+            i.bi.bi-geo-alt
+            span= facility.location
+          li
+            i.bi.bi-clock
+            span= facility.hours
+          li
+            i.bi.bi-telephone
+            span= facility.phone
+
+        p.sz-detail-desc= facility.description
+
+        h3.sz-amenity-title TIỆN ÍCH PHỤC VỤ NGƯỜI CHƠI
+        .sz-amenity-grid
+          each a in facility.amenities
+            .sz-amenity-item
+              i.bi.bi-check-circle-fill
+              span= a
+
+        .sz-detail-actions
+          a.sz-btn.sz-btn-green(href=`/facilities/${facility.id}/booking`)
+            i.bi.bi-calendar2-check
+            | Chọn khung giờ đặt sân
+          a.sz-btn.sz-btn-dark(href=`tel:${facility.phone.replace(/\s/g, "")}`)
+            i.bi.bi-telephone
+            | Gọi nóng
+
+    .sz-card.sz-panel.mt-4
+      h2.sz-panel-title Danh sách sân con
+      p.sz-panel-sub.mb-3 #{facility.courts.length} sân đang mở đặt
+      .row.g-3
+        each court in facility.courts
+          .col-12.col-md-6
+            .sz-court-mini
+              strong= court.name
+              p= court.surface
+              span Chuẩn: #{court.capacity}
+              a.sz-link(href=`/facilities/${facility.id}/booking`) Đặt sân này →

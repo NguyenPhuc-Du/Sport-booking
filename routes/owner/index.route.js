@@ -31,7 +31,6 @@ module.exports = (app) => {
   app.use(PATH + "/bookings", bookingRoutes);
   app.use(PATH + "/finance", financeRoutes);
   app.use(PATH + "/profile", ownerProfileRoutes);
-
   // Giữ tương thích link cũ của chủ sân (không đụng /admin/dashboard của platform)
   app.get("/admin/facilities", (req, res) =>
     res.redirect(PATH + "/facilities"),

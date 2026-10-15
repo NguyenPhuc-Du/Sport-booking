@@ -1,0 +1,26 @@
+header.sz-header.sz-client-header
+  .sz-header-inner
+    .d-flex.align-items-center.gap-3.gap-lg-4.flex-wrap
+      a.sz-brand(href="/")
+        span
+          span.sz-brand-name Sport
+            span.text-green Zone
+          small.sz-brand-sub Hệ thống Đặt & Quản lý Sân
+
+    .sz-client-search.d-none.d-xl-flex
+      i.bi.bi-search
+      input(type="search" placeholder="Tìm sân cầu lông, pickleball, bóng đá...")
+
+    .d-flex.align-items-center.gap-3
+      .sz-role-pill
+        span.dot
+        i.bi.bi-person
+        | Khách hàng
+      a.sz-bell(href="/profile?tab=notifications" aria-label="Thông báo")
+        i.bi.bi-bell
+        span.sz-bell-dot
+      a.sz-user(href="/profile")
+        img(src="https://i.pravatar.cc/100?img=11" alt="Avatar khách hàng")
+        div
+          .sz-user-name Nguyễn Minh Quân
+          .sz-user-wallet Ví: 650.000đ
