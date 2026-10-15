@@ -13,15 +13,17 @@ const priceRuleSchema = new mongoose.Schema({
     dayType: {
       type: String,
       required: true,
-      trim: true,
+      enum: ["weekday", "weekend", "all"]
     },
     timeStart: {
-        type: Date,
-        required: true
+        type: String,
+        required: true,
+        match: HHMM
     },
     timeEnd: {
-        type: Date,
-        required: true
+        type: String,
+        required: true,
+        match: HHMM
     },
     pricePerHour: {
         type: Number,
