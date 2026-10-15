@@ -5,7 +5,7 @@ const venueSchema = new mongoose.Schema(
     owner_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      // required: true,
+      required: true,
     },
     name: {
       type: String,
