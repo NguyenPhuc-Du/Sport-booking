@@ -1,3 +1,97 @@
 <resources>
     <string name="app_name">SportZone</string>
+
+    <!-- Navigation Tabs -->
+    <string name="tab_home">Home</string>
+    <string name="tab_bookings">Bookings</string>
+    <string name="tab_wallet">Wallet</string>
+    <string name="tab_profile">Profile</string>
+
+    <!-- Common / Actions -->
+    <string name="btn_retry">Retry</string>
+    <string name="btn_cancel">Cancel</string>
+    <string name="btn_confirm">Confirm</string>
+    <string name="btn_back">Back</string>
+    <string name="btn_apply">Apply</string>
+    <string name="label_loading">Loading…</string>
+    <string name="label_today">Today</string>
+    <string name="label_tomorrow">Tomorrow</string>
+    <string name="label_peak_hour">Peak Hour</string>
+    <string name="label_rating_format">%1$.1f (%2$d reviews)</string>
+
+    <!-- Home Screen -->
+    <string name="home_greeting">Hello athlete 👋</string>
+    <string name="home_title">Find &amp; Book Courts</string>
+    <string name="home_search_hint">Search venue, sport, location…</string>
+    <string name="home_categories_title">Categories</string>
+    <string name="home_facilities_title">Available Venues</string>
+    <string name="home_empty_title">No venues found</string>
+    <string name="home_empty_desc">Try searching with a different keyword or selecting another sport.</string>
+
+    <!-- Facility Detail Screen -->
+    <string name="facility_detail_title">Venue Detail</string>
+    <string name="facility_about">About Venue</string>
+    <string name="facility_amenities">Amenities</string>
+    <string name="facility_courts">Available Courts</string>
+    <string name="facility_operating_hours">Hours</string>
+    <string name="facility_phone">Hotline</string>
+    <string name="facility_book_cta">Select Court &amp; Slot</string>
+
+    <!-- Booking Screen -->
+    <string name="booking_title">Select Court &amp; Time</string>
+    <string name="booking_select_court">1. Select Court</string>
+    <string name="booking_select_date">2. Select Date</string>
+    <string name="booking_select_time">3. Select Time Slot</string>
+    <string name="booking_slot_loading">Checking slot availability…</string>
+    <string name="booking_slot_legend_available">Available</string>
+    <string name="booking_slot_legend_selected">Selected</string>
+    <string name="booking_slot_legend_booked">Booked</string>
+    <string name="booking_slot_legend_peak">Peak</string>
+    <string name="booking_continue_cta">Continue to Checkout</string>
+
+    <!-- Checkout Screen -->
+    <string name="checkout_title">Confirm Booking</string>
+    <string name="checkout_court_price">Court Fee</string>
+    <string name="checkout_discount">Discount</string>
+    <string name="checkout_total">Total Amount</string>
+    <string name="checkout_wallet_balance">SportZone Wallet Balance: %1$s</string>
+    <string name="checkout_voucher_section">Promotion / Voucher</string>
+    <string name="checkout_voucher_hint">Enter voucher code</string>
+    <string name="checkout_payment_section">Payment Method</string>
+    <string name="checkout_btn_pay">Pay %1$s</string>
+    <string name="checkout_btn_paying">Processing payment…</string>
+    <string name="checkout_success_message">Booking successful!</string>
+
+    <!-- Bookings Screen -->
+    <string name="bookings_title">My Bookings</string>
+    <string name="bookings_tab_all">All (%1$d)</string>
+    <string name="bookings_tab_upcoming">Upcoming (%1$d)</string>
+    <string name="bookings_tab_completed">Completed (%1$d)</string>
+    <string name="bookings_tab_cancelled">Cancelled (%1$d)</string>
+    <string name="bookings_empty_title">No bookings yet</string>
+    <string name="bookings_empty_desc">You do not have any bookings in this section.</string>
+    <string name="bookings_cancel_btn">Cancel Booking</string>
+    <string name="bookings_cancelling_btn">Cancelling…</string>
+    <string name="bookings_cancel_dialog_title">Cancel this booking?</string>
+    <string name="bookings_cancel_dialog_desc">Refund policies will be applied according to venue rules.</string>
+
+    <!-- Profile Screen -->
+    <string name="profile_title">Profile</string>
+    <string name="profile_wallet_balance">Wallet: %1$s</string>
+    <string name="profile_full_name">Full Name</string>
+    <string name="profile_phone">Phone Number</string>
+    <string name="profile_email">Email</string>
+    <string name="profile_save_btn">Save Changes</string>
+    <string name="profile_saving_btn">Saving…</string>
+    <string name="profile_notifications">Notifications</string>
+    <string name="profile_reviews">My Reviews</string>
+    <string name="profile_logout_btn">Log Out</string>
+
+    <!-- Wallet Screen -->
+    <string name="wallet_title">SportZone Wallet</string>
+    <string name="wallet_balance_label">Available Balance</string>
+    <string name="wallet_select_amount">Select Amount</string>
+    <string name="wallet_payment_gateway">Payment Gateway</string>
+    <string name="wallet_topup_btn">Top Up Now</string>
+    <string name="wallet_topup_btn_loading">Processing…</string>
 </resources>

@@ -1,0 +1,97 @@
+<resources>
+    <string name="app_name">SportZone</string>
+
+    <!-- Navigation Tabs -->
+    <string name="tab_home">Sân</string>
+    <string name="tab_bookings">Lịch</string>
+    <string name="tab_wallet">Ví</string>
+    <string name="tab_profile">Tôi</string>
+
+    <!-- Common / Actions -->
+    <string name="btn_retry">Thử lại</string>
+    <string name="btn_cancel">Hủy</string>
+    <string name="btn_confirm">Xác nhận</string>
+    <string name="btn_back">Quay lại</string>
+    <string name="btn_apply">Áp dụng</string>
+    <string name="label_loading">Đang tải…</string>
+    <string name="label_today">Hôm nay</string>
+    <string name="label_tomorrow">Ngày mai</string>
+    <string name="label_peak_hour">Giờ vàng</string>
+    <string name="label_rating_format">%1$.1f (%2$d đánh giá)</string>
+
+    <!-- Home Screen -->
+    <string name="home_greeting">Chào bạn 👋</string>
+    <string name="home_title">Đặt sân thể thao</string>
+    <string name="home_search_hint">Tìm sân, môn, khu vực…</string>
+    <string name="home_categories_title">Môn thể thao</string>
+    <string name="home_facilities_title">Danh sách cơ sở</string>
+    <string name="home_empty_title">Không tìm thấy sân phù hợp</string>
+    <string name="home_empty_desc">Hãy thử tìm với từ khóa khác hoặc chọn một môn thể thao khác.</string>
+
+    <!-- Facility Detail Screen -->
+    <string name="facility_detail_title">Chi tiết cơ sở</string>
+    <string name="facility_about">Giới thiệu</string>
+    <string name="facility_amenities">Tiện ích sân</string>
+    <string name="facility_courts">Danh sách sân con</string>
+    <string name="facility_operating_hours">Giờ hoạt động</string>
+    <string name="facility_phone">Hotline</string>
+    <string name="facility_book_cta">Chọn sân và khung giờ</string>
+
+    <!-- Booking Screen -->
+    <string name="booking_title">Chọn sân &amp; giờ</string>
+    <string name="booking_select_court">1. Chọn sân</string>
+    <string name="booking_select_date">2. Chọn ngày</string>
+    <string name="booking_select_time">3. Chọn khung giờ</string>
+    <string name="booking_slot_loading">Đang kiểm tra khung giờ…</string>
+    <string name="booking_slot_legend_available">Còn trống</string>
+    <string name="booking_slot_legend_selected">Đang chọn</string>
+    <string name="booking_slot_legend_booked">Đã đặt</string>
+    <string name="booking_slot_legend_peak">Giờ vàng</string>
+    <string name="booking_continue_cta">Tiếp tục thanh toán</string>
+
+    <!-- Checkout Screen -->
+    <string name="checkout_title">Xác nhận đặt sân</string>
+    <string name="checkout_court_price">Giá sân</string>
+    <string name="checkout_discount">Giảm giá</string>
+    <string name="checkout_total">Tổng thanh toán</string>
+    <string name="checkout_wallet_balance">Số dư ví SportZone: %1$s</string>
+    <string name="checkout_voucher_section">Mã giảm giá</string>
+    <string name="checkout_voucher_hint">Nhập mã ưu đãi</string>
+    <string name="checkout_payment_section">Phương thức thanh toán</string>
+    <string name="checkout_btn_pay">Thanh toán %1$s</string>
+    <string name="checkout_btn_paying">Đang xử lý đặt sân…</string>
+    <string name="checkout_success_message">Đặt sân thành công!</string>
+
+    <!-- Bookings Screen -->
+    <string name="bookings_title">Lịch đặt</string>
+    <string name="bookings_tab_all">Tất cả (%1$d)</string>
+    <string name="bookings_tab_upcoming">Sắp diễn ra (%1$d)</string>
+    <string name="bookings_tab_completed">Hoàn thành (%1$d)</string>
+    <string name="bookings_tab_cancelled">Đã hủy (%1$d)</string>
+    <string name="bookings_empty_title">Chưa có đơn đặt sân</string>
+    <string name="bookings_empty_desc">Bạn chưa có đơn đặt nào trong danh mục này.</string>
+    <string name="bookings_cancel_btn">Hủy đơn</string>
+    <string name="bookings_cancelling_btn">Đang hủy…</string>
+    <string name="bookings_cancel_dialog_title">Xác nhận hủy đơn đặt?</string>
+    <string name="bookings_cancel_dialog_desc">Số tiền hoàn (nếu có) sẽ được chuyển về ví SportZone của bạn theo chính sách cơ sở.</string>
+
+    <!-- Profile Screen -->
+    <string name="profile_title">Tài khoản</string>
+    <string name="profile_wallet_balance">Ví: %1$s</string>
+    <string name="profile_full_name">Họ và tên</string>
+    <string name="profile_phone">Số điện thoại</string>
+    <string name="profile_email">Email</string>
+    <string name="profile_save_btn">Lưu hồ sơ</string>
+    <string name="profile_saving_btn">Đang lưu…</string>
+    <string name="profile_notifications">Thông báo</string>
+    <string name="profile_reviews">Đánh giá của tôi</string>
+    <string name="profile_logout_btn">Đăng xuất</string>
+
+    <!-- Wallet Screen -->
+    <string name="wallet_title">Ví SportZone</string>
+    <string name="wallet_balance_label">Số dư hiện tại</string>
+    <string name="wallet_select_amount">Chọn mệnh giá</string>
+    <string name="wallet_payment_gateway">Cổng nạp tiền</string>
+    <string name="wallet_topup_btn">Nạp tiền vào ví</string>
+    <string name="wallet_topup_btn_loading">Đang thực hiện…</string>
+</resources>

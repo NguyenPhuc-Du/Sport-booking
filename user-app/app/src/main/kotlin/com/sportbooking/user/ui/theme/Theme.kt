@@ -1,34 +1,56 @@
 package com.sportbooking.user.ui.theme
 
+import android.os.Build
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Typography
-import androidx.compose.material3.lightColorScheme
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
-
-private val Green = Color(0xFF128A4A)
-private val GreenDark = Color(0xFF0C6B38)
-private val Teal = Color(0xFF0F766E)
-private val Ink = Color(0xFF14221B)
-private val Mist = Color(0xFFF3F7F4)
-
-private val LightColors = lightColorScheme(
-    primary = Green,
-    onPrimary = Color.White,
-    primaryContainer = Color(0xFFD7F5E3),
-    onPrimaryContainer = GreenDark,
-    secondary = Teal,
-    background = Mist,
-    surface = Color.White,
-    onBackground = Ink,
-    onSurface = Ink,
-)
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.ui.platform.LocalContext
 
 @Composable
-fun SportBookingTheme(content: @Composable () -> Unit) {
-    MaterialTheme(
-        colorScheme = LightColors,
-        typography = Typography(),
-        content = content,
+fun SportBookingTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    dynamicColor: Boolean = false,
+    content: @Composable () -> Unit,
+) {
+    val colorScheme = when {
+        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+            val context = LocalContext.current
+            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+        }
+        darkTheme -> DarkColorScheme
+        else -> LightColorScheme
+    }
+
+    val extraColors = SportExtraColors(
+        peakSlot = if (darkTheme) AmberAccentDark else AmberAccent,
+        peakSlotContainer = if (darkTheme) AmberAccentContainerDark else AmberAccentContainer,
+        bookedSlot = if (darkTheme) DarkOutlineVariant else LightOutlineVariant,
+        bookedSlotContainer = if (darkTheme) DarkSurfaceVariant else LightSurfaceVariant,
     )
+
+    CompositionLocalProvider(
+        LocalSpacing provides SportSpacing(),
+        LocalExtraColors provides extraColors,
+    ) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = SportTypography,
+            shapes = SportShapes,
+            content = content,
+        )
+    }
 }
+
+val MaterialTheme.spacing: SportSpacing
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalSpacing.current
+
+val MaterialTheme.extraColors: SportExtraColors
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalExtraColors.current
