@@ -79,3 +79,6 @@ module.exports.createVenuesPost = async (req, res) => {
   req.flash("success", "Thêm cơ sở thành công");
   res.redirect(req.get("Referer"));
 };
+module.exports.deleteVenues = async (req, res) => {
+  res.send("ok");
+};

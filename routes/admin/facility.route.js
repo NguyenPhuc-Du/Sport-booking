@@ -8,6 +8,7 @@ const upload = multer();
 router.get("/", controller.index);
 router.get("/venues", controller.indexVenues);
 router.get("/venues/create", controller.createVenues);
+router.delete("/venues/delete/:id", controller.deleteVenues);
 router.post(
   "/venues/create",
   upload.single("image_url"),
