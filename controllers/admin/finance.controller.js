@@ -1,5 +1,6 @@
 const Voucher = require("../../models/finance.model");
 const prefixAdmin = require("../../config/system");
+const Venues = require("../../models/facilities.model");
 module.exports.index = async (req, res) => {
   const voucher = await Voucher.find({ deleted: false }).lean();
   voucher.forEach((item) => {
@@ -22,8 +23,10 @@ module.exports.index = async (req, res) => {
   });
 };
 module.exports.create = async (req, res) => {
+  const venues = await Venues.find({});
   res.render("admin/pages/finance/create", {
     pageTitle: "Tạo Voucher",
+    venues: venues,
   });
 };
 module.exports.createPost = async (req, res) => {
