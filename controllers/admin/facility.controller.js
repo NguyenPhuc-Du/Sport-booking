@@ -58,7 +58,7 @@ module.exports.index = async (req, res) => {
   });
 };
 module.exports.indexVenues = async (req, res) => {
-  const venues = await Venues.find({});
+  const venues = await Venues.find({ deleted: false });
 
   res.render("admin/pages/facilities/indexVenues", {
     pageTitle: "Cơ sở",
@@ -78,4 +78,15 @@ module.exports.createVenuesPost = async (req, res) => {
   await venues.save();
   req.flash("success", "Thêm cơ sở thành công");
   res.redirect(req.get("Referer"));
+};
+module.exports.deleteVenues = async (req, res) => {
+  try {
+    const id = req.params.id;
+    await Venues.updateOne({ _id: id }, { deleted: true });
+    req.flash("success", "Bạn đã xoá cơ sở thành công");
+    res.redirect(req.get("Referer"));
+  } catch (error) {
+    req.flash("success", "Bạn đã xoá cơ sở  thất bại");
+    res.redirect(req.get("Referer"));
+  }
 };
