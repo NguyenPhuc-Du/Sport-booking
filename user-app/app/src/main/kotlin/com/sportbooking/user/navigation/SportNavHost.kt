@@ -2,24 +2,14 @@ package com.sportbooking.user.navigation
 
 import android.net.Uri
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.outlined.AccountBalanceWallet
-import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -35,8 +25,10 @@ import com.sportbooking.user.ui.auth.RegisterScreen
 import com.sportbooking.user.ui.booking.BookingScreen
 import com.sportbooking.user.ui.bookings.BookingsScreen
 import com.sportbooking.user.ui.checkout.CheckoutScreen
+import com.sportbooking.user.ui.components.AppBottomNavBar
 import com.sportbooking.user.ui.components.LoadingScreen
 import com.sportbooking.user.ui.components.MessageScreen
+import com.sportbooking.user.ui.components.defaultBottomNavTabs
 import com.sportbooking.user.ui.facility.FacilityDetailScreen
 import com.sportbooking.user.ui.home.HomeScreen
 import com.sportbooking.user.ui.profile.ProfileScreen
@@ -44,15 +36,6 @@ import com.sportbooking.user.ui.session.SessionUiState
 import com.sportbooking.user.ui.session.SessionViewModel
 import com.sportbooking.user.ui.wallet.WalletScreen
 import kotlinx.coroutines.launch
-
-private data class Tab(val route: String, val label: String, val icon: ImageVector)
-
-private val tabs = listOf(
-    Tab("home", "Sân", Icons.Filled.Home),
-    Tab("bookings", "Lịch", Icons.Filled.DateRange),
-    Tab("wallet", "Ví", Icons.Outlined.AccountBalanceWallet),
-    Tab("account", "Tôi", Icons.Filled.Person),
-)
 
 @Composable
 fun SportBookingRoot(sessionViewModel: SessionViewModel = hiltViewModel()) {
@@ -101,30 +84,24 @@ private fun MainNavHost(
     val scope = rememberCoroutineScope()
     val backStack by navController.currentBackStackEntryAsState()
     val route = backStack?.destination?.route
-    val showBar = tabs.any { it.route == route }
+    val showBar = defaultBottomNavTabs.any { it.route == route }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
             if (showBar) {
-                NavigationBar {
-                    tabs.forEach { tab ->
-                        NavigationBarItem(
-                            selected = route == tab.route,
-                            onClick = {
-                                navController.navigate(tab.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            },
-                            icon = { Icon(tab.icon, contentDescription = tab.label) },
-                            label = { Text(tab.label) },
-                        )
-                    }
-                }
+                AppBottomNavBar(
+                    currentRoute = route,
+                    onNavigate = { targetRoute ->
+                        navController.navigate(targetRoute) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                )
             }
         },
     ) { padding ->
