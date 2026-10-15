@@ -59,15 +59,18 @@ module.exports.index = async (req, res) => {
 };
 module.exports.indexVenues = async (req, res) => {
   const venues = await Venues.find({});
-  console.log(venues);
+
   res.render("admin/pages/facilities/indexVenues", {
     pageTitle: "Cơ sở",
     venues: venues,
   });
 };
 module.exports.createVenues = async (req, res) => {
+  const userId = res.locals.user.id;
+  console.log(userId + "user");
   res.render("admin/pages/facilities/createVenues", {
     pageTitle: "Cơ sở",
+    userId: userId,
   });
 };
 module.exports.createVenuesPost = async (req, res) => {

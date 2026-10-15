@@ -17,6 +17,12 @@ block main
         method="POST"
         enctype="multipart/form-data")
         .fv-field
+            input#closeTime.fv-input.d-none(
+              type="text"
+              name="owner_id"
+              value=userId
+            )
+        .fv-field
           label.fv-label(for="venueName")
             | Tên cơ sở
             span.fv-req *
