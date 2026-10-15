@@ -18,3 +18,11 @@ yarn-debug.log*
 yarn-error.log*
 
 /.cursor
+
+# Android user app
+user-app/.gradle/
+user-app/**/build/
+user-app/local.properties
+user-app/.idea/
+*.iml
+.cxx/
