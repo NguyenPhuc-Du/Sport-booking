@@ -1,10 +1,10 @@
 const express = require("express");
 const router = express.Router();
 const controller = require("../../controllers/admin/finance.controller");
-
+const validate = require("../../validates/admin/voucher.validates");
 router.get("/", controller.index);
 router.get("/create", controller.create);
-router.post("/create", controller.createPost);
+router.post("/create", validate.creatPost, controller.createPost);
 router.delete("/delete/:id", controller.delete);
 router.get("/edit/:id", controller.edit);
 router.patch("/edit/:id", controller.editPatch);

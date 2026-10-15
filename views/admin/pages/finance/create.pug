@@ -1,6 +1,7 @@
 extends ../../layouts/default.pug
-
+include ../../../mixins/alert.pug
 block main
+  +alert-error(5000)
   .vc-modal-page
     .vc-modal
       .vc-modal-head
@@ -116,3 +117,4 @@ block main
         .vc-modal-foot
           a.vc-btn-cancel(href=`${prefixAdmin}/finance`) Hủy
           button.vc-btn-submit(type="submit") Phát hành Voucher
+    script(src="/js/script.js")
