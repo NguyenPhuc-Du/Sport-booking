@@ -5,11 +5,20 @@ const dashboardRoutes = require("../admin/dashboard.route");
 const facilityRoutes = require("../admin/facility.route");
 const bookingRoutes = require("../admin/booking.route");
 const financeRoutes = require("../admin/finance.route");
-const voucherRoutes = require("../admin/voucher.route");
 const ownerProfileRoutes = require("../admin/owner-profile.route");
+
+const authMiddleware = require("../../middlewares/auth.middleware");
 
 module.exports = (app) => {
   const PATH = systemConfig.prefixOwner;
+
+  app.use(PATH, authMiddleware.requireAuth);
+  app.use(PATH, (req, res, next) => {
+    if (res.locals.user.role !== "OWNER") {
+      return res.redirect("/");
+    }
+    next();
+  });
 
   app.use(PATH, localsOwner);
 
