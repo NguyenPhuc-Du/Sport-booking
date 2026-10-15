@@ -1,0 +1,145 @@
+/* Khóa cuộn màn hình trên Desktop */
+@media (min-width: 992px) {
+  .sz-compact-body {
+    height: 100vh;
+    overflow: hidden;
+  }
+}
+
+.sz-login {
+  height: 100vh;
+}
+
+/* Thu gọn Padding Cột trái (Hero) */
+.sz-login-hero {
+  padding: 32px 40px;
+  gap: 20px;
+}
+
+.sz-login-hero-body h2 {
+  font-size: 28px;
+  margin-bottom: 8px;
+}
+
+.sz-login-hero-body > p {
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.sz-login-points {
+  gap: 10px;
+}
+
+.sz-login-points li {
+  font-size: 13.5px;
+}
+
+.sz-login-points i {
+  width: 32px;
+  height: 32px;
+  font-size: 14px;
+}
+
+/* Thu gọn Cột phải (Card Đăng ký) */
+.sz-login-panel {
+  padding: 16px 24px;
+  justify-content: center;
+}
+
+.sz-register-card {
+  max-width: 520px;
+  padding: 24px 28px 20px;
+  border-radius: 20px;
+}
+
+.sz-register-card .sz-title {
+  font-size: 22px;
+  margin-bottom: 2px;
+}
+
+.sz-register-card .sz-subtitle {
+  font-size: 13px;
+  margin-bottom: 14px;
+}
+
+/* Grid 2 cột gọn gàng cho Input */
+.sz-field-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.sz-register-card .sz-field {
+  margin-bottom: 12px;
+}
+
+.sz-register-card .sz-field label {
+  font-size: 12.5px;
+  margin-bottom: 4px;
+}
+
+/* Giảm chiều cao Input từ 50px -> 42px */
+.sz-register-card .sz-input input {
+  height: 42px;
+  padding: 0 36px 0 38px;
+  font-size: 13.5px;
+  border-radius: 10px;
+}
+
+.sz-register-card .sz-input > i:first-child {
+  left: 12px;
+  font-size: 15px;
+}
+
+.sz-register-card .sz-eye {
+  right: 3px;
+  width: 34px;
+  height: 34px;
+  font-size: 15px;
+}
+
+/* Checkbox & Button */
+.sz-register-card .sz-check {
+  margin: 6px 0 14px;
+  font-size: 12.5px;
+}
+
+.sz-register-card .sz-btn-primary {
+  height: 44px;
+  font-size: 14.5px;
+  border-radius: 10px;
+}
+
+.sz-register-card .sz-login-alt {
+  margin-top: 12px;
+  font-size: 13px;
+}
+
+.sz-login-panel .sz-copy {
+  margin-top: 12px;
+  font-size: 12px;
+}
+
+/* Tự động bật cuộn nếu xem trên Mobile / Tablet */
+@media (max-width: 991px) {
+  .sz-compact-body {
+    overflow: auto;
+  }
+  .sz-login {
+    height: auto;
+    min-height: 100vh;
+  }
+  .sz-login-panel {
+    padding: 24px 16px;
+  }
+  .sz-register-card {
+    padding: 20px 18px;
+  }
+}
+
+@media (max-width: 576px) {
+  .sz-field-grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}

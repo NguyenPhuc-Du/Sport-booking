@@ -1,0 +1,56 @@
+module.exports.index = async (req, res) => {
+  res.render("client/pages/home/index", {
+    pageTitle: "Đặt sân thể thao",
+    activeNav: "home",
+    sports: [
+      { id: "all", label: "Tất cả môn", icon: "bi-grid", active: true },
+      { id: "badminton", label: "Cầu lông", icon: "bi-trophy" },
+      { id: "pickleball", label: "Pickleball", icon: "bi-circle-half" },
+      { id: "football", label: "Bóng đá mini", icon: "bi-dribbble" },
+      { id: "tennis", label: "Quần vợt (Tennis)", icon: "bi-record-circle" },
+      { id: "basketball", label: "Bóng rổ", icon: "bi-basket" },
+    ],
+    amenities: [
+      "Wifi tốc độ cao",
+      "Bãi đỗ ô tô & xe máy",
+      "Phòng tắm nóng/lạnh",
+      "Đèn LED chống chói",
+      "Cho thuê vợt/bóng",
+      "Căn tin / đồ uống",
+      "Khu chờ máy lạnh",
+      "Tủ khóa có mã",
+    ],
+    facilities: [
+      {
+        id: "elite-pickleball",
+        name: "Elite Pickleball Club Landmark",
+        location: "Quận Bình Thạnh, TP. Hồ Chí Minh",
+        rating: 4.95,
+        reviews: 210,
+        badge: "HOT",
+        sports: ["Pickleball"],
+        image: "https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=800&q=80",
+      },
+      {
+        id: "sportpro-cau-giay",
+        name: "SportPro Complex - Cầu Giấy",
+        location: "Quận Cầu Giấy, Hà Nội",
+        rating: 4.9,
+        reviews: 142,
+        badge: "HOT",
+        sports: ["Cầu lông", "Tennis"],
+        image: "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=800&q=80",
+      },
+      {
+        id: "star-dome",
+        name: "Star Basketball & Futsal Dome",
+        location: "Quận 1, TP. Hồ Chí Minh",
+        rating: 4.85,
+        reviews: 67,
+        badge: null,
+        sports: ["Bóng rổ", "Futsal"],
+        image: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=800&q=80",
+      },
+    ],
+  });
+};
