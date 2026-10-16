@@ -31,9 +31,31 @@ block main
             .col-md-6
               label.sz-label Email
               input.sz-input(type="email" name="email" value=owner.email required)
-            .col-md-6
+            .col-12
               label.sz-label Cơ sở đang quản lý
-              input.sz-input(type="text" name="facility" value=owner.facility)
+              - const venueList = (typeof venues !== "undefined" ? venues : []).filter((v) => !v.deleted)
+              if venueList.length
+                .row.g-2
+                  each v in venueList
+                    - const place = [v.address, v.district, v.city].filter(Boolean).join(", ")
+                    .col-12
+                      .sz-court-card
+                        .d-flex.justify-content-between.align-items-start.gap-2
+                          div
+                            strong.sz-court-name= v.name
+                            p.sz-muted.mb-0.mt-1
+                              i.bi.bi-geo-alt
+                              |  #{place || "Chưa có địa chỉ"}
+                            if v.open_time || v.close_time
+                              p.sz-muted.mb-0
+                                i.bi.bi-clock
+                                |  #{v.open_time || "--:--"} - #{v.close_time || "--:--"}
+                          if v.status === "inactive"
+                            span.sz-badge.sz-badge-danger Ngừng hoạt động
+                          else
+                            span.sz-badge.sz-badge-ok Đang hoạt động
+              else
+                input.sz-input(type="text" value="Chưa quản lý cơ sở nào" readonly)
             .col-12
               label.sz-label Số dư ví
               input.sz-input(type="text" value=owner.wallet readonly)
