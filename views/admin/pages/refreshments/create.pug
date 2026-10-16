@@ -1,0 +1,208 @@
+extends ../../layouts/default.pug
+include ../../../mixins/alert.pug
+
+block main
+    +alert-success(3000)
+    +alert-error(5000)
+    link(rel="stylesheet" href="/admin/css/refreshments.css")
+    - const old = typeof oldData !== "undefined" ? oldData : {}
+    - const errs = typeof errors !== "undefined" ? errors : {}
+
+    .d-flex.justify-content-between.align-items-start.flex-wrap.gap-3.mb-3
+        div
+            h1.sz-page-title Thêm dịch vụ giải khát
+            p.sz-page-sub Tạo sản phẩm mới để bán tại quầy và cho khách đặt kèm khi đặt sân.
+        a.sz-btn-outline(href=`${prefixOwner}/refreshments`)
+            i.bi.bi-arrow-left
+            |  Quay lại danh sách
+
+    form#refreshmentForm(action=`${prefixOwner}/refreshments/create` method="POST" enctype="multipart/form-data" novalidate)
+        .row.g-4
+            //- ===== CỘT TRÁI: THÔNG TIN CHÍNH =====
+            .col-12.col-xl-8
+                .sz-card
+                    .sz-card-head
+                        h2.sz-card-title Thông tin sản phẩm
+                        p.sz-card-sub Các trường có dấu * là bắt buộc
+
+                    .row.g-3
+                        .col-12
+                            label.sz-label(for="name") Tên sản phẩm
+                                span.sz-req  *
+                            input#name.sz-input(type="text" name="name" placeholder="VD: Nước suối Aquafina 500ml" value=old.name required maxlength="120" class=(errs.name ? "is-invalid" : undefined))
+                            if errs.name
+                                .sz-error= errs.name
+
+                        .col-12
+                            label.sz-label(for="venueId") Cơ sở áp dụng
+                                span.sz-req  *
+                            select#venueId.sz-input(name="venueId" required class=(errs.venueId ? "is-invalid" : undefined))
+                                option(value="") -- Chọn cơ sở --
+                                each v in (typeof venues !== "undefined" ? venues : [])
+                                    option(value=v._id selected=(String(old.venueId) === String(v._id)))= v.name
+                            if errs.venueId
+                                .sz-error= errs.venueId
+
+                        .col-12.col-md-6
+                            label.sz-label(for="price") Giá bán (VNĐ)
+                                span.sz-req  *
+                            .sz-input-group
+                                input#price.sz-input(type="number" name="price" min="0" step="500" placeholder="15000" value=old.price required class=(errs.price ? "is-invalid" : undefined))
+                                span.sz-input-suffix đ
+                            .sz-hint#pricePreview Nhập giá để xem định dạng
+                            if errs.price
+                                .sz-error= errs.price
+
+                        .col-12.col-md-6
+                            label.sz-label(for="stock") Tồn kho ban đầu
+                            .sz-input-group
+                                input#stock.sz-input(type="number" name="stock" min="0" step="1" placeholder="0" value=(old.stock !== undefined ? old.stock : 0) class=(errs.stock ? "is-invalid" : undefined))
+                                span.sz-input-suffix sản phẩm
+                            .sz-hint Để 0 nếu chưa nhập hàng
+                            if errs.stock
+                                .sz-error= errs.stock
+
+                        .col-12
+                            label.sz-label(for="supplier") Nhà cung cấp
+                                span.sz-req  *
+                            .sz-input-group
+                                span.sz-input-prefix
+                                    i.bi.bi-truck
+                                input#supplier.sz-input.has-prefix(type="text" name="supplier" placeholder="VD: Công ty TNHH Suntory PepsiCo" value=old.supplier required class=(errs.supplier ? "is-invalid" : undefined))
+                            if errs.supplier
+                                .sz-error= errs.supplier
+
+                .sz-card.mt-4
+                    .sz-card-head
+                        h2.sz-card-title Trạng thái bán hàng
+                        p.sz-card-sub Sản phẩm ngừng bán sẽ không hiển thị khi khách đặt sân
+
+                    - const curStatus = old.status || "active"
+                    .sz-status-options
+                        label.sz-status-option
+                            input(type="radio" name="status" value="active" checked=(curStatus === "active"))
+                            .sz-status-box
+                                span.sz-status-dot.active
+                                div
+                                    strong Đang bán
+                                    small Hiển thị và cho phép đặt kèm
+                        label.sz-status-option
+                            input(type="radio" name="status" value="inactive" checked=(curStatus === "inactive"))
+                            .sz-status-box
+                                span.sz-status-dot.inactive
+                                div
+                                    strong Ngừng bán
+                                    small Ẩn khỏi danh sách đặt
+
+            //- ===== CỘT PHẢI: ẢNH + XEM TRƯỚC =====
+            .col-12.col-xl-4
+                .sz-card
+                    .sz-card-head
+                        h2.sz-card-title Ảnh sản phẩm
+                            span.sz-req  *
+                        p.sz-card-sub JPG, PNG, WEBP · tối đa 2MB
+
+                    label.sz-dropzone#dropzone(for="image")
+                        img#imagePreview.sz-dropzone-img(alt="Xem trước ảnh" hidden)
+                        .sz-dropzone-empty#dropzoneEmpty
+                            i.bi.bi-cloud-arrow-up
+                            strong Kéo thả hoặc bấm để chọn ảnh
+                            small Tỉ lệ vuông cho hiển thị đẹp nhất
+                    input#image.d-none(type="file" name="image" accept="image/png,image/jpeg,image/webp" required)
+                    if errs.image
+                        .sz-error.mt-2= errs.image
+                    button#removeImage.sz-btn-link.mt-2(type="button" hidden)
+                        i.bi.bi-trash3
+                        |  Xoá ảnh đã chọn
+
+                .sz-card.mt-4
+                    .sz-card-head
+                        h2.sz-card-title Xem trước
+                        p.sz-card-sub Cách sản phẩm hiển thị với khách
+                    .sz-preview
+                        .sz-preview-thumb#previewThumb
+                            i.bi.bi-cup-straw
+                        .sz-preview-body
+                            .sz-preview-name#previewName Tên sản phẩm
+                            .sz-preview-price#previewPrice 0đ
+                            .sz-preview-meta
+                                span.sz-tag#previewStatus Đang bán
+                                span.sz-preview-stock#previewStock Tồn: 0
+
+        .sz-form-actions
+            a.sz-btn-outline(href=`${prefixAdmin}/refreshments`) Huỷ
+            button.sz-btn-primary(type="submit")
+                i.bi.bi-check2-circle
+                |  Lưu sản phẩm
+
+block script
+    script.
+        (function () {
+            var $ = function (id) { return document.getElementById(id); };
+            var fmt = function (n) { return Number(n || 0).toLocaleString("vi-VN") + "đ"; };
+
+            var nameEl = $("name"), priceEl = $("price"), stockEl = $("stock");
+            var imageEl = $("image"), preview = $("imagePreview"), empty = $("dropzoneEmpty");
+            var removeBtn = $("removeImage"), thumb = $("previewThumb");
+
+            function sync() {
+                $("previewName").textContent = nameEl.value.trim() || "Tên sản phẩm";
+                $("previewPrice").textContent = fmt(priceEl.value);
+                $("pricePreview").textContent = priceEl.value ? "= " + fmt(priceEl.value) : "Nhập giá để xem định dạng";
+                $("previewStock").textContent = "Tồn: " + (stockEl.value || 0);
+                var st = document.querySelector('input[name="status"]:checked').value;
+                var tag = $("previewStatus");
+                tag.textContent = st === "active" ? "Đang bán" : "Ngừng bán";
+                tag.className = "sz-tag " + (st === "active" ? "" : "off");
+            }
+
+            [nameEl, priceEl, stockEl].forEach(function (el) { el.addEventListener("input", sync); });
+            document.querySelectorAll('input[name="status"]').forEach(function (r) { r.addEventListener("change", sync); });
+
+            function setImage(file) {
+                if (!file) return;
+                if (file.size > 2 * 1024 * 1024) {
+                    alert("Ảnh vượt quá 2MB, vui lòng chọn ảnh khác.");
+                    imageEl.value = "";
+                    return;
+                }
+                var url = URL.createObjectURL(file);
+                preview.src = url; preview.hidden = false; empty.hidden = true; removeBtn.hidden = false;
+                thumb.innerHTML = '<img src="' + url + '" alt="">';
+            }
+
+            imageEl.addEventListener("change", function () { setImage(imageEl.files[0]); });
+
+            removeBtn.addEventListener("click", function () {
+                imageEl.value = ""; preview.hidden = true; empty.hidden = false; removeBtn.hidden = true;
+                thumb.innerHTML = '<i class="bi bi-cup-straw"></i>';
+            });
+
+            var dz = $("dropzone");
+            ["dragenter", "dragover"].forEach(function (ev) {
+                dz.addEventListener(ev, function (e) { e.preventDefault(); dz.classList.add("drag"); });
+            });
+            ["dragleave", "drop"].forEach(function (ev) {
+                dz.addEventListener(ev, function (e) { e.preventDefault(); dz.classList.remove("drag"); });
+            });
+            dz.addEventListener("drop", function (e) {
+                if (e.dataTransfer.files.length) {
+                    imageEl.files = e.dataTransfer.files;
+                    setImage(imageEl.files[0]);
+                }
+            });
+
+            $("refreshmentForm").addEventListener("submit", function (e) {
+                var bad = false;
+                ["name", "venueId", "price", "supplier"].forEach(function (id) {
+                    var el = $(id);
+                    var invalid = !el.value.trim() || (id === "price" && Number(el.value) < 0);
+                    el.classList.toggle("is-invalid", invalid);
+                    if (invalid) bad = true;
+                });
+                if (!imageEl.files.length) { dz.classList.add("invalid"); bad = true; } else { dz.classList.remove("invalid"); }
+                if (bad) { e.preventDefault(); window.scrollTo({ top: 0, behavior: "smooth" }); }
+            });
+
+            sync();
+        })();

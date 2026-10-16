@@ -6,6 +6,7 @@ const facilityRoutes = require("../admin/facility.route");
 const bookingRoutes = require("../admin/booking.route");
 const financeRoutes = require("../admin/finance.route");
 const ownerProfileRoutes = require("../admin/owner-profile.route");
+const refreshmentRoutes = require("../admin/refreshment.route");
 
 const authMiddleware = require("../../middlewares/auth.middleware");
 
@@ -31,6 +32,8 @@ module.exports = (app) => {
   app.use(PATH + "/bookings", bookingRoutes);
   app.use(PATH + "/finance", financeRoutes);
   app.use(PATH + "/profile", ownerProfileRoutes);
+  app.use(PATH + "/refreshments", refreshmentRoutes);
+
   // Giữ tương thích link cũ của chủ sân (không đụng /admin/dashboard của platform)
   app.get("/admin/facilities", (req, res) =>
     res.redirect(PATH + "/facilities"),
