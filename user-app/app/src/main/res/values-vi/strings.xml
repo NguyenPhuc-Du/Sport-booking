@@ -94,4 +94,31 @@
     <string name="wallet_payment_gateway">Cổng nạp tiền</string>
     <string name="wallet_topup_btn">Nạp tiền vào ví</string>
     <string name="wallet_topup_btn_loading">Đang thực hiện…</string>
+
+    <!-- OTP Verification Screen -->
+    <string name="otp_title">Xác thực mã OTP</string>
+    <string name="otp_subtitle">Mã xác thực gồm 6 chữ số đã được gửi đến</string>
+    <string name="otp_resend_countdown">Gửi lại mã sau %1$02ds</string>
+    <string name="otp_resend_action">Gửi lại mã OTP</string>
+    <string name="otp_btn_confirm">Xác nhận</string>
+    <string name="otp_btn_verifying">Đang xác thực…</string>
+    <string name="otp_change_info">Đổi thông tin đăng ký</string>
+    <string name="otp_demo_hint">Mẹo: Nhập 6 số bất kỳ hoặc bấm mã mẫu</string>
+    <string name="otp_quick_fill">Điền mã mẫu (123456)</string>
+    <string name="otp_resend_success">Đã gửi lại mã OTP mới!</string>
+
+    <!-- Forgot Password Screen -->
+    <string name="login_forgot_password">Quên mật khẩu?</string>
+    <string name="forgot_password_title">Quên mật khẩu?</string>
+    <string name="forgot_password_subtitle">Nhập email hoặc số điện thoại liên kết với tài khoản SportZone của bạn để nhận mã khôi phục.</string>
+    <string name="forgot_password_input_label">Email hoặc số điện thoại</string>
+    <string name="forgot_password_input_hint">athlete@sportzone.vn hoặc 0987654321</string>
+    <string name="forgot_password_btn_send">Gửi mã xác thực</string>
+    <string name="forgot_password_sending">Đang gửi mã…</string>
+    <string name="forgot_password_back_login">Quay lại đăng nhập</string>
+    <string name="forgot_password_method_email">Qua Email</string>
+    <string name="forgot_password_method_phone">Qua Số điện thoại</string>
+    <string name="forgot_password_note">Mã OTP gồm 6 chữ số sẽ được gửi qua email hoặc SMS của bạn trong vòng ít phút.</string>
 </resources>
+
+

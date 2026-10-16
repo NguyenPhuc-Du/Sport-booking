@@ -1,7 +1,11 @@
 package com.sportbooking.user.navigation
 
 import android.net.Uri
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.Alignment
+import androidx.compose.material3.Text
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -20,7 +24,9 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.sportbooking.domain.model.User
+import com.sportbooking.user.ui.auth.ForgotPasswordScreen
 import com.sportbooking.user.ui.auth.LoginScreen
+import com.sportbooking.user.ui.auth.OtpScreen
 import com.sportbooking.user.ui.auth.RegisterScreen
 import com.sportbooking.user.ui.booking.BookingScreen
 import com.sportbooking.user.ui.bookings.BookingsScreen
@@ -34,7 +40,6 @@ import com.sportbooking.user.ui.home.HomeScreen
 import com.sportbooking.user.ui.profile.ProfileScreen
 import com.sportbooking.user.ui.session.SessionUiState
 import com.sportbooking.user.ui.session.SessionViewModel
-import com.sportbooking.user.ui.wallet.WalletScreen
 import kotlinx.coroutines.launch
 
 @Composable
@@ -61,16 +66,53 @@ private fun AuthNavHost(onAuthenticated: (User) -> Unit) {
             LoginScreen(
                 onLoggedIn = onAuthenticated,
                 onRegister = { navController.navigate("register") },
+                onForgotPassword = { navController.navigate("forgot_password") },
+            )
+        }
+        composable("forgot_password") {
+            ForgotPasswordScreen(
+                onNavigateToOtp = { target ->
+                    val encoded = Uri.encode(target)
+                    navController.navigate("otp/$encoded")
+                },
+                onBack = { navController.popBackStack() },
             )
         }
         composable("register") {
             RegisterScreen(
-                onLoggedIn = onAuthenticated,
+                onNavigateToOtp = { target ->
+                    val encoded = Uri.encode(target)
+                    navController.navigate("otp/$encoded")
+                },
                 onBack = { navController.popBackStack() },
+            )
+        }
+        composable(
+            route = "otp/{target}",
+            arguments = listOf(navArgument("target") { type = NavType.StringType }),
+        ) { backStackEntry ->
+            val target = backStackEntry.arguments?.getString("target").orEmpty().ifBlank { "0987654321" }
+            OtpScreen(
+                target = target,
+                onBack = { navController.popBackStack() },
+                onVerified = {
+                    onAuthenticated(
+                        User(
+                            id = "u_verified",
+                            fullName = "Thành viên SportZone",
+                            phone = if (target.all { it.isDigit() }) target else "0987654321",
+                            email = if (target.contains("@")) target else "athlete@sportzone.vn",
+                            avatarUrl = null,
+                            status = "active",
+                            walletBalance = 500_000L,
+                        ),
+                    )
+                },
             )
         }
     }
 }
+
 
 @Composable
 private fun MainNavHost(
@@ -171,3 +213,17 @@ private fun MainNavHost(
         }
     }
 }
+
+@Composable
+private fun WalletScreen(
+    onBalanceChanged: (Long) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text("Ví SportZone")
+    }
+}
+

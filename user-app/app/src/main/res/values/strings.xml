@@ -94,4 +94,31 @@
     <string name="wallet_payment_gateway">Payment Gateway</string>
     <string name="wallet_topup_btn">Top Up Now</string>
     <string name="wallet_topup_btn_loading">Processing…</string>
+
+    <!-- OTP Verification Screen -->
+    <string name="otp_title">OTP Verification</string>
+    <string name="otp_subtitle">A 6-digit verification code has been sent to</string>
+    <string name="otp_resend_countdown">Resend code in %1$02ds</string>
+    <string name="otp_resend_action">Resend OTP</string>
+    <string name="otp_btn_confirm">Verify &amp; Continue</string>
+    <string name="otp_btn_verifying">Verifying…</string>
+    <string name="otp_change_info">Change registration info</string>
+    <string name="otp_demo_hint">Tip: Enter 6 digits or tap quick sample</string>
+    <string name="otp_quick_fill">Fill sample (123456)</string>
+    <string name="otp_resend_success">New OTP sent successfully!</string>
+
+    <!-- Forgot Password Screen -->
+    <string name="login_forgot_password">Forgot password?</string>
+    <string name="forgot_password_title">Forgot Password?</string>
+    <string name="forgot_password_subtitle">Enter the email or phone number associated with your SportZone account to receive a recovery code.</string>
+    <string name="forgot_password_input_label">Email or phone number</string>
+    <string name="forgot_password_input_hint">athlete@sportzone.vn or 0987654321</string>
+    <string name="forgot_password_btn_send">Send Verification Code</string>
+    <string name="forgot_password_sending">Sending code…</string>
+    <string name="forgot_password_back_login">Back to Sign In</string>
+    <string name="forgot_password_method_email">Via Email</string>
+    <string name="forgot_password_method_phone">Via Phone Number</string>
+    <string name="forgot_password_note">A 6-digit OTP code will be sent to your email or SMS within a few minutes.</string>
 </resources>
+
+
