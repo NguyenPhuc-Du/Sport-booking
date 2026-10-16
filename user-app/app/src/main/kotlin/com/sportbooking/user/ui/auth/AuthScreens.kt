@@ -63,6 +63,7 @@ import com.sportbooking.user.ui.theme.spacing
 fun LoginScreen(
     onLoggedIn: (User) -> Unit,
     onRegister: () -> Unit,
+    onForgotPassword: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: LoginViewModel = hiltViewModel(),
 ) {
@@ -78,6 +79,7 @@ fun LoginScreen(
         onPasswordChange = viewModel::onPasswordChange,
         onSubmit = viewModel::submit,
         onRegister = onRegister,
+        onForgotPassword = onForgotPassword,
         modifier = modifier,
     )
 }
@@ -89,6 +91,7 @@ fun LoginContent(
     onPasswordChange: (String) -> Unit,
     onSubmit: () -> Unit,
     onRegister: () -> Unit,
+    onForgotPassword: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var passwordVisible by remember { mutableStateOf(false) }
@@ -139,7 +142,23 @@ fun LoginContent(
             modifier = Modifier.fillMaxWidth(),
         )
 
-        ErrorText(state.error, Modifier.padding(top = MaterialTheme.spacing.small))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End,
+        ) {
+            TextButton(
+                onClick = onForgotPassword,
+            ) {
+                Text(
+                    text = "Quên mật khẩu?",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
+
+        ErrorText(state.error, Modifier.padding(top = MaterialTheme.spacing.extraSmall))
 
         Spacer(Modifier.height(MaterialTheme.spacing.large))
 
@@ -166,15 +185,18 @@ fun LoginContent(
 
 @Composable
 fun RegisterScreen(
-    onLoggedIn: (User) -> Unit,
+    onNavigateToOtp: (String) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: RegisterViewModel = hiltViewModel(),
+    onLoggedIn: ((User) -> Unit)? = null,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    LaunchedEffect(viewModel) {
-        viewModel.loggedIn.collect(onLoggedIn)
+    if (onLoggedIn != null) {
+        LaunchedEffect(viewModel) {
+            viewModel.loggedIn.collect(onLoggedIn)
+        }
     }
 
     RegisterContent(
@@ -183,11 +205,15 @@ fun RegisterScreen(
         onPhoneChange = viewModel::onPhoneChange,
         onEmailChange = viewModel::onEmailChange,
         onPasswordChange = viewModel::onPasswordChange,
-        onSubmit = viewModel::submit,
+        onSubmit = {
+            val target = state.phone.ifBlank { state.email }.ifBlank { "0987654321" }
+            onNavigateToOtp(target)
+        },
         onBack = onBack,
         modifier = modifier,
     )
 }
+
 
 @Composable
 fun RegisterContent(
