@@ -23,7 +23,7 @@ module.exports.index = async (req, res) => {
   });
 };
 module.exports.create = async (req, res) => {
-  const venues = await Venues.find({});
+  const venues = await Venues.find({ deleted: false });
   res.render("admin/pages/finance/create", {
     pageTitle: "Tạo Voucher",
     venues: venues,
@@ -60,9 +60,11 @@ module.exports.edit = async (req, res) => {
   };
   voucher.start_date_formatted = formatDateTimeLocal(voucher.start_date);
   voucher.end_date_formatted = formatDateTimeLocal(voucher.end_date);
+  const venues = await Venues.find({ deleted: false });
   res.render("admin/pages/finance/edit", {
     pageTitle: "Trang Khuyến mãi",
     voucher: voucher,
+    venues: venues,
   });
 };
 module.exports.editPatch = async (req, res) => {

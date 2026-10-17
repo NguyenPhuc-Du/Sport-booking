@@ -33,15 +33,6 @@ block main
           )
 
         .vc-field
-          //- label.vc-label(for="venueId")
-          //-   | Cơ sở / Venue ID
-          //-   span.vc-req *
-          //- input#venueId.vc-input(
-          //-   type="text"
-          //-   name="venue_id"
-          //-   placeholder="ObjectId của venue (vd: 66f1a2b3c4d5e6f789012345)"
-          //-   required
-          //- )
           select(class="form-control" id="inputGroupSelect02" name="venue_id")
             option(value="" selected disabled) --Chọn cơ sở áp dụng voucher--
             each item in venues
