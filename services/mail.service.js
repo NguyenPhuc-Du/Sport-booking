@@ -26,23 +26,27 @@ module.exports.sendOtpMail = async (email, code, purpose) => {
 };
 
 module.exports.sendBookingMail = async (email, booking) => {
-    const subject = `Xác nhận đặt sân ${booking.code} - SportZone`;
+    const subject = `Thanh toán thành công ${booking.code} - SportZone`;
     const lines = [
-        `Xin chào,`,
-        ``,
-        `Đơn đặt sân của bạn đã được ghi nhận.`,
-        `Mã đơn: ${booking.code}`,
-        `Cơ sở: ${booking.facilityName}`,
-        `Sân: ${booking.courtName}`,
-        `Ngày: ${booking.date}`,
-        `Giờ: ${booking.time}`,
-        `Tạm tính: ${booking.courtPrice}đ`,
-        `Giảm giá: ${booking.discount}đ`,
-        `Tổng thanh toán: ${booking.amount}đ`,
-        `Hình thức: Thanh toán tại sân`,
-        ``,
-        `Vui lòng đến đúng giờ và thanh toán tại quầy.`,
+      `Xin chào,`,
+      ``,
+      `Bạn đã thanh toán thành công qua VNPay.`,
+      `Mã đơn: ${booking.code}`,
+      `Mã GD VNPay: ${booking.vnpTransactionNo || "-"}`,
+      `Cơ sở: ${booking.facilityName}`,
+      `Sân: ${booking.courtName}`,
+      `Ngày: ${booking.date}`,
+      `Giờ: ${booking.time}`,
+      `Số tiền: ${booking.amount}đ`,
+      ``,
+      `Vui lòng đến đúng giờ và xuất trình mã đơn khi check-in.`,
     ];
-
-    
-}
+  
+    await transporter.sendMail({
+      from: process.env.MAIL_FROM || process.env.SMTP_USER,
+      to: email,
+      subject,
+      text: lines.join("\n"),
+      html: `<pre style="font-family:sans-serif">${lines.join("<br>")}</pre>`,
+    });
+  };
