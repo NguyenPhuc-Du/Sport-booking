@@ -8,7 +8,6 @@ const flash = require("express-flash");
 const routeApi = require("./routes/api/index.route");
 const routeOwner = require("./routes/owner/index.route");
 const routeAdmin = require("./routes/admin/index.route");
-const routeClient = require("./routes/client/index.route");
 
 const database = require("./config/database");
 database.connect();
@@ -50,7 +49,6 @@ app.get("/", (req, res) => {
 app.use("/api/v1", routeApi);
 routeOwner(app);
 routeAdmin(app);
-routeClient(app);
 
 app.listen(port, () => {
   console.log(`app listening on port ${port}`);
