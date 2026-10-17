@@ -1,0 +1,129 @@
+extends ../../layouts/default.pug
+include ../../../mixins/alert.pug
+block head
+  +alert-success(5000)
+  link(rel="stylesheet" href="/admin/css/facilities.css")
+
+block main
+  .fv-modal-page
+    .fv-modal
+      .fv-modal-head
+        h1.fv-modal-title Thêm cơ sở mới
+        a.fv-modal-close(href=`${prefixAdmin}/facilities/venues` aria-label="Đóng")
+          i.bi.bi-x-lg
+
+      form( action=`${prefixAdmin}/facilities/venues/edit/${venues._id}?method_PATCH`
+        id="form-create-product"
+        method="POST"
+        enctype="multipart/form-data")
+        .fv-field
+            input#closeTime.fv-input.d-none(
+              type="text"
+              name="owner_id"
+              value=userId
+            )
+        .fv-field
+          label.fv-label(for="venueName")
+            | Tên cơ sở
+            span.fv-req *
+          input#venueName.fv-input(
+            type="text"
+            name="name"
+            value= venues.name
+          )
+
+        .fv-field
+          label.fv-label(for="venueAddress")
+            | Địa chỉ
+            span.fv-req *
+          input#venueAddress.fv-input(
+            type="text"
+            name="address"
+            value= venues.address
+          )
+
+        .fv-field-row
+          .fv-field
+            label.fv-label(for="venueCity")
+              | Tỉnh / Thành phố
+              span.fv-req *
+            .fv-select-wrap
+              select#venueCity.fv-input.fv-select-field(name="city" select_city=venues.city)
+                option(value="" ) -- Chọn tỉnh / thành phố --
+          .fv-field
+            label.fv-label(for="venueWard")
+              | Phường / Xã
+              span.fv-req *
+            .fv-select-wrap
+              select#venueWard.fv-input.fv-select-field(
+                name="district"
+                select_ward=venues.district
+                disabled
+              )
+                option(value="") -- Chọn phường / xã --
+        .fv-field
+            div(class="form-group" upload-image)
+                label.fv-label Ảnh cơ sở
+                    .fv-image-actions
+                    label.fv-btn-upload(for="venueImageInput")
+                        i.bi.bi-upload
+                        | Chọn ảnh
+                    input#venueImageInput.d-none(
+                        type="file"
+                        name="image_url"
+                        accept="image/*"
+                        upload-image-input
+                    )
+                    img(
+                        src= venues.image_url
+                        upload-image-preview
+                        class="image-preview"
+                        )
+        .fv-field-row
+          .fv-field
+            label.fv-label(for="openTime") Giờ mở cửa
+            input#openTime.fv-input(
+              type="time"
+              name="open_time"
+              value= venues.open_time
+            )
+          .fv-field
+            label.fv-label(for="closeTime") Giờ đóng cửa
+            input#closeTime.fv-input(
+              type="time"
+              name="close_time"
+                value= venues.close_time
+            )
+
+        .fv-field
+          label.fv-label(for="venueDescription") Mô tả
+          textarea#venueDescription.fv-input.fv-textarea(
+            name="description"
+            rows="3"
+            venues.description
+          ) #{venues.description}
+
+        .fv-field-row
+          .fv-field
+            label.fv-label(for="venueStatus") Trạng thái
+            .fv-select-wrap
+              select#venueStatus.fv-input.fv-select-field(name="status")
+                option(value="active" selected=(venues.status==="active")) Đang hoạt động
+                option(value="inactive" selected=(venues.status==="inactive")) Ngưng hoạt động
+          .fv-field.fv-field-check
+            label.fv-check
+              input#isFeatured(
+                type="checkbox"
+                name="is_featured"
+                value="true"
+                checked= venues.is_featured
+              )
+              span Đánh dấu nổi bật (Featured)
+
+        .fv-modal-foot
+          a.fv-btn-cancel(href=`${prefixAdmin}/facilities/venues`) Hủy
+          button.fv-btn-submit(type="submit") Lưu cơ sở
+
+block script
+  script(src="/admin/js/vn-address.js")
+  script(src="/js/script.js")
