@@ -17,4 +17,6 @@ router.get("/edit/:id", controller.edit);
 
 router.patch("/edit/:id", upload.single("image"), uploadCloud.upload, controller.editPatch);
 
+router.patch("/change-status/:id", controller.changeStatus);
+
 module.exports = router;

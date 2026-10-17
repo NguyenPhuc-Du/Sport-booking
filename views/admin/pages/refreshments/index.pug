@@ -1,10 +1,13 @@
 extends ../../layouts/default
+include ../../../mixins/alert.pug
 
 block head
   link(rel="stylesheet" href="/admin/css/refreshments.css")
   link(rel="stylesheet" href="/admin/css/refreshment-index.css")
 
 block main
+  +alert-success(2000)
+  +alert-error(5000)
   - const f = typeof filter !== "undefined" ? filter : {}
   - const pg = typeof pagination !== "undefined" ? pagination : { currentPage: 1, totalPages: 1 }
   - const list = typeof refreshments !== "undefined" ? refreshments : []
@@ -69,8 +72,9 @@ block main
             option(value=v._id selected=(String(f.venueId) === String(v._id)))= v.name
         .sz-search
           i.bi.bi-search
-          input.sz-input(type="search" name="keyword" placeholder="Tìm tên hoặc nhà cung cấp..." value=f.keyword)
+          input.sz-input(type="search" name="keyword" placeholder="Tìm tên sản phẩm..." value=f.keyword)
         button.sz-btn-outline(type="submit") Lọc
+        a.sz-btn-outline(href=`${prefixAdmin}/refreshments`) Xóa lọc
 
     if list.length
       .sz-table-wrap
@@ -109,9 +113,9 @@ block main
                     span.sz-tag.off ngừng bán
                 td
                   .sz-actions
-                    a.sz-icon-btn(href=`${prefixAdmin}/refreshments/edit/${item._id}` title="Chỉnh sửa")
+                    a.sz-icon-btn(href=`${prefixOwner}/refreshments/edit/${item._id}` title="Chỉnh sửa")
                       i.bi.bi-pencil-square
-                    form(method="POST" action=`${prefixAdmin}/refreshments/change-status/${item._id}`)
+                    form(method="POST" action=`${prefixOwner}/refreshments/change-status/${item._id}?_method=PATCH`)
                       input(type="hidden" name="status" value=(item.status === "active" ? "inactive" : "active"))
                       if item.status === "active"
                         button.sz-icon-btn.warn(type="submit" title="Ngừng bán")
@@ -119,9 +123,6 @@ block main
                       else
                         button.sz-icon-btn.ok(type="submit" title="Mở bán lại")
                           i.bi.bi-play-circle
-                    form(method="POST" action=`${prefixAdmin}/refreshments/delete/${item._id}` data-confirm=`Xoá "${item.name}"? Hành động này không thể hoàn tác.`)
-                      button.sz-icon-btn.danger(type="submit" title="Xoá")
-                        i.bi.bi-trash3
 
       if pg.totalPages > 1
         nav.sz-pagination(aria-label="Phân trang")
