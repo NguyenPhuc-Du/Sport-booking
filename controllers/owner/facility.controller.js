@@ -4,14 +4,14 @@ const CourtsType = require("../../models/court-types.model");
 const prefixAdmin = require("../../config/system");
 const Court = require("../../models/court.model");
 module.exports.index = async (req, res) => {
-  const court = await Courts.find({});
-  const courtType = await CourtsType.find({});
+  const courts = await Courts.find({})
+    .populate("court_type_id", "name icon_url description")
+    .lean();
   console.log("sssss");
   // console.log(courtType);
   res.render("owner/pages/facilities/index", {
     pageTitle: "Quản lý Cơ sở & Sân",
-    courts: court,
-    courtType: courtType,
+    courts: courts,
   });
 };
 module.exports.indexVenues = async (req, res) => {
