@@ -3,7 +3,6 @@ const auth = require("../../controllers/api/auth.controller");
 const profile = require("../../controllers/api/profile.controller");
 const facility = require("../../controllers/api/facility.controller");
 const booking = require("../../controllers/api/booking.controller");
-const payment = require("../../controllers/api/payment.controller");
 const requireAuth = require("../../middlewares/api/auth.middleware");
 
 const router = express.Router();

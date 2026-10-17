@@ -1,3 +1,4 @@
+const Venue = require("../../models/facilities.model");
 const User = require("../../models/user.model");
 
 module.exports.index = async (req, res) => {
@@ -7,10 +8,15 @@ module.exports.index = async (req, res) => {
     _id: ownerId,
   });
 
+  const venues = await Venue.find({
+    owner_id: ownerId
+  });
+
   res.render("admin/pages/owner-profile/index", {
     pageTitle: "Hồ sơ chủ sân",
     activeMenu: "profile",
     owner: owner,
+    venues
   });
 };
 
@@ -18,7 +24,7 @@ module.exports.update = async (req, res) => {
   try {
     const id = res.locals.user.id;
 
-    const { email, phone, fullName } = req.body;
+    const { email, phone, fullName, avatar_url } = req.body;
 
     await User.updateOne(
       {
@@ -28,6 +34,7 @@ module.exports.update = async (req, res) => {
         email,
         phone,
         fullName,
+        avatar_url
       },
     );
 
