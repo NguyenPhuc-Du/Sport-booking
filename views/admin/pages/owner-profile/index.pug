@@ -9,7 +9,7 @@ block main
     p.sz-subtitle Cập nhật ảnh đại diện và thông tin liên hệ hiển thị trên hệ thống SportZone.
 
   .sz-card.sz-panel
-    form(action=`${prefixOwner}/profile/update` method="POST")
+    form(action=`${prefixOwner}/profile/update` method="POST" enctype="multipart/form-data")
       .row.g-4
         .col-md-4
           .sz-avatar-editor
@@ -17,7 +17,7 @@ block main
             label.sz-btn.sz-btn-green.sz-btn-sm(for="ownerAvatarInput")
               i.bi.bi-camera
               | Đổi avatar
-            input#ownerAvatarInput.d-none(type="file" accept="image/*")
+            input#ownerAvatarInput.d-none(type="file" name="avatar_url" accept="image/*")
             input#ownerAvatarUrl(type="hidden" name="avatar_url" value=owner.avatar_url || "")
             p.sz-muted.mt-2.mb-0 Tham gia #{owner.createdAt ? new Date(owner.createdAt).toLocaleDateString("vi-VN") : ""}
         .col-md-8
