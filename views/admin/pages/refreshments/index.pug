@@ -1,0 +1,151 @@
+extends ../../layouts/default
+
+block head
+  link(rel="stylesheet" href="/admin/css/refreshments.css")
+  link(rel="stylesheet" href="/admin/css/refreshment-index.css")
+
+block main
+  - const f = typeof filter !== "undefined" ? filter : {}
+  - const pg = typeof pagination !== "undefined" ? pagination : { currentPage: 1, totalPages: 1 }
+  - const list = typeof refreshments !== "undefined" ? refreshments : []
+  - const LOW = 10
+  - const computed = { total: list.length, active: list.filter((item) => item.status === "active").length, inactive: list.filter((item) => item.status === "inactive").length, lowStock: list.filter((item) => Number(item.stock) <= LOW).length, stockValue: list.reduce((sum, item) => sum + (Number(item.price) || 0) * (Number(item.stock) || 0), 0) }
+  - const st = typeof stats !== "undefined" ? stats : computed
+  - const fmt = (n) => Number(n || 0).toLocaleString("vi-VN") + "đ"
+  - const qs = (o) => { const p = Object.assign({}, f, o); return Object.keys(p).filter(k => p[k]).map(k => k + "=" + encodeURIComponent(p[k])).join("&"); }
+
+  //- ===== TIÊU ĐỀ + HÀNH ĐỘNG =====
+  .d-flex.justify-content-between.align-items-start.flex-wrap.gap-3
+    div
+      h1.sz-page-title Dịch vụ giải khát
+      p.sz-page-sub Quản lý đồ uống, tồn kho và nhà cung cấp cho từng cơ sở.
+    a.sz-btn-primary(href=`${prefixAdmin}/refreshments/create`)
+      i.bi.bi-plus-lg
+      |  Thêm sản phẩm
+
+  //- ===== THẺ THỐNG KÊ =====
+  .row.g-3.mt-1
+    .col-6.col-xl-3
+      .sz-stat
+        .sz-stat-label TỔNG SẢN PHẨM
+        .sz-stat-value #{st.total} <small>món</small>
+        .sz-stat-note.green #{st.active} đang bán
+    .col-6.col-xl-3
+      .sz-stat
+        .sz-stat-label NGỪNG BÁN
+        .sz-stat-value #{st.inactive} <small>món</small>
+        .sz-stat-note.gray Đang bị ẩn khỏi đặt sân
+    .col-6.col-xl-3
+      .sz-stat
+        .sz-stat-label SẮP HẾT HÀNG
+        .sz-stat-value #{st.lowStock} <small>món</small>
+        .sz-stat-note.orange Tồn kho ≤ #{LOW} sản phẩm
+    .col-6.col-xl-3
+      .sz-stat
+        .sz-stat-label GIÁ TRỊ TỒN KHO
+        .sz-stat-value= fmt(st.stockValue)
+        .sz-stat-note.green Theo giá bán hiện tại
+
+  //- ===== TAB TRẠNG THÁI =====
+  nav.sz-tabs.mt-4(aria-label="Lọc trạng thái")
+    a.sz-tab(href=`?${qs({ status: "", page: "" })}` class=(!f.status ? "active" : undefined)) Tất cả (#{st.total})
+    a.sz-tab(href=`?${qs({ status: "active", page: "" })}` class=(f.status === "active" ? "active" : undefined)) Đang bán (#{st.active})
+    a.sz-tab(href=`?${qs({ status: "inactive", page: "" })}` class=(f.status === "inactive" ? "active" : undefined)) Ngừng bán (#{st.inactive})
+    a.sz-tab(href=`?${qs({ status: "low", page: "" })}` class=(f.status === "low" ? "active" : undefined)) Sắp hết hàng (#{st.lowStock})
+
+  //- ===== CARD DANH SÁCH =====
+  .sz-card.sz-list-card.mt-3
+    .d-flex.justify-content-between.align-items-end.flex-wrap.gap-3.mb-3
+      div
+        h2.sz-card-title Danh sách sản phẩm
+        p.sz-card-sub Chỉnh sửa, đổi trạng thái bán hoặc xoá từng sản phẩm
+
+      form.sz-filter(method="GET" action=`${prefixAdmin}/refreshments`)
+        if f.status
+          input(type="hidden" name="status" value=f.status)
+        select.sz-input.sz-filter-select(name="venueId" onchange="this.form.submit()")
+          option(value="") Tất cả cơ sở
+          each v in (typeof venues !== "undefined" ? venues : [])
+            option(value=v._id selected=(String(f.venueId) === String(v._id)))= v.name
+        .sz-search
+          i.bi.bi-search
+          input.sz-input(type="search" name="keyword" placeholder="Tìm tên hoặc nhà cung cấp..." value=f.keyword)
+        button.sz-btn-outline(type="submit") Lọc
+
+    if list.length
+      .sz-table-wrap
+        table.sz-table
+          thead
+            tr
+              th SẢN PHẨM
+              th CƠ SỞ
+              th NHÀ CUNG CẤP
+              th GIÁ BÁN
+              th TỒN KHO
+              th TRẠNG THÁI
+              th.text-end THAO TÁC
+          tbody
+            each item in refreshments
+              tr(class=(item.status === "inactive" ? "is-off" : undefined))
+                td
+                  .sz-product
+                    img.sz-product-img(src=item.image alt=item.name loading="lazy" onerror="this.style.visibility='hidden'")
+                    .sz-product-name= item.name
+                td.sz-muted= item.venueId ? item.venueId.name : "—"
+                td.sz-muted= item.supplier
+                td
+                  strong.sz-price= fmt(item.price)
+                td
+                  if item.stock === 0
+                    span.sz-stock.out Hết hàng
+                  else if item.stock <= LOW
+                    span.sz-stock.low #{item.stock} · Sắp hết
+                  else
+                    span.sz-stock.ok= item.stock
+                td
+                  if item.status === "active"
+                    span.sz-tag đang bán
+                  else
+                    span.sz-tag.off ngừng bán
+                td
+                  .sz-actions
+                    a.sz-icon-btn(href=`${prefixAdmin}/refreshments/edit/${item._id}` title="Chỉnh sửa")
+                      i.bi.bi-pencil-square
+                    form(method="POST" action=`${prefixAdmin}/refreshments/change-status/${item._id}`)
+                      input(type="hidden" name="status" value=(item.status === "active" ? "inactive" : "active"))
+                      if item.status === "active"
+                        button.sz-icon-btn.warn(type="submit" title="Ngừng bán")
+                          i.bi.bi-pause-circle
+                      else
+                        button.sz-icon-btn.ok(type="submit" title="Mở bán lại")
+                          i.bi.bi-play-circle
+                    form(method="POST" action=`${prefixAdmin}/refreshments/delete/${item._id}` data-confirm=`Xoá "${item.name}"? Hành động này không thể hoàn tác.`)
+                      button.sz-icon-btn.danger(type="submit" title="Xoá")
+                        i.bi.bi-trash3
+
+      if pg.totalPages > 1
+        nav.sz-pagination(aria-label="Phân trang")
+          if pg.currentPage > 1
+            a.sz-page(href=`?${qs({ page: pg.currentPage - 1 })}`)
+              i.bi.bi-chevron-left
+          - for (let i = 1; i <= pg.totalPages; i++)
+            a.sz-page(href=`?${qs({ page: i })}` class=(i === pg.currentPage ? "active" : undefined))= i
+          if pg.currentPage < pg.totalPages
+            a.sz-page(href=`?${qs({ page: pg.currentPage + 1 })}`)
+              i.bi.bi-chevron-right
+    else
+      .sz-empty
+        i.bi.bi-cup-straw
+        h3 Chưa có sản phẩm nào
+        p Hãy thêm đồ uống đầu tiên để khách có thể đặt kèm khi đặt sân.
+        a.sz-btn-primary(href=`${prefixAdmin}/refreshments/create`)
+          i.bi.bi-plus-lg
+          |  Thêm sản phẩm
+
+block script
+  script.
+    document.querySelectorAll("form[data-confirm]").forEach(function (form) {
+      form.addEventListener("submit", function (e) {
+        if (!confirm(form.dataset.confirm)) e.preventDefault();
+      });
+    });
