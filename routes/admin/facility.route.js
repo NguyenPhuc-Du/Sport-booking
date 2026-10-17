@@ -8,6 +8,7 @@ const upload = multer();
 router.get("/", controller.index);
 router.get("/venues", controller.indexVenues);
 router.get("/venues/create", controller.createVenues);
+router.get("/venues/edit/:id", controller.editVenues);
 router.delete("/venues/delete/:id", controller.deleteVenues);
 router.post(
   "/venues/create",
@@ -15,6 +16,11 @@ router.post(
   uploadCloud.upload,
   controller.createVenuesPost,
 );
-
+router.post(
+  "/venues/edit/:id",
+  upload.single("image_url"),
+  uploadCloud.upload,
+  controller.editVenuesPost,
+);
 router.use("/price-rules", priceRuleRoute);
 module.exports = router;

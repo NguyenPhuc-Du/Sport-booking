@@ -90,3 +90,18 @@ module.exports.deleteVenues = async (req, res) => {
     res.redirect(req.get("Referer"));
   }
 };
+module.exports.editVenues = async (req, res) => {
+  const userId = res.locals.user.id;
+  const venues = await Venues.findById(req.params.id);
+  res.render("admin/pages/facilities/editVenues", {
+    pageTitle: "Cơ sở",
+    userId: userId,
+    venues: venues,
+  });
+};
+module.exports.editVenuesPost = async (req, res) => {
+  const id = req.params.id;
+  await Venues.updateOne({ _id: id }, req.body);
+  req.flash("success", "Thay đổi dữ liệu cơ sở thành công");
+  res.redirect(req.get("Referer"));
+};
