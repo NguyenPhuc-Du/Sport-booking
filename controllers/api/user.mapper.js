@@ -1,5 +1,3 @@
-const store = require("../../services/user-app.store");
-
 function toUser(user) {
   return {
     id: String(user._id),
@@ -8,7 +6,7 @@ function toUser(user) {
     phone: user.phone,
     avatarUrl: user.avatar_url || null,
     status: user.status,
-    walletBalance: store.balanceOf(user._id),
+    walletBalance: 0,
   };
 }
 

@@ -11,12 +11,6 @@ const notifications = [
     text: "Đặt sân, theo dõi lịch và nạp ví ngay trên ứng dụng.",
     date: "14/10/2026",
   },
-  {
-    type: "promo",
-    title: "Ưu đãi giờ vàng",
-    text: "Dùng mã PEAKVIP10 giảm 10% cho các slot buổi tối.",
-    date: "14/10/2026",
-  },
 ];
 
 const reviews = [
