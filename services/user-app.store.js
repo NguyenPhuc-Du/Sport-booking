@@ -52,6 +52,10 @@ function bookingCounts(userId) {
   };
 }
 
+function findBookingByCode(code) {
+  return bookings.find((item) => item.code === code) || null;
+}
+
 module.exports = {
   balanceOf,
   setBalance,
@@ -60,4 +64,5 @@ module.exports = {
   listBookings,
   findBooking,
   bookingCounts,
+  findBookingByCode,
 };
