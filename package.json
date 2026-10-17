@@ -23,7 +23,9 @@
     "multer": "^2.4.0",
     "nodemailer": "^10.1.1",
     "pug": "^3.0.4",
-    "streamifier": "^0.1.1"
+    "qs": "^6.16.1",
+    "streamifier": "^0.1.1",
+    "vnpay": "^2.5.0"
   },
   "devDependencies": {
     "nodemon": "^1.14.10"
