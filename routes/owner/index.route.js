@@ -7,7 +7,6 @@ const bookingRoutes = require("../admin/booking.route");
 const financeRoutes = require("../admin/finance.route");
 const ownerProfileRoutes = require("../admin/owner-profile.route");
 const refreshmentRoutes = require("../admin/refreshment.route");
-
 const authMiddleware = require("../../middlewares/auth.middleware");
 
 module.exports = (app) => {
