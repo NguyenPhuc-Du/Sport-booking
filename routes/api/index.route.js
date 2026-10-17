@@ -3,7 +3,6 @@ const auth = require("../../controllers/api/auth.controller");
 const profile = require("../../controllers/api/profile.controller");
 const catalog = require("../../controllers/api/catalog.controller");
 const booking = require("../../controllers/api/booking.controller");
-const wallet = require("../../controllers/api/wallet.controller");
 const requireAuth = require("../../middlewares/api/auth.middleware");
 
 const router = express.Router();
@@ -24,8 +23,5 @@ router.post("/bookings/:code/cancel", requireAuth, booking.cancel);
 
 router.get("/profile", requireAuth, profile.index);
 router.put("/profile", requireAuth, profile.update);
-
-router.get("/wallet", requireAuth, wallet.index);
-router.post("/wallet/top-up", requireAuth, wallet.topUp);
 
 module.exports = router;
