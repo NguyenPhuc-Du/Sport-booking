@@ -1,13 +1,16 @@
 const systemConfig = require("../../config/system");
 const localsOwner = require("../../middlewares/owner/locals.middleware");
 
-const dashboardRoutes = require("../admin/dashboard.route");
-const facilityRoutes = require("../admin/facility.route");
-const bookingRoutes = require("../admin/booking.route");
-const financeRoutes = require("../admin/finance.route");
-const ownerProfileRoutes = require("../admin/owner-profile.route");
-const refreshmentRoutes = require("../admin/refreshment.route");
+const dashboardRoutes = require("./dashboard.route");
+const facilityRoutes = require("./facility.route");
+const bookingRoutes = require("./booking.route");
+const financeRoutes = require("./finance.route");
+const ownerProfileRoutes = require("./owner-profile.route");
+const refreshmentRoutes = require("./refreshment.route");
+
 const authMiddleware = require("../../middlewares/auth.middleware");
+const authRoutes = require("../owner/auth.route");
+
 
 module.exports = (app) => {
   const PATH = systemConfig.prefixOwner;
@@ -32,6 +35,7 @@ module.exports = (app) => {
   app.use(PATH + "/finance", financeRoutes);
   app.use(PATH + "/profile", ownerProfileRoutes);
   app.use(PATH + "/refreshments", refreshmentRoutes);
+  app.use("/auth", authRoutes);
 
   // Giữ tương thích link cũ của chủ sân (không đụng /admin/dashboard của platform)
   app.get("/admin/facilities", (req, res) =>
