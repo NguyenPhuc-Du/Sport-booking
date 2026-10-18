@@ -1,0 +1,458 @@
+/* ===== Price Rules page — SportZone (polished) ===== */
+
+/* ---------- Tokens ---------- */
+.fv-page {
+    --pr-green-50: #ecfdf5;
+    --pr-green-100: #d1fae5;
+    --pr-green-500: #10b981;
+    --pr-green-600: #059669;
+    --pr-green-700: #047857;
+    --pr-ink: #0f172a;
+    --pr-text: #334155;
+    --pr-muted: #94a3b8;
+    --pr-line: #e8eef3;
+    --pr-soft: #f8fafc;
+}
+
+/* ---------- Card ---------- */
+.sz-card {
+    position: relative;
+    background: #fff;
+    border: 1px solid var(--pr-line);
+    border-radius: 24px;
+    padding: 26px;
+    margin-top: 20px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 16px 40px rgba(15, 23, 42, .05);
+}
+
+.sz-card::before {
+    content: "";
+    position: absolute;
+    left: 26px;
+    right: 26px;
+    top: 0;
+    height: 3px;
+    border-radius: 0 0 6px 6px;
+    background: linear-gradient(90deg, var(--pr-green-500), #34d399 60%, transparent);
+}
+
+.sz-card-head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.sz-card-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: var(--pr-green-600);
+    background: linear-gradient(135deg, var(--pr-green-50), var(--pr-green-100));
+    flex-shrink: 0;
+}
+
+.sz-card-title {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--pr-ink);
+    margin: 0;
+}
+
+.sz-card-sub {
+    font-size: 13px;
+    color: var(--pr-muted);
+    margin: 2px 0 0;
+}
+
+/* ---------- Buttons ---------- */
+.sz-btn-green {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: #fff;
+    font-weight: 700;
+    border: 0;
+    border-radius: 12px;
+    padding: 10px 18px;
+    box-shadow: 0 8px 18px rgba(5, 150, 105, .25);
+    transition: transform .15s, box-shadow .15s, filter .15s;
+}
+
+.sz-btn-green:hover {
+    color: #fff;
+    filter: brightness(1.05);
+    transform: translateY(-1px);
+    box-shadow: 0 12px 22px rgba(5, 150, 105, .3);
+}
+
+.sz-btn-dark {
+    background: var(--pr-ink);
+    color: #fff;
+    font-weight: 700;
+    border: 0;
+    border-radius: 12px;
+    padding: 10px 16px;
+    transition: background .15s, transform .15s;
+}
+
+.sz-btn-dark:hover {
+    color: #fff;
+    background: #1e293b;
+    transform: translateY(-1px);
+}
+
+.sz-btn-outline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    color: #475569;
+    background: #fff;
+    transition: all .15s;
+}
+
+.sz-btn-outline:hover {
+    border-color: #fca5a5;
+    color: #dc2626;
+    background: #fef2f2;
+}
+
+/* ---------- Filter panel ---------- */
+.sz-filter {
+    background: var(--pr-soft);
+    border: 1px solid var(--pr-line);
+    border-radius: 16px;
+    padding: 12px;
+    margin: 20px 0 18px;
+}
+
+.sz-search {
+    position: relative;
+}
+
+.sz-search i {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--pr-muted);
+    pointer-events: none;
+}
+
+.sz-search .form-control {
+    padding-left: 38px;
+}
+
+.sz-card .form-control,
+.sz-card .form-select {
+    border-radius: 12px;
+    border-color: #e2e8f0;
+    font-size: 14px;
+    background-color: #fff;
+    transition: border-color .15s, box-shadow .15s;
+}
+
+.sz-card .form-control:focus,
+.sz-card .form-select:focus {
+    border-color: var(--pr-green-500);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, .15);
+}
+
+/* ---------- Table ---------- */
+.sz-table {
+    margin: 0;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.sz-table thead th {
+    background: var(--pr-soft);
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .07em;
+    border: 0;
+    padding: 14px 16px;
+    white-space: nowrap;
+}
+
+.sz-table thead th:first-child {
+    border-radius: 12px 0 0 12px;
+}
+
+.sz-table thead th:last-child {
+    border-radius: 0 12px 12px 0;
+}
+
+.sz-table tbody td {
+    padding: 16px;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 14px;
+    color: var(--pr-text);
+    background: transparent;
+    transition: background .15s;
+}
+
+.sz-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.sz-table tbody tr:hover td {
+    background: #f7fcf9;
+}
+
+/* Hàng giờ vàng: vạch nhấn bên trái + nền ấm nhẹ */
+.sz-table tbody tr.sz-row-gold td {
+    background: linear-gradient(90deg, rgba(254, 243, 199, .35), transparent 40%);
+}
+
+.sz-table tbody tr.sz-row-gold td:first-child {
+    box-shadow: inset 3px 0 0 #f59e0b;
+}
+
+.sz-rule-name {
+    font-weight: 700;
+    color: var(--pr-ink);
+}
+
+/* ---------- Cells ---------- */
+.sz-venue {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    color: var(--pr-text);
+}
+
+.sz-venue i {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: var(--pr-green-600);
+    background: var(--pr-green-50);
+}
+
+.sz-court-chip {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #475569;
+    background: #f1f5f9;
+    white-space: nowrap;
+}
+
+.sz-time {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    color: #475569;
+    white-space: nowrap;
+}
+
+.sz-time i {
+    color: var(--pr-muted);
+}
+
+.sz-price {
+    color: var(--pr-green-600);
+    font-size: 15px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.sz-price-unit {
+    margin-left: 2px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--pr-muted);
+}
+
+/* Tag giờ vàng */
+.sz-gold-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    margin-left: 8px;
+    padding: 2px 9px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    color: #b45309;
+    font-size: 11px;
+    font-weight: 700;
+    vertical-align: middle;
+}
+
+/* Loại ngày */
+.sz-daytype {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.sz-daytype-weekday {
+    background: #e0f2fe;
+    color: #0369a1;
+}
+
+.sz-daytype-weekend {
+    background: #ede9fe;
+    color: #6d28d9;
+}
+
+.sz-daytype-all {
+    background: #f1f5f9;
+    color: #475569;
+}
+
+/* Badge trạng thái (có chấm màu) */
+.sz-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.sz-badge::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.sz-badge-active {
+    background: var(--pr-green-100);
+    color: var(--pr-green-700);
+}
+
+.sz-badge-inactive {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+/* Nút icon hành động */
+.sz-icon-btn {
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #e2e8f0;
+    background: #fff;
+    border-radius: 10px;
+    color: #475569;
+    cursor: pointer;
+    transition: all .15s;
+}
+
+.sz-icon-btn:hover {
+    border-color: var(--pr-green-500);
+    color: var(--pr-green-600);
+    background: var(--pr-green-50);
+    transform: translateY(-1px);
+}
+
+.sz-icon-btn.danger:hover {
+    border-color: #fca5a5;
+    color: #dc2626;
+    background: #fef2f2;
+}
+
+/* Empty state */
+.sz-empty {
+    padding: 36px 0;
+    color: var(--pr-muted);
+}
+
+.sz-empty i {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 40px;
+    color: #cbd5e1;
+}
+
+/* Footer bảng */
+.sz-table-foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px dashed var(--pr-line);
+    font-size: 13px;
+    color: var(--pr-muted);
+}
+
+.sz-table-foot strong {
+    color: var(--pr-ink);
+}
+
+/* ---------- Pagination ---------- */
+.sz-pagination .page-link {
+    border-radius: 10px !important;
+    margin: 0 3px;
+    border-color: #e2e8f0;
+    color: #475569;
+    font-weight: 600;
+}
+
+.sz-pagination .page-link:hover {
+    background: var(--pr-green-50);
+    color: var(--pr-green-600);
+}
+
+.sz-pagination .page-item.active .page-link {
+    background: var(--pr-green-600);
+    border-color: var(--pr-green-600);
+    color: #fff;
+    box-shadow: 0 6px 14px rgba(5, 150, 105, .25);
+}
+
+/* ---------- Utilities (giữ lại cho trang khác dùng chung) ---------- */
+.text-green {
+    color: var(--pr-green-500);
+}
+
+.text-orange {
+    color: #ea580c;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 768px) {
+    .sz-card {
+        padding: 18px;
+        border-radius: 20px;
+    }
+
+    .sz-card::before {
+        left: 18px;
+        right: 18px;
+    }
+
+    .sz-table tbody td {
+        padding: 12px;
+    }
+}

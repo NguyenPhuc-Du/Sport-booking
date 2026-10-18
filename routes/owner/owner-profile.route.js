@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const controller = require("../../controllers/owner/owner-profile.controller");
-const validate = require("../../validates/admin/owner-profile.validate");
+const validate = require("../../validates/owner/owner-profile.validate");
 
 const uploadCloud = require("../../middlewares/owner/uploadCloud.middleware");
 const multer = require("multer");

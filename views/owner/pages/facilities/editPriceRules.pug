@@ -1,0 +1,94 @@
+extends ../../layouts/default.pug
+include ../../../mixins/alert.pug
+
+block main
+  +alert-success(3000)
+  +alert-error(5000)
+  link(rel="stylesheet", href="/admin/css/price-rules.css")
+  .pr-wrap
+    a.pr-back(href=`${prefixOwner}/facilities/price-rules`) ← Quay lại Bảng giá & Giờ vàng
+    .pr-card
+      h1 Cấu hình Quy tắc Giá (Price Rule)
+      p.pr-sub Hệ thống sẽ tự động nhân tỷ lệ giá khi khách chọn slot trùng khung giờ này.
+
+      if error
+        .pr-error= error
+
+      form(method="POST" action=`${prefixOwner}/facilities/price-rules/edit/${priceRule._id}`)
+        .pr-grid
+          .pr-full
+            label(for="name") Tên khung giá *
+            input#name(type="text" name="name" required placeholder="VD: Giờ vàng tối" value=priceRule.name)
+
+          div
+            label(for="venue") Cơ sở *
+            select#venue(name="venueId" required)
+              option(value="") -- Chọn cơ sở --
+              each v in venues
+                option(value=v._id selected=(String(v._id) === String(venueId)))= v.name
+
+          div
+            label(for="court") Sân con (tương ứng) *
+            select#court(name="court")
+              option(value="") Tất cả sân của cơ sở
+              each c in courts
+                option(value=c._id data-venue=c.venueId selected=(String(priceRule.court) === String(c._id)))= c.name
+
+          div
+            label(for="dayType") Áp dụng ngày *
+            select#dayType(name="dayType" required)
+              option(value="weekday" selected=(priceRule.dayType === "weekday")) Thứ 2 - Thứ 6
+              option(value="weekend" selected=(priceRule.dayType === "weekend")) Thứ 7 & Chủ Nhật
+              option(value="all" selected=(priceRule.dayType === "all")) Tất cả các ngày
+
+          div
+            label(for="pricePerHour") Giá thuê mỗi giờ (VNĐ) *
+            .pr-price
+              input#pricePerHour(type="number" name="pricePerHour" min="0" step="1000" required value=priceRule.pricePerHour placeholder="190000")
+              span đ
+
+          div
+            label(for="timeStart") Từ giờ *
+            input#timeStart(type="time" name="timeStart" required value=priceRule.timeStart)
+
+          div
+            label(for="timeEnd") Đến giờ *
+            input#timeEnd(type="time" name="timeEnd" required value=priceRule.timeEnd)
+
+        .pr-actions
+          a.pr-btn.pr-btn-ghost(href=`${prefixOwner}/facilities/price-rules`) Hủy
+          button.pr-btn.pr-btn-main(type="submit") Lưu khung giá
+
+  script.
+    const venue = document.getElementById('venue');
+    const court = document.getElementById('court');
+    const allCourts = [...court.options].filter(o => o.value).map(o => ({
+      value: o.value,
+      venueId: o.dataset.venue,
+      name: o.textContent
+    }));
+
+    const filter = () => {
+      const venueId = venue.value;
+      const current = court.value;
+      court.replaceChildren();
+      const blank = document.createElement('option');
+      blank.value = '';
+      blank.textContent = 'Tất cả sân của cơ sở';
+      court.appendChild(blank);
+      allCourts.forEach(item => {
+        if (item.venueId !== venueId) return;
+        const option = document.createElement('option');
+        option.value = item.value;
+        option.dataset.venue = item.venueId;
+        option.textContent = item.name;
+        option.selected = item.value === current;
+        court.appendChild(option);
+      });
+    };
+
+    venue.addEventListener('change', () => {
+      court.value = '';
+      filter();
+    });
+    filter();
