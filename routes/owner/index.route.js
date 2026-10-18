@@ -11,7 +11,6 @@ const refreshmentRoutes = require("./refreshment.route");
 const authMiddleware = require("../../middlewares/auth.middleware");
 const authRoutes = require("../owner/auth.route");
 
-
 module.exports = (app) => {
   const PATH = systemConfig.prefixOwner;
 

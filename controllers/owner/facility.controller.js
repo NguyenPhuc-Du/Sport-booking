@@ -1,60 +1,17 @@
 const Venues = require("../../models/facilities.model");
+const Courts = require("../../models/court.model");
+const CourtsType = require("../../models/court-types.model");
 const prefixAdmin = require("../../config/system");
+const Court = require("../../models/court.model");
 module.exports.index = async (req, res) => {
+  const courts = await Courts.find({})
+    .populate("court_type_id", "name icon_url description")
+    .lean();
+  console.log("sssss");
+  // console.log(courtType);
   res.render("owner/pages/facilities/index", {
     pageTitle: "Quản lý Cơ sở & Sân",
-    activeMenu: "facilities",
-    activeTab: "courts",
-    courts: [
-      {
-        name: "Sân Cầu Lông 01 (VIP)",
-        sport: "badminton",
-        surface: "PVC tiêu chuẩn BWF",
-        type: "Trong nhà",
-        capacity: "4 người",
-        status: "active",
-      },
-      {
-        name: "Sân Cầu Lông 02",
-        sport: "badminton",
-        surface: "PVC tiêu chuẩn",
-        type: "Trong nhà",
-        capacity: "4 người",
-        status: "active",
-      },
-      {
-        name: "Sân Pickleball A",
-        sport: "pickleball",
-        surface: "Acrylic ngoài trời",
-        type: "Ngoài trời",
-        capacity: "4 người",
-        status: "active",
-      },
-      {
-        name: "Sân Tennis 01",
-        sport: "tennis",
-        surface: "Hard court",
-        type: "Ngoài trời",
-        capacity: "4 người",
-        status: "active",
-      },
-      {
-        name: "Sân Tennis 02",
-        sport: "tennis",
-        surface: "Hard court có mái",
-        type: "Bán trong nhà",
-        capacity: "4 người",
-        status: "maintenance",
-      },
-      {
-        name: "Sân Bóng Đá Mini 1",
-        sport: "football",
-        surface: "Cỏ nhân tạo 5v5",
-        type: "Ngoài trời",
-        capacity: "10 người",
-        status: "active",
-      },
-    ],
+    courts: courts,
   });
 };
 module.exports.indexVenues = async (req, res) => {
@@ -89,4 +46,19 @@ module.exports.deleteVenues = async (req, res) => {
     req.flash("success", "Bạn đã xoá cơ sở  thất bại");
     res.redirect(req.get("Referer"));
   }
+};
+module.exports.editVenues = async (req, res) => {
+  const userId = res.locals.user.id;
+  const venues = await Venues.findById(req.params.id);
+  res.render("owner/pages/facilities/editVenues", {
+    pageTitle: "Cơ sở",
+    userId: userId,
+    venues: venues,
+  });
+};
+module.exports.editVenuesPost = async (req, res) => {
+  const id = req.params.id;
+  await Venues.updateOne({ _id: id }, req.body);
+  req.flash("success", "Thay đổi dữ liệu cơ sở thành công");
+  res.redirect(req.get("Referer"));
 };
