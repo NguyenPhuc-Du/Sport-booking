@@ -3,7 +3,7 @@ extends ../../layouts/default.pug
 block main
   .d-flex.justify-content-between.align-items-start.flex-wrap.gap-3.mb-4
     div
-      h1.sz-title Quản lý Cơ sở & Cụm sân
+      h1.sz-title #{pageTitle}
       p.sz-subtitle Cấu hình sân con, bảng giá giờ vàng và lịch bảo trì cho cụm sân đang vận hành.
     .d-flex.gap-2.flex-wrap
       select.sz-select
@@ -14,7 +14,7 @@ block main
         | Thêm cơ sở
 
   .sz-tabs.mb-4#facilityTabs
-    button.sz-tab.active(type="button" data-tab="courts") Sân con (#{courts.length})
+    button.sz-tab.active(type="button" data-tab="courts") Sân con (5)
     button.sz-tab(type="button" data-tab="pricing") Bảng giá & Giờ vàng (5)
     button.sz-tab(type="button" data-tab="locks") Khóa slot bảo trì (2)
     a.sz-tab(href=`${prefixAdmin}/facilities/venues`) Danh sách cơ sở (5)
@@ -35,14 +35,7 @@ block main
             .d-flex.justify-content-between.align-items-start.mb-2
               .d-flex.align-items-center.gap-2
                 span.sz-court-icon
-                  if court.sport === "badminton"
-                    i.bi.bi-trophy
-                  else if court.sport === "pickleball"
-                    i.bi.bi-circle-half
-                  else if court.sport === "tennis"
-                    i.bi.bi-record-circle
-                  else
-                    i.bi.bi-dribbble
+                  img(src= court.court_type_id.icon_url)
                 strong.sz-court-name= court.name
               if court.status === "active"
                 span.sz-badge.sz-badge-ok HOẠT ĐỘNG
@@ -54,10 +47,7 @@ block main
                 strong= court.surface
               li
                 span Loại hình
-                strong= court.type
-              li
-                span Sức chứa tiêu chuẩn
-                strong= court.capacity
+                strong  #{court.court_type_id.name}
             .sz-court-actions
               if court.status === "active"
                 button.sz-btn.sz-btn-outline-danger.sz-btn-sm(type="button" data-action="maintain")

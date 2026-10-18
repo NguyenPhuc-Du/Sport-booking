@@ -21,7 +21,11 @@
     const items = root.querySelectorAll(itemSel);
     items.forEach((btn) => {
       btn.addEventListener("click", (e) => {
-        if (btn.tagName === "A" && btn.getAttribute("href") && btn.getAttribute("href") !== "#") {
+        if (
+          btn.tagName === "A" &&
+          btn.getAttribute("href") &&
+          btn.getAttribute("href") !== "#"
+        ) {
           return;
         }
         e.preventDefault();
@@ -42,7 +46,7 @@
           <div class="sz-bar" style="height:${(d.value / max) * 100}%"></div>
         </div>
         <span class="sz-bar-day">${d.day}</span>
-      </div>`
+      </div>`,
       )
       .join("");
   }
@@ -62,7 +66,7 @@
         <div class="sz-peak-track">
           <div class="sz-peak-fill" style="width:${p.pct}%;background:${p.color}"></div>
         </div>
-      </div>`
+      </div>`,
       )
       .join("");
   }
@@ -73,28 +77,15 @@
   activateGroup(document.getElementById("facilityTabs"), ".sz-tab");
   activateGroup(document.getElementById("financeTabs"), ".sz-tab");
 
-  document.querySelectorAll("[data-action='maintain']").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const card = btn.closest(".sz-court-card");
-      if (!card) return;
-      card.classList.add("is-maint");
-      const badge = card.querySelector(".sz-badge");
-      if (badge) {
-        badge.className = "sz-badge sz-badge-danger";
-        badge.textContent = "ĐANG BẢO TRÌ";
-      }
-      btn.outerHTML =
-        '<button class="sz-btn sz-btn-green sz-btn-sm" type="button" data-action="activate"><i class="bi bi-check2-circle"></i> Mở lại sân</button>';
-    });
-  });
-
   const userSearch = document.getElementById("userSearch");
   const usersTable = document.getElementById("usersTable");
   if (userSearch && usersTable) {
     userSearch.addEventListener("input", () => {
       const q = userSearch.value.trim().toLowerCase();
       usersTable.querySelectorAll("tbody tr").forEach((row) => {
-        row.style.display = row.textContent.toLowerCase().includes(q) ? "" : "none";
+        row.style.display = row.textContent.toLowerCase().includes(q)
+          ? ""
+          : "none";
       });
     });
   }
