@@ -47,7 +47,7 @@ fun StatusBadge(
         "cancelled", "rejected" -> {
             MaterialTheme.colorScheme.errorContainer to MaterialTheme.colorScheme.onErrorContainer
         }
-        "pending", "waiting" -> {
+        "pending", "pending_payment", "waiting" -> {
             MaterialTheme.colorScheme.tertiaryContainer to MaterialTheme.colorScheme.onTertiaryContainer
         }
         else -> {
@@ -100,7 +100,8 @@ fun RatingBar(
             modifier = Modifier.size(16.dp),
         )
         Text(
-            text = stringResource(R.string.label_rating_format, rating, reviewsCount),
+            text = if (reviewsCount > 0) stringResource(R.string.label_rating_format, rating, reviewsCount)
+            else stringResource(R.string.label_no_reviews),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

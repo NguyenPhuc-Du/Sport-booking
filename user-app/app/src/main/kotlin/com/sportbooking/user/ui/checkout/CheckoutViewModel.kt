@@ -25,7 +25,7 @@ data class CheckoutUiState(
     val quote: BookingQuote? = null,
     val payments: List<PaymentMethod> = emptyList(),
     val vouchers: List<Voucher> = emptyList(),
-    val paymentMethod: String = "wallet",
+    val paymentMethod: String = "vnpay",
     val voucherInput: String = "",
     val appliedVoucher: String? = null,
     val submitting: Boolean = false,
@@ -46,14 +46,14 @@ class CheckoutViewModel @Inject constructor(
 
     private val _state = MutableStateFlow(CheckoutUiState())
     val state = _state.asStateFlow()
-    private val _booked = MutableSharedFlow<Long>()
-    val booked = _booked.asSharedFlow()
+    private val _paymentUrl = MutableSharedFlow<String>()
+    val paymentUrl = _paymentUrl.asSharedFlow()
 
     init {
         viewModelScope.launch {
             when (val options = getOptions()) {
                 is DomainResult.Success -> {
-                    val method = options.data.payments.firstOrNull()?.id ?: "wallet"
+                    val method = options.data.payments.firstOrNull()?.id ?: "vnpay"
                     _state.update {
                         it.copy(payments = options.data.payments, vouchers = options.data.vouchers, paymentMethod = method)
                     }
@@ -88,8 +88,13 @@ class CheckoutViewModel @Inject constructor(
             _state.update { it.copy(submitting = true, error = null) }
             when (val result = createBooking(draft(current.paymentMethod, current.appliedVoucher))) {
                 is DomainResult.Success -> {
-                    _state.update { it.copy(submitting = false) }
-                    _booked.emit(result.data.walletBalance)
+                    val url = result.data.paymentUrl
+                    if (url.isNullOrBlank()) {
+                        _state.update { it.copy(submitting = false, error = "Không tạo được link thanh toán") }
+                    } else {
+                        _state.update { it.copy(submitting = false) }
+                        _paymentUrl.emit(url)
+                    }
                 }
                 is DomainResult.Failure -> _state.update { it.copy(submitting = false, error = result.message) }
             }

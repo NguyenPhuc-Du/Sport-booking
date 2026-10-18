@@ -4,7 +4,6 @@
     <!-- Navigation Tabs -->
     <string name="tab_home">Sân</string>
     <string name="tab_bookings">Lịch</string>
-    <string name="tab_wallet">Ví</string>
     <string name="tab_profile">Tôi</string>
 
     <!-- Common / Actions -->
@@ -18,6 +17,7 @@
     <string name="label_tomorrow">Ngày mai</string>
     <string name="label_peak_hour">Giờ vàng</string>
     <string name="label_rating_format">%1$.1f (%2$d đánh giá)</string>
+    <string name="label_no_reviews">Chưa có đánh giá</string>
 
     <!-- Home Screen -->
     <string name="home_greeting">Chào bạn 👋</string>
@@ -54,7 +54,6 @@
     <string name="checkout_court_price">Giá sân</string>
     <string name="checkout_discount">Giảm giá</string>
     <string name="checkout_total">Tổng thanh toán</string>
-    <string name="checkout_wallet_balance">Số dư ví SportZone: %1$s</string>
     <string name="checkout_voucher_section">Mã giảm giá</string>
     <string name="checkout_voucher_hint">Nhập mã ưu đãi</string>
     <string name="checkout_payment_section">Phương thức thanh toán</string>
@@ -65,6 +64,7 @@
     <!-- Bookings Screen -->
     <string name="bookings_title">Lịch đặt</string>
     <string name="bookings_tab_all">Tất cả (%1$d)</string>
+    <string name="bookings_tab_pending_payment">Chờ thanh toán (%1$d)</string>
     <string name="bookings_tab_upcoming">Sắp diễn ra (%1$d)</string>
     <string name="bookings_tab_completed">Hoàn thành (%1$d)</string>
     <string name="bookings_tab_cancelled">Đã hủy (%1$d)</string>
@@ -77,7 +77,6 @@
 
     <!-- Profile Screen -->
     <string name="profile_title">Tài khoản</string>
-    <string name="profile_wallet_balance">Ví: %1$s</string>
     <string name="profile_full_name">Họ và tên</string>
     <string name="profile_phone">Số điện thoại</string>
     <string name="profile_email">Email</string>
@@ -86,14 +85,6 @@
     <string name="profile_notifications">Thông báo</string>
     <string name="profile_reviews">Đánh giá của tôi</string>
     <string name="profile_logout_btn">Đăng xuất</string>
-
-    <!-- Wallet Screen -->
-    <string name="wallet_title">Ví SportZone</string>
-    <string name="wallet_balance_label">Số dư hiện tại</string>
-    <string name="wallet_select_amount">Chọn mệnh giá</string>
-    <string name="wallet_payment_gateway">Cổng nạp tiền</string>
-    <string name="wallet_topup_btn">Nạp tiền vào ví</string>
-    <string name="wallet_topup_btn_loading">Đang thực hiện…</string>
 
     <!-- OTP Verification Screen -->
     <string name="otp_title">Xác thực mã OTP</string>

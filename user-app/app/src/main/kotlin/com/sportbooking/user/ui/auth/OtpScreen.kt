@@ -85,6 +85,9 @@ import com.sportbooking.user.ui.theme.SportBookingTheme
 import com.sportbooking.user.ui.theme.spacing
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.sportbooking.domain.model.User
 
 private const val OTP_LENGTH = 6
 private const val COUNTDOWN_INITIAL_SECONDS = 60
@@ -95,63 +98,44 @@ private const val COUNTDOWN_INITIAL_SECONDS = 60
  */
 @Composable
 fun OtpScreen(
-    target: String,
     onBack: () -> Unit,
-    onVerified: () -> Unit,
+    onRegistered: (User) -> Unit,
+    onResetCodeEntered: (String) -> Unit,
     modifier: Modifier = Modifier,
+    viewModel: OtpViewModel = hiltViewModel(),
 ) {
-    var otpValue by rememberSaveable { mutableStateOf("") }
+    val state by viewModel.state.collectAsStateWithLifecycle()
     var secondsRemaining by rememberSaveable { mutableIntStateOf(COUNTDOWN_INITIAL_SECONDS) }
-    var isVerifying by rememberSaveable { mutableStateOf(false) }
-    var errorMessage by rememberSaveable { mutableStateOf<String?>(null) }
-
     val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
 
-    // Đếm ngược gửi lại mã OTP
     LaunchedEffect(secondsRemaining) {
         if (secondsRemaining > 0) {
             delay(1000L)
             secondsRemaining -= 1
         }
     }
+    LaunchedEffect(viewModel) { viewModel.registered.collect(onRegistered) }
+    LaunchedEffect(viewModel) { viewModel.resetCode.collect(onResetCodeEntered) }
+    LaunchedEffect(state.info) {
+        state.info?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.consumeInfo()
+        }
+    }
 
     OtpContent(
-        target = target.ifBlank { "0987 654 321" },
-        otpValue = otpValue,
-        onOtpChange = { newCode ->
-            errorMessage = null
-            otpValue = newCode
-        },
+        target = viewModel.email,
+        otpValue = state.code,
+        onOtpChange = viewModel::onCodeChange,
         secondsRemaining = secondsRemaining,
-        isVerifying = isVerifying,
-        errorMessage = errorMessage,
+        isVerifying = state.verifying,
+        errorMessage = state.error,
         snackbarHostState = snackbarHostState,
         onResend = {
             secondsRemaining = COUNTDOWN_INITIAL_SECONDS
-            otpValue = ""
-            errorMessage = null
-            scope.launch {
-                snackbarHostState.showSnackbar("Đã gửi mã OTP mới gồm 6 số!")
-            }
+            viewModel.resend()
         },
-        onSubmit = {
-            if (otpValue.length == OTP_LENGTH) {
-                scope.launch {
-                    isVerifying = true
-                    errorMessage = null
-                    delay(800L) // Giả lập độ trễ xác thực UI
-                    isVerifying = false
-                    onVerified()
-                }
-            } else {
-                errorMessage = "Vui lòng nhập đủ 6 chữ số OTP"
-            }
-        },
-        onQuickFillSample = {
-            otpValue = "123456"
-            errorMessage = null
-        },
+        onSubmit = viewModel::submit,
         onBack = onBack,
         modifier = modifier,
     )
@@ -169,7 +153,6 @@ fun OtpContent(
     snackbarHostState: SnackbarHostState,
     onResend: () -> Unit,
     onSubmit: () -> Unit,
-    onQuickFillSample: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -337,28 +320,6 @@ fun OtpContent(
             )
 
             Spacer(Modifier.height(MaterialTheme.spacing.normal))
-
-            // Nút hỗ trợ test nhanh mã mẫu cho UI
-            TextButton(
-                onClick = onQuickFillSample,
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.LockReset,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(18.dp)
-                        .padding(end = 4.dp),
-                    tint = MaterialTheme.colorScheme.secondary,
-                )
-                Text(
-                    text = stringResource(R.string.otp_quick_fill),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.secondary,
-                )
-            }
-
-            Spacer(Modifier.height(MaterialTheme.spacing.small))
 
             // Nút quay lại đăng ký
             TextButton(
@@ -593,7 +554,6 @@ private fun OtpContentEmptyPreview() {
                 snackbarHostState = remember { SnackbarHostState() },
                 onResend = {},
                 onSubmit = {},
-                onQuickFillSample = {},
                 onBack = {},
             )
         }
@@ -615,7 +575,6 @@ private fun OtpContentFilledPreview() {
                 snackbarHostState = remember { SnackbarHostState() },
                 onResend = {},
                 onSubmit = {},
-                onQuickFillSample = {},
                 onBack = {},
             )
         }

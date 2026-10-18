@@ -21,7 +21,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.AccountBalanceWallet
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.ConfirmationNumber
 import androidx.compose.material.icons.rounded.Payments
@@ -50,6 +49,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.PreviewFontScale
@@ -80,21 +80,23 @@ sealed interface CheckoutUiEvent {
 
 @Composable
 fun CheckoutScreen(
-    walletBalance: Long,
     onBack: () -> Unit,
-    onBooked: (Long) -> Unit,
+    onPaymentStarted: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: CheckoutViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val uriHandler = LocalUriHandler.current
 
     LaunchedEffect(viewModel) {
-        viewModel.booked.collect(onBooked)
+        viewModel.paymentUrl.collect { url ->
+            uriHandler.openUri(url)
+            onPaymentStarted()
+        }
     }
 
     CheckoutContent(
         state = state,
-        walletBalance = walletBalance,
         onBack = onBack,
         onEvent = { event ->
             when (event) {
@@ -112,14 +114,11 @@ fun CheckoutScreen(
 @Composable
 fun CheckoutContent(
     state: CheckoutUiState,
-    walletBalance: Long,
     onBack: () -> Unit,
     onEvent: (CheckoutUiEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val quote = state.quote
-    val isWalletPayment = state.paymentMethod == "wallet"
-    val isInsufficientBalance = isWalletPayment && quote != null && walletBalance < quote.amount
 
     Scaffold(
         topBar = {
@@ -178,10 +177,9 @@ fun CheckoutContent(
 
                     PrimaryButton(
                         text = if (state.submitting) stringResource(R.string.checkout_btn_paying)
-                        else if (isInsufficientBalance) "Số dư ví không đủ - Nạp thêm ví"
                         else stringResource(R.string.checkout_btn_pay, quote?.amount?.toVnd().orEmpty()),
                         loading = state.submitting,
-                        enabled = quote != null && !isInsufficientBalance && !state.submitting,
+                        enabled = quote != null && !state.submitting,
                         onClick = { onEvent(CheckoutUiEvent.Confirm) },
                     )
                 }
@@ -211,46 +209,6 @@ fun CheckoutContent(
                     item(key = "checkout_quote") {
                         Box(modifier = Modifier.padding(horizontal = MaterialTheme.spacing.normal)) {
                             BookingSummaryCard(quote = quote)
-                        }
-                    }
-
-                    // Wallet Balance Hint Card
-                    item(key = "checkout_wallet_info") {
-                        Surface(
-                            color = if (isInsufficientBalance) MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f)
-                            else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
-                            shape = MaterialTheme.shapes.medium,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = MaterialTheme.spacing.normal),
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(MaterialTheme.spacing.medium),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Rounded.AccountBalanceWallet,
-                                    contentDescription = null,
-                                    tint = if (isInsufficientBalance) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(24.dp),
-                                )
-                                Column {
-                                    Text(
-                                        text = stringResource(R.string.checkout_wallet_balance, walletBalance.toVnd()),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = if (isInsufficientBalance) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
-                                    )
-                                    if (isInsufficientBalance) {
-                                        Text(
-                                            text = "Vui lòng nạp thêm hoặc chọn phương thức khác",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.error,
-                                        )
-                                    }
-                                }
-                            }
                         }
                     }
 
@@ -416,7 +374,6 @@ private fun PaymentMethodTile(
     )
 
     val icon: ImageVector = when (method.id.lowercase()) {
-        "wallet" -> Icons.Rounded.AccountBalanceWallet
         "momo" -> Icons.Rounded.PhoneAndroid
         "vnpay" -> Icons.Rounded.QrCode
         else -> Icons.Rounded.Payments
@@ -492,10 +449,9 @@ private fun CheckoutContentSuccessPreview() {
                     quote = PreviewData.bookingQuote,
                     payments = PreviewData.paymentMethods,
                     vouchers = PreviewData.vouchers,
-                    paymentMethod = "wallet",
+                    paymentMethod = "vnpay",
                     appliedVoucher = "SPORT30K",
                 ),
-                walletBalance = 850_000,
                 onBack = {},
                 onEvent = {},
             )
@@ -510,7 +466,6 @@ private fun CheckoutContentLoadingPreview() {
         Surface {
             CheckoutContent(
                 state = CheckoutUiState(loading = true),
-                walletBalance = 850_000,
                 onBack = {},
                 onEvent = {},
             )

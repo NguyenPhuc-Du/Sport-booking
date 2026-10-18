@@ -77,16 +77,11 @@ sealed interface BookingsUiEvent {
 
 @Composable
 fun BookingsScreen(
-    onBalanceChanged: (Long) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: BookingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val lifecycleOwner = LocalLifecycleOwner.current
-
-    LaunchedEffect(viewModel) {
-        viewModel.balance.collect(onBalanceChanged)
-    }
 
     DisposableEffect(lifecycleOwner, viewModel) {
         val observer = LifecycleEventObserver { _, event ->
@@ -139,6 +134,7 @@ fun BookingsContent(
             // Filter Tabs
             val filters = listOf(
                 "all" to stringResource(R.string.bookings_tab_all, state.counts.all),
+                "pending_payment" to stringResource(R.string.bookings_tab_pending_payment, state.counts.pendingPayment),
                 "upcoming" to stringResource(R.string.bookings_tab_upcoming, state.counts.upcoming),
                 "completed" to stringResource(R.string.bookings_tab_completed, state.counts.completed),
                 "cancelled" to stringResource(R.string.bookings_tab_cancelled, state.counts.cancelled),
@@ -335,7 +331,7 @@ fun BookingTicketCard(
                     )
                 }
 
-                if (booking.status == "upcoming") {
+                if (booking.status == "upcoming" || booking.status == "pending_payment") {
                     SecondaryButton(
                         text = if (cancelling) stringResource(R.string.bookings_cancelling_btn) else stringResource(R.string.bookings_cancel_btn),
                         onClick = onCancelClick,

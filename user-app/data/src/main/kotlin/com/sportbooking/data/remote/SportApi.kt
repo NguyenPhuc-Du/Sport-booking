@@ -7,16 +7,18 @@ import com.sportbooking.data.remote.dto.BookingReceiptDto
 import com.sportbooking.data.remote.dto.BookingRequest
 import com.sportbooking.data.remote.dto.CheckoutOptionsDto
 import com.sportbooking.data.remote.dto.FacilityEnvelope
+import com.sportbooking.data.remote.dto.ForgotPasswordRequest
 import com.sportbooking.data.remote.dto.HomeDto
 import com.sportbooking.data.remote.dto.LoginRequest
+import com.sportbooking.data.remote.dto.MessageDto
 import com.sportbooking.data.remote.dto.ProfileDto
 import com.sportbooking.data.remote.dto.RegisterRequest
+import com.sportbooking.data.remote.dto.ResendOtpRequest
+import com.sportbooking.data.remote.dto.ResetPasswordRequest
 import com.sportbooking.data.remote.dto.SlotScheduleDto
-import com.sportbooking.data.remote.dto.TopUpDto
-import com.sportbooking.data.remote.dto.TopUpRequest
 import com.sportbooking.data.remote.dto.UpdateProfileRequest
 import com.sportbooking.data.remote.dto.UserEnvelope
-import com.sportbooking.data.remote.dto.WalletDto
+import com.sportbooking.data.remote.dto.VerifyOtpRequest
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
@@ -26,7 +28,19 @@ import retrofit2.http.Query
 
 interface SportApi {
     @POST("auth/register")
-    suspend fun register(@Body body: RegisterRequest): AuthDto
+    suspend fun register(@Body body: RegisterRequest): MessageDto
+
+    @POST("auth/register/verify")
+    suspend fun registerVerify(@Body body: VerifyOtpRequest): AuthDto
+
+    @POST("auth/otp/resend")
+    suspend fun resendOtp(@Body body: ResendOtpRequest): MessageDto
+
+    @POST("auth/password/forgot")
+    suspend fun forgotPassword(@Body body: ForgotPasswordRequest): MessageDto
+
+    @POST("auth/password/reset")
+    suspend fun resetPassword(@Body body: ResetPasswordRequest): MessageDto
 
     @POST("auth/login")
     suspend fun login(@Body body: LoginRequest): AuthDto
@@ -67,10 +81,4 @@ interface SportApi {
 
     @PUT("profile")
     suspend fun updateProfile(@Body body: UpdateProfileRequest): UserEnvelope
-
-    @GET("wallet")
-    suspend fun wallet(): WalletDto
-
-    @POST("wallet/top-up")
-    suspend fun topUp(@Body body: TopUpRequest): TopUpDto
 }

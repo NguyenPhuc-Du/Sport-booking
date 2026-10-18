@@ -7,7 +7,7 @@ const mailService = require("../../services/mail.service");
 async function markPaidAndMail(txnRef, transactionNo) {
   const booking = await Booking.findOne({ code: txnRef });
   if (!booking) return { ok: false };
-  if (booking.status === "upcoming") return { ok: true };
+  if (booking.status !== "pending_payment") return { ok: true };
 
   booking.status = "upcoming";
   booking.statusLabel = "SẮP DIỄN RA";
@@ -48,7 +48,9 @@ module.exports.vnpayReturn = async (req, res) => {
 
   if (result.responseCode === "00") {
     await markPaidAndMail(result.txnRef, result.transactionNo);
-    return res.redirect(`sportzone://payment/success?code=${result.txnRef}`);
+    const paid = await Booking.exists({ code: result.txnRef, status: "upcoming" });
+    if (paid) return res.redirect(`sportzone://payment/success?code=${result.txnRef}`);
+    return res.redirect(`sportzone://payment/failed?code=${result.txnRef}`);
   }
 
   await Booking.findOneAndUpdate(
@@ -71,16 +73,17 @@ module.exports.vnpayIpn = async (req, res) => {
   if (Number(booking.amount) !== Number(result.amount)) {
     return res.status(200).json({ RspCode: "04", Message: "Invalid amount" });
   }
+  if (booking.status !== "pending_payment") {
+    return res.status(200).json({ RspCode: "02", Message: "Order already confirmed" });
+  }
 
   if (result.responseCode === "00") {
     await markPaidAndMail(result.txnRef, result.transactionNo);
     return res.status(200).json({ RspCode: "00", Message: "Success" });
   }
 
-  if (booking.status === "pending_payment") {
-    booking.status = "cancelled";
-    booking.statusLabel = "THANH TOÁN THẤT BẠI";
-    await booking.save();
-  }
+  booking.status = "cancelled";
+  booking.statusLabel = "THANH TOÁN THẤT BẠI";
+  await booking.save();
   return res.status(200).json({ RspCode: "00", Message: "Confirmed" });
 };

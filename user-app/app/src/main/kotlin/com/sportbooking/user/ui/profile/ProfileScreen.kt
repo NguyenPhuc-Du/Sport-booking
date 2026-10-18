@@ -23,7 +23,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Logout
-import androidx.compose.material.icons.rounded.AccountBalanceWallet
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Email
 import androidx.compose.material.icons.rounded.Notifications
@@ -168,29 +167,11 @@ fun ProfileContent(
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface,
                         )
-                        Surface(
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            shape = PillShape,
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Rounded.AccountBalanceWallet,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(14.dp),
-                                )
-                                Text(
-                                    text = state.walletBalance.toVnd(),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                )
-                            }
-                        }
+                        Text(
+                            text = state.email,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
                 }
             }
@@ -459,7 +440,6 @@ private fun ProfileContentSuccessPreview() {
                     fullName = "Nguyễn Phúc Du",
                     phone = "0912 345 678",
                     email = "phucdu.sport@gmail.com",
-                    walletBalance = 850_000,
                     notifications = PreviewData.notifications,
                     reviews = PreviewData.reviews,
                 ),

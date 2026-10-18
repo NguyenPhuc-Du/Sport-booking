@@ -63,10 +63,7 @@ import com.sportbooking.user.ui.theme.spacing
 fun LoginScreen(
     onLoggedIn: (User) -> Unit,
     onRegister: () -> Unit,
-<<<<<<< Updated upstream
     onForgotPassword: () -> Unit = {},
-=======
->>>>>>> Stashed changes
     modifier: Modifier = Modifier,
     viewModel: LoginViewModel = hiltViewModel(),
 ) {
@@ -82,10 +79,7 @@ fun LoginScreen(
         onPasswordChange = viewModel::onPasswordChange,
         onSubmit = viewModel::submit,
         onRegister = onRegister,
-<<<<<<< Updated upstream
         onForgotPassword = onForgotPassword,
-=======
->>>>>>> Stashed changes
         modifier = modifier,
     )
 }
@@ -97,10 +91,7 @@ fun LoginContent(
     onPasswordChange: (String) -> Unit,
     onSubmit: () -> Unit,
     onRegister: () -> Unit,
-<<<<<<< Updated upstream
     onForgotPassword: () -> Unit = {},
-=======
->>>>>>> Stashed changes
     modifier: Modifier = Modifier,
 ) {
     var passwordVisible by remember { mutableStateOf(false) }
@@ -151,7 +142,6 @@ fun LoginContent(
             modifier = Modifier.fillMaxWidth(),
         )
 
-<<<<<<< Updated upstream
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.End,
@@ -169,9 +159,6 @@ fun LoginContent(
         }
 
         ErrorText(state.error, Modifier.padding(top = MaterialTheme.spacing.extraSmall))
-=======
-        ErrorText(state.error, Modifier.padding(top = MaterialTheme.spacing.small))
->>>>>>> Stashed changes
 
         Spacer(Modifier.height(MaterialTheme.spacing.large))
 
@@ -202,19 +189,11 @@ fun RegisterScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: RegisterViewModel = hiltViewModel(),
-    onLoggedIn: ((User) -> Unit)? = null,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-<<<<<<< Updated upstream
-    if (onLoggedIn != null) {
-        LaunchedEffect(viewModel) {
-            viewModel.loggedIn.collect(onLoggedIn)
-        }
-=======
     LaunchedEffect(viewModel) {
-        viewModel.loggedIn.collect(onLoggedIn)
->>>>>>> Stashed changes
+        viewModel.otpSent.collect(onNavigateToOtp)
     }
 
     RegisterContent(
@@ -223,23 +202,12 @@ fun RegisterScreen(
         onPhoneChange = viewModel::onPhoneChange,
         onEmailChange = viewModel::onEmailChange,
         onPasswordChange = viewModel::onPasswordChange,
-<<<<<<< Updated upstream
-        onSubmit = {
-            val target = state.phone.ifBlank { state.email }.ifBlank { "0987654321" }
-            onNavigateToOtp(target)
-        },
-=======
         onSubmit = viewModel::submit,
->>>>>>> Stashed changes
         onBack = onBack,
         modifier = modifier,
     )
 }
 
-<<<<<<< Updated upstream
-
-=======
->>>>>>> Stashed changes
 @Composable
 fun RegisterContent(
     state: RegisterUiState,

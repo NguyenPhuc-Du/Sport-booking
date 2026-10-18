@@ -140,7 +140,6 @@ module.exports.create = async (req, res) => {
     return res.status(201).json({
       booking: publicBooking(booking),
       paymentUrl,
-      walletBalance: 0,
     });
   } catch (error) {
     console.error(error);
@@ -155,9 +154,11 @@ module.exports.list = async (req, res) => {
     if (!allowed.has(filter)) return fail(res, 400, "Bộ lọc không hợp lệ");
 
     await slotService.expireStablePending();
+    await slotService.completePastBookings({ userId: req.auth.userId });
     const all = await Booking.find({ userId: req.auth.userId }).sort({ createdAt: -1 });
     const counts = {
       all: all.length,
+      pendingPayment: all.filter((b) => b.status === "pending_payment").length,
       upcoming: all.filter((b) => b.status === "upcoming").length,
       completed: all.filter((b) => b.status === "completed").length,
       cancelled: all.filter((b) => b.status === "cancelled").length,
@@ -182,7 +183,7 @@ module.exports.cancel = async (req, res) => {
     booking.status = "cancelled";
     booking.statusLabel = "ĐÃ HỦY";
     await booking.save();
-    return res.json({ booking: publicBooking(booking), walletBalance: 0 });
+    return res.json({ booking: publicBooking(booking)});
   } catch (error) {
     return fail(res, 500, "Hủy đơn thất bại");
   }

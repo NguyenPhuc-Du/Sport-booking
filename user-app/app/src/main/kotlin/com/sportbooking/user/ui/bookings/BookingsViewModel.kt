@@ -9,9 +9,7 @@ import com.sportbooking.domain.usecase.CancelBookingUseCase
 import com.sportbooking.domain.usecase.GetBookingsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -32,8 +30,6 @@ class BookingsViewModel @Inject constructor(
 ) : ViewModel() {
     private val _state = MutableStateFlow(BookingsUiState())
     val state = _state.asStateFlow()
-    private val _balance = MutableSharedFlow<Long>()
-    val balance = _balance.asSharedFlow()
 
     init {
         load("all")
@@ -47,10 +43,7 @@ class BookingsViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(workingCode = code, error = null) }
             when (val result = cancelBooking(code)) {
-                is DomainResult.Success -> {
-                    _balance.emit(result.data.walletBalance)
-                    load(_state.value.filter)
-                }
+                is DomainResult.Success -> load(_state.value.filter)
                 is DomainResult.Failure -> _state.update { it.copy(workingCode = null, error = result.message) }
             }
         }

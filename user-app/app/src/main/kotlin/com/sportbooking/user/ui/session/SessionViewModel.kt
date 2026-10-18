@@ -10,7 +10,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 sealed interface SessionUiState {
@@ -47,16 +46,6 @@ class SessionViewModel @Inject constructor(
 
     fun onAuthenticated(user: User) {
         _state.value = SessionUiState.LoggedIn(user)
-    }
-
-    fun updateBalance(balance: Long) {
-        _state.update { current ->
-            if (current is SessionUiState.LoggedIn) {
-                current.copy(user = current.user.copy(walletBalance = balance))
-            } else {
-                current
-            }
-        }
     }
 
     fun logout() {

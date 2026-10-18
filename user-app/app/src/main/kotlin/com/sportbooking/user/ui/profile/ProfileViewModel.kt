@@ -22,7 +22,6 @@ data class ProfileUiState(
     val fullName: String = "",
     val phone: String = "",
     val email: String = "",
-    val walletBalance: Long = 0,
     val notifications: List<AppNotification> = emptyList(),
     val reviews: List<Review> = emptyList(),
     val saving: Boolean = false,
@@ -60,7 +59,6 @@ class ProfileViewModel @Inject constructor(
                             fullName = result.data.fullName,
                             phone = result.data.phone,
                             email = result.data.email,
-                            walletBalance = result.data.walletBalance,
                             message = "Đã lưu hồ sơ",
                         )
                     }
@@ -80,7 +78,6 @@ class ProfileViewModel @Inject constructor(
                         fullName = result.data.user.fullName,
                         phone = result.data.user.phone,
                         email = result.data.user.email,
-                        walletBalance = result.data.user.walletBalance,
                         notifications = result.data.notifications,
                         reviews = result.data.reviews,
                     )

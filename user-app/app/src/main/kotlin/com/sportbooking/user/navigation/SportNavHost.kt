@@ -1,18 +1,12 @@
 package com.sportbooking.user.navigation
 
 import android.net.Uri
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-<<<<<<< Updated upstream
-import androidx.compose.ui.Alignment
-import androidx.compose.material3.Text
-=======
->>>>>>> Stashed changes
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -20,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -27,10 +22,14 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.sportbooking.domain.model.User
+import com.sportbooking.user.payment.PaymentResultBus
 import com.sportbooking.user.ui.auth.ForgotPasswordScreen
 import com.sportbooking.user.ui.auth.LoginScreen
+import com.sportbooking.user.ui.auth.OTP_PURPOSE_REGISTER
+import com.sportbooking.user.ui.auth.OTP_PURPOSE_RESET
 import com.sportbooking.user.ui.auth.OtpScreen
 import com.sportbooking.user.ui.auth.RegisterScreen
+import com.sportbooking.user.ui.auth.ResetPasswordScreen
 import com.sportbooking.user.ui.booking.BookingScreen
 import com.sportbooking.user.ui.bookings.BookingsScreen
 import com.sportbooking.user.ui.checkout.CheckoutScreen
@@ -53,10 +52,8 @@ fun SportBookingRoot(sessionViewModel: SessionViewModel = hiltViewModel()) {
         SessionUiState.LoggedOut -> AuthNavHost(onAuthenticated = sessionViewModel::onAuthenticated)
         is SessionUiState.Offline -> MessageScreen(current.message, "Thử lại", sessionViewModel::refresh)
         is SessionUiState.LoggedIn -> MainNavHost(
-            user = current.user,
             onLogout = sessionViewModel::logout,
             onUserUpdated = sessionViewModel::onAuthenticated,
-            onBalanceChanged = sessionViewModel::updateBalance,
         )
     }
 }
@@ -74,55 +71,51 @@ private fun AuthNavHost(onAuthenticated: (User) -> Unit) {
         }
         composable("forgot_password") {
             ForgotPasswordScreen(
-                onNavigateToOtp = { target ->
-                    val encoded = Uri.encode(target)
-                    navController.navigate("otp/$encoded")
-                },
+                onNavigateToOtp = { email -> navController.navigate("otp/$OTP_PURPOSE_RESET/${Uri.encode(email)}") },
                 onBack = { navController.popBackStack() },
             )
         }
         composable("register") {
             RegisterScreen(
-                onNavigateToOtp = { target ->
-                    val encoded = Uri.encode(target)
-                    navController.navigate("otp/$encoded")
-                },
+                onNavigateToOtp = { email -> navController.navigate("otp/$OTP_PURPOSE_REGISTER/${Uri.encode(email)}") },
                 onBack = { navController.popBackStack() },
             )
         }
         composable(
-            route = "otp/{target}",
-            arguments = listOf(navArgument("target") { type = NavType.StringType }),
-        ) { backStackEntry ->
-            val target = backStackEntry.arguments?.getString("target").orEmpty().ifBlank { "0987654321" }
+            route = "otp/{purpose}/{email}",
+            arguments = listOf(
+                navArgument("purpose") { type = NavType.StringType },
+                navArgument("email") { type = NavType.StringType },
+            ),
+        ) { entry ->
+            val email = entry.arguments?.getString("email").orEmpty()
             OtpScreen(
-                target = target,
                 onBack = { navController.popBackStack() },
-                onVerified = {
-                    onAuthenticated(
-                        User(
-                            id = "u_verified",
-                            fullName = "Thành viên SportZone",
-                            phone = if (target.all { it.isDigit() }) target else "0987654321",
-                            email = if (target.contains("@")) target else "athlete@sportzone.vn",
-                            avatarUrl = null,
-                            status = "active",
-                            walletBalance = 500_000L,
-                        ),
-                    )
+                onRegistered = onAuthenticated,
+                onResetCodeEntered = { code ->
+                    navController.navigate("reset_password/${Uri.encode(email)}/$code")
                 },
+            )
+        }
+        composable(
+            route = "reset_password/{email}/{code}",
+            arguments = listOf(
+                navArgument("email") { type = NavType.StringType },
+                navArgument("code") { type = NavType.StringType },
+            ),
+        ) {
+            ResetPasswordScreen(
+                onBack = { navController.popBackStack() },
+                onDone = { navController.popBackStack("login", inclusive = false) },
             )
         }
     }
 }
 
-
 @Composable
 private fun MainNavHost(
-    user: User,
     onLogout: () -> Unit,
     onUserUpdated: (User) -> Unit,
-    onBalanceChanged: (Long) -> Unit,
 ) {
     val navController = rememberNavController()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -130,6 +123,17 @@ private fun MainNavHost(
     val backStack by navController.currentBackStackEntryAsState()
     val route = backStack?.destination?.route
     val showBar = defaultBottomNavTabs.any { it.route == route }
+    val paymentResult by PaymentResultBus.result.collectAsStateWithLifecycle()
+
+    LaunchedEffect(paymentResult) {
+        val result = paymentResult ?: return@LaunchedEffect
+        PaymentResultBus.consume()
+        navController.goToBookings()
+        snackbarHostState.showSnackbar(
+            if (result.success) "Thanh toán thành công đơn ${result.code}"
+            else "Thanh toán thất bại đơn ${result.code}",
+        )
+    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -159,10 +163,7 @@ private fun MainNavHost(
                 HomeScreen(onOpenFacility = { id -> navController.navigate("facility/$id") })
             }
             composable("bookings") {
-                BookingsScreen(onBalanceChanged = onBalanceChanged)
-            }
-            composable("wallet") {
-                WalletScreen(onBalanceChanged = onBalanceChanged)
+                BookingsScreen()
             }
             composable("account") {
                 ProfileScreen(onUserUpdated = onUserUpdated, onLogout = onLogout)
@@ -201,15 +202,10 @@ private fun MainNavHost(
                 ),
             ) {
                 CheckoutScreen(
-                    walletBalance = user.walletBalance,
                     onBack = { navController.popBackStack() },
-                    onBooked = { balance ->
-                        onBalanceChanged(balance)
-                        scope.launch { snackbarHostState.showSnackbar("Đặt sân thành công") }
-                        navController.navigate("bookings") {
-                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                            launchSingleTop = true
-                        }
+                    onPaymentStarted = {
+                        navController.goToBookings()
+                        scope.launch { snackbarHostState.showSnackbar("Hoàn tất thanh toán trên VNPay trong 15 phút") }
                     },
                 )
             }
@@ -217,16 +213,9 @@ private fun MainNavHost(
     }
 }
 
-@Composable
-private fun WalletScreen(
-    onBalanceChanged: (Long) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text("Ví SportZone")
+private fun NavHostController.goToBookings() {
+    navigate("bookings") {
+        popUpTo(graph.findStartDestination().id) { saveState = true }
+        launchSingleTop = true
     }
 }
-

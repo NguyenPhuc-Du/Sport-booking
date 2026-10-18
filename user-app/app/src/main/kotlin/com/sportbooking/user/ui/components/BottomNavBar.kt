@@ -2,7 +2,6 @@ package com.sportbooking.user.ui.components
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.AccountBalanceWallet
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Person
@@ -30,7 +29,6 @@ data class BottomNavTab(
 val defaultBottomNavTabs = listOf(
     BottomNavTab("home", "Sân", Icons.Rounded.Home),
     BottomNavTab("bookings", "Lịch", Icons.Rounded.CalendarMonth),
-    BottomNavTab("wallet", "Ví", Icons.Rounded.AccountBalanceWallet),
     BottomNavTab("account", "Tôi", Icons.Rounded.Person),
 )
 

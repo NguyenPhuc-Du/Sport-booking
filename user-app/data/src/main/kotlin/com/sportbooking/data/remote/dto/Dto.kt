@@ -7,7 +7,6 @@ data class UserDto(
     val phone: String,
     val avatarUrl: String?,
     val status: String,
-    val walletBalance: Long,
 )
 
 data class AuthDto(
@@ -164,6 +163,7 @@ data class BookingCountsDto(
     val upcoming: Int,
     val completed: Int,
     val cancelled: Int,
+    val pendingPayment: Int,
 )
 
 data class BookingPageDto(
@@ -174,7 +174,7 @@ data class BookingPageDto(
 
 data class BookingReceiptDto(
     val booking: BookingDto,
-    val walletBalance: Long,
+    val paymentUrl: String?,
 )
 
 data class NotificationDto(
@@ -196,21 +196,28 @@ data class ProfileDto(
     val reviews: List<ReviewDto>,
 )
 
-data class WalletDto(
-    val balance: Long,
-    val amounts: List<Long>,
-    val methods: List<PaymentMethodDto>,
+data class MessageDto(
+    val message: String,
 )
 
-data class TopUpRequest(
-    val amount: Long,
-    val method: String,
+data class VerifyOtpRequest(
+    val email: String,
+    val code: String,
 )
 
-data class TopUpDto(
-    val balance: Long,
-    val amount: Long,
-    val method: String,
+data class ResendOtpRequest(
+    val email: String,
+    val purpose: String,
+)
+
+data class ForgotPasswordRequest(
+    val email: String,
+)
+
+data class ResetPasswordRequest(
+    val email: String,
+    val code: String,
+    val newPassword: String,
 )
 
 data class ApiErrorDto(
