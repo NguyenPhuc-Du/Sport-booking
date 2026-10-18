@@ -1,0 +1,128 @@
+.pf-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.pf-kicker {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--green);
+}
+.pf-title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.4px;
+}
+.pf-sub {
+  margin: 6px 0 0;
+  color: var(--muted);
+  max-width: 640px;
+}
+.pf-filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.pf-filters .sz-input,
+.pf-filters .sz-select {
+  width: auto;
+  min-width: 160px;
+}
+.pf-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+.pf-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-decoration: none;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 18px;
+  box-shadow: var(--shadow);
+}
+.pf-stat:hover {
+  border-color: #a7f3d0;
+  transform: translateY(-2px);
+}
+.pf-stat i {
+  color: var(--green);
+  font-size: 18px;
+}
+.pf-stat-label {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.pf-stat-value {
+  font-size: 32px;
+  letter-spacing: -0.6px;
+}
+.pf-stat-note {
+  color: var(--green-dark);
+  font-weight: 700;
+  font-size: 12px;
+}
+.pf-menu {
+  position: relative;
+}
+.pf-menu summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--green);
+}
+.pf-menu form {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  align-items: center;
+}
+.pf-pager {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-top: 14px;
+}
+.pf-pager a {
+  color: var(--green);
+  font-weight: 700;
+}
+.pf-logout {
+  text-decoration: none;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-weight: 700;
+  color: var(--ink);
+  background: #fff;
+}
+.sz-role.role-user {
+  background: #d1fae5;
+  color: #047857;
+}
+@media (max-width: 991px) {
+  .pf-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+  .pf-title {
+    font-size: 24px;
+  }
+}
+@media (max-width: 640px) {
+  .pf-stats {
+    grid-template-columns: 1fr;
+  }
+}

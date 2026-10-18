@@ -7,20 +7,18 @@ aside.sz-sidebar
       .sz-facility-name Admin Console
       .sz-facility-plan
         i.bi.bi-shield-lock
-        |  Quản trị toàn hệ thống
-
+        |  Quản trị hệ thống
     .sz-menu-title PHÂN HỆ QUẢN TRỊ
-    nav.sz-menu(aria-label="Menu admin")
-      a.sz-menu-item(href="/admin/dashboard" class=(activeMenu === "commissions" ? "active" : undefined))
-        i.bi.bi-cash-stack
-        span.sz-menu-text Doanh thu hoa hồng
-      a.sz-menu-item(href="/admin/permissions" class=(activeMenu === "permissions" ? "active" : undefined))
+    nav.sz-menu(aria-label="Menu quản trị")
+      a.sz-menu-item(href="/admin/dashboard" class=(activeMenu === "dashboard" ? "active" : undefined))
+        i.bi.bi-grid
+        span.sz-menu-text Tổng quan sàn
+      a.sz-menu-item(href="/admin/users" class=(activeMenu === "users" ? "active" : undefined))
         i.bi.bi-people
-        span.sz-menu-text Phân quyền
-        span.sz-menu-badge.sz-menu-badge-admin ADMIN
-
+        span.sz-menu-text Tài khoản
     .sz-sidebar-bottom
-      .sz-copy Hệ thống SportZone
+      .sz-copy Hệ thống SportZone 
+
   else
     .sz-facility
       .d-flex.justify-content-between.align-items-center

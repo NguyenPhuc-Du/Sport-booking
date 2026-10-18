@@ -1,0 +1,28 @@
+extends ../../../owner/layouts/default.pug
+ 
+block main
+  header.pf-head
+    div
+      p.pf-kicker Chỉ xem
+      h1.pf-title Cơ sở đang hoạt động
+      p.pf-sub Chủ sân tự bật tắt sân trên /owner. Trang này không có nút sửa.
+  section.sz-card.sz-panel
+    if items.length
+      table.sz-table
+        thead
+          tr
+            th Tên
+            th Địa chỉ
+            th Chủ sân
+            th Trạng thái
+        tbody
+          each item in items
+            tr
+              td
+                strong= item.name
+              td #{item.address || ""} #{item.district || ""} #{item.city || ""}
+              td= item.owner_id && item.owner_id.fullName ? item.owner_id.fullName : "—"
+              td
+                span.sz-badge.sz-badge-ok= item.status
+    else
+      p.sz-empty Chưa có cơ sở active.
