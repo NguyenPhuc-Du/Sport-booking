@@ -3,8 +3,12 @@ package com.sportbooking.data.repository
 import com.sportbooking.data.local.AuthTokenHolder
 import com.sportbooking.data.remote.ApiCaller
 import com.sportbooking.data.remote.SportApi
+import com.sportbooking.data.remote.dto.ForgotPasswordRequest
 import com.sportbooking.data.remote.dto.LoginRequest
 import com.sportbooking.data.remote.dto.RegisterRequest
+import com.sportbooking.data.remote.dto.ResendOtpRequest
+import com.sportbooking.data.remote.dto.ResetPasswordRequest
+import com.sportbooking.data.remote.dto.VerifyOtpRequest
 import com.sportbooking.data.remote.dto.toDomain
 import com.sportbooking.domain.common.DomainResult
 import com.sportbooking.domain.model.User
@@ -33,9 +37,13 @@ class AuthRepositoryImpl @Inject constructor(
         phone: String,
         email: String,
         password: String,
-    ): DomainResult<User> {
+    ): DomainResult<String> {
         val body = RegisterRequest(fullName, phone, email, password)
-        return when (val result = caller.call { api.register(body) }) {
+        return caller.call { api.register(body).message }
+    }
+
+    override suspend fun verifyRegister(email: String, code: String): DomainResult<User> {
+        return when (val result = caller.call { api.registerVerify(VerifyOtpRequest(email, code)) }) {
             is DomainResult.Success -> {
                 tokenHolder.save(result.data.token)
                 DomainResult.Success(result.data.user.toDomain())
@@ -43,6 +51,15 @@ class AuthRepositoryImpl @Inject constructor(
             is DomainResult.Failure -> result
         }
     }
+
+    override suspend fun resendOtp(email: String, purpose: String): DomainResult<String> =
+        caller.call { api.resendOtp(ResendOtpRequest(email, purpose)).message }
+
+    override suspend fun forgotPassword(email: String): DomainResult<String> =
+        caller.call { api.forgotPassword(ForgotPasswordRequest(email)).message }
+
+    override suspend fun resetPassword(email: String, code: String, newPassword: String): DomainResult<String> =
+        caller.call { api.resetPassword(ResetPasswordRequest(email, code, newPassword)).message }
 
     override suspend fun currentUser(): DomainResult<User> {
         tokenHolder.restore()

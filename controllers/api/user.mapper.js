@@ -6,7 +6,6 @@ function toUser(user) {
     phone: user.phone,
     avatarUrl: user.avatar_url || null,
     status: user.status,
-    walletBalance: 0,
   };
 }
 

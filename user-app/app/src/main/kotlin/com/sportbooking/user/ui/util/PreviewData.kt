@@ -13,8 +13,6 @@ import com.sportbooking.domain.model.Sport
 import com.sportbooking.domain.model.TimeSlot
 import com.sportbooking.domain.model.User
 import com.sportbooking.domain.model.Voucher
-import com.sportbooking.domain.model.WalletInfo
-
 object PreviewData {
     val sports = listOf(
         Sport(id = "all", label = "Tất cả"),
@@ -122,7 +120,6 @@ object PreviewData {
     )
 
     val paymentMethods = listOf(
-        PaymentMethod(id = "wallet", title = "Ví SportZone", description = "Thanh toán tức thì, hoàn tiền nhanh chóng"),
         PaymentMethod(id = "momo", title = "Ví MoMo", description = "Thanh toán qua ứng dụng MoMo"),
         PaymentMethod(id = "vnpay", title = "VNPay QR", description = "Quét mã QR từ 40+ ứng dụng ngân hàng"),
         PaymentMethod(id = "cash", title = "Thanh toán tại sân", description = "Trả tiền mặt khi đến nhận sân"),
@@ -198,7 +195,6 @@ object PreviewData {
         phone = "0912 345 678",
         avatarUrl = null,
         status = "active",
-        walletBalance = 850_000,
     )
 
     val notifications = listOf(
@@ -227,11 +223,5 @@ object PreviewData {
             rating = 4,
             text = "Mặt cỏ êm, thoát nước tốt ngay cả khi trời mưa.",
         ),
-    )
-
-    val walletInfo = WalletInfo(
-        balance = 850_000,
-        amounts = listOf(100_000, 200_000, 500_000, 1_000_000, 2_000_000),
-        methods = paymentMethods,
     )
 }

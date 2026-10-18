@@ -2,27 +2,31 @@ const mongoose = require("mongoose");
 
 const courtSchema = new mongoose.Schema(
     {
-        venueId: {
+        venue_id: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Venue",
             required: true,
             index: true,
+        },
+        court_type_id: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "CourtType",
+            required: true,
         },
         name: {
             type: String,
             required: true,
             trim: true,
         },
-        sport: {
-            type: String,
-            enum: ["pickleball", "badminton", "tennis", "football", "other"],
-            default: "other",
-        },
         surface: {
             type: String,
             default: "",
         },
         capacity: {
+            type: String,
+            default: "",
+        },
+        note: {
             type: String,
             default: "",
         },

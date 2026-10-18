@@ -7,7 +7,6 @@ data class User(
     val phone: String,
     val avatarUrl: String?,
     val status: String,
-    val walletBalance: Long,
 )
 
 data class Sport(
@@ -133,6 +132,7 @@ data class BookingCounts(
     val upcoming: Int,
     val completed: Int,
     val cancelled: Int,
+    val pendingPayment: Int = 0,
 )
 
 data class BookingPage(
@@ -143,7 +143,7 @@ data class BookingPage(
 
 data class BookingReceipt(
     val booking: Booking,
-    val walletBalance: Long,
+    val paymentUrl: String?,
 )
 
 data class AppNotification(
@@ -163,16 +163,4 @@ data class Profile(
     val user: User,
     val notifications: List<AppNotification>,
     val reviews: List<Review>,
-)
-
-data class WalletInfo(
-    val balance: Long,
-    val amounts: List<Long>,
-    val methods: List<PaymentMethod>,
-)
-
-data class TopUpResult(
-    val balance: Long,
-    val amount: Long,
-    val method: String,
 )

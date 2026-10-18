@@ -17,12 +17,10 @@ import com.sportbooking.domain.model.Review
 import com.sportbooking.domain.model.SlotSchedule
 import com.sportbooking.domain.model.Sport
 import com.sportbooking.domain.model.TimeSlot
-import com.sportbooking.domain.model.TopUpResult
 import com.sportbooking.domain.model.User
 import com.sportbooking.domain.model.Voucher
-import com.sportbooking.domain.model.WalletInfo
 
-fun UserDto.toDomain() = User(id, fullName, email, phone, avatarUrl, status, walletBalance)
+fun UserDto.toDomain() = User(id, fullName, email, phone, avatarUrl, status)
 
 fun HomeDto.toDomain() = HomeContent(
     sports = sports.map { Sport(it.id, it.label) },
@@ -77,18 +75,14 @@ fun BookingDto.toDomain() = Booking(
 
 fun BookingPageDto.toDomain() = BookingPage(
     filter = filter,
-    counts = BookingCounts(counts.all, counts.upcoming, counts.completed, counts.cancelled),
+    counts = BookingCounts(counts.all, counts.upcoming, counts.completed, counts.cancelled, counts.pendingPayment),
     bookings = bookings.map { it.toDomain() },
 )
 
-fun BookingReceiptDto.toDomain() = BookingReceipt(booking.toDomain(), walletBalance)
+fun BookingReceiptDto.toDomain() = BookingReceipt(booking.toDomain(), paymentUrl)
 
 fun ProfileDto.toDomain() = Profile(
     user = user.toDomain(),
     notifications = notifications.map { AppNotification(it.type, it.title, it.text, it.date) },
     reviews = reviews.map { Review(it.facility, it.rating, it.text) },
 )
-
-fun WalletDto.toDomain() = WalletInfo(balance, amounts, methods.map { it.toDomain() })
-
-fun TopUpDto.toDomain() = TopUpResult(balance, amount, method)

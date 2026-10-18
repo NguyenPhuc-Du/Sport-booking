@@ -4,30 +4,13 @@ const { toUser } = require("./user.mapper");
 const EMAIL_PATTERN = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 const PHONE_PATTERN = /^0\d{9}$/;
 
-const notifications = [
-  {
-    type: "success",
-    title: "Chào mừng đến SportZone",
-    text: "Đặt sân, theo dõi lịch và nạp ví ngay trên ứng dụng.",
-    date: "14/10/2026",
-  },
-];
-
-const reviews = [
-  {
-    facility: "SportPro Complex - Cầu Giấy",
-    rating: 5,
-    text: "Thảm sân êm, đèn LED nhìn cầu rõ và bãi đỗ xe rộng.",
-  },
-];
-
 module.exports.index = async (req, res) => {
   const user = await User.findById(req.auth.userId);
   if (!user) return res.status(401).json({ message: "Phiên đăng nhập không hợp lệ" });
   return res.json({
     user: toUser(user),
-    notifications,
-    reviews,
+    notifications: [],
+    reviews: [],
   });
 };
 

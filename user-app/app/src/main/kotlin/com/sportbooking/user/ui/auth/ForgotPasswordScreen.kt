@@ -43,6 +43,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -61,6 +62,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.PreviewFontScale
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sportbooking.user.R
 import com.sportbooking.user.ui.components.ErrorText
 import com.sportbooking.user.ui.components.PrimaryButton
@@ -75,52 +78,45 @@ enum class RecoveryChannel {
 }
 
 /**
- * Màn hình Quên mật khẩu (UI Only).
- * Cho phép người dùng nhập Email hoặc Số điện thoại để nhận mã OTP khôi phục tài khoản.
+ * Màn hình Quên mật khẩu: gửi mã OTP đặt lại mật khẩu tới email đã đăng ký.
  */
 @Composable
 fun ForgotPasswordScreen(
     onNavigateToOtp: (String) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    viewModel: ForgotPasswordViewModel = hiltViewModel(),
 ) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
     var recoveryChannel by rememberSaveable { mutableStateOf(RecoveryChannel.EMAIL) }
     var contactValue by rememberSaveable { mutableStateOf("") }
-    var isSending by rememberSaveable { mutableStateOf(false) }
-    var errorText by rememberSaveable { mutableStateOf<String?>(null) }
+    var localError by rememberSaveable { mutableStateOf<String?>(null) }
 
-    val scope = rememberCoroutineScope()
+    LaunchedEffect(viewModel) {
+        viewModel.sent.collect(onNavigateToOtp)
+    }
 
     ForgotPasswordContent(
         recoveryChannel = recoveryChannel,
         onChannelSelected = { channel ->
             recoveryChannel = channel
             contactValue = ""
-            errorText = null
+            localError = null
+            viewModel.clearError()
         },
         contactValue = contactValue,
         onContactChange = {
             contactValue = it
-            errorText = null
+            localError = null
+            viewModel.clearError()
         },
-        isSending = isSending,
-        error = errorText,
+        isSending = state.sending,
+        error = localError ?: state.error,
         onSubmit = {
-            if (contactValue.isBlank()) {
-                errorText = if (recoveryChannel == RecoveryChannel.EMAIL) {
-                    "Vui lòng nhập địa chỉ email"
-                } else {
-                    "Vui lòng nhập số điện thoại"
-                }
-                return@ForgotPasswordContent
-            }
-
-            scope.launch {
-                isSending = true
-                errorText = null
-                delay(700L) // Giả lập độ trễ xử lý UI
-                isSending = false
-                onNavigateToOtp(contactValue.trim())
+            if (recoveryChannel == RecoveryChannel.PHONE) {
+                localError = "Hiện chỉ hỗ trợ khôi phục qua email"
+            } else {
+                viewModel.submit(contactValue)
             }
         },
         onBack = onBack,
