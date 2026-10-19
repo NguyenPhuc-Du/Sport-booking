@@ -12,6 +12,7 @@ router.post("/auth/register", auth.register);
 router.post("/auth/register/verify", auth.registerVerify);
 router.post("/auth/otp/resend", auth.resendOtp);
 router.post("/auth/password/forgot", auth.forgotPassword);
+router.post("/auth/password/verify-otp", auth.verifyResetOtp);
 router.post("/auth/password/reset", auth.resetPassword);
 router.post("/auth/login", auth.login);
 router.get("/auth/me", requireAuth, auth.me);

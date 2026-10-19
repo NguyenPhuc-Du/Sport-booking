@@ -9,6 +9,7 @@ interface AuthRepository {
     suspend fun verifyRegister(email: String, code: String): DomainResult<User>
     suspend fun resendOtp(email: String, purpose: String): DomainResult<String>
     suspend fun forgotPassword(email: String): DomainResult<String>
+    suspend fun verifyResetOtp(email: String, code: String): DomainResult<String>
     suspend fun resetPassword(email: String, code: String, newPassword: String): DomainResult<String>
     suspend fun currentUser(): DomainResult<User>
     suspend fun logout()

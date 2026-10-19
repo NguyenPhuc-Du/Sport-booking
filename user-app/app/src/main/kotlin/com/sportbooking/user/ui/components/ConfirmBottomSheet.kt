@@ -138,7 +138,7 @@ private fun ConfirmBottomSheetContentPreview() {
                     fontWeight = FontWeight.Bold,
                 )
                 Text(
-                    text = "Số tiền hoàn sẽ được hoàn về ví theo quy định của sân.",
+                    text = "Số tiền hoàn sẽ được hoàn trả theo quy định của cơ sở.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = 12.dp),

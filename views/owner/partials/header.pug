@@ -15,7 +15,7 @@ header.sz-header
         .sz-user
           div
             .sz-user-name= user && user.fullName ? user.fullName : "Quản trị"
-            .sz-user-wallet Quản trị hệ thống
+            .sz-user-sub Quản trị hệ thống
         a.pf-logout(href="/admin/auth/logout") Thoát  
       else
         .sz-role-pill
@@ -28,4 +28,3 @@ header.sz-header
           img(src=user.avatar_url alt="Avatar chủ sân")
           div
             .sz-user-name #{user.fullName}
-            .sz-user-wallet Ví: 14.250.000đ

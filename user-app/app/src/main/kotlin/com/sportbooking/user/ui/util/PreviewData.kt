@@ -43,7 +43,7 @@ object PreviewData {
             location = "30 Phan Thúc Duyện, Tân Bình, TP.HCM",
             rating = 4.6,
             reviews = 89,
-            badge = "Giờ vàng ưu đãi",
+            badge = "Ưu đãi",
             sports = listOf("Bóng đá"),
             sportIds = listOf("football"),
             image = "https://images.unsplash.com/photo-1529900748604-07564a03e7a6",
@@ -93,10 +93,10 @@ object PreviewData {
         TimeSlot(time = "06:00 - 07:00", price = 100_000, peak = false, available = true),
         TimeSlot(time = "07:00 - 08:00", price = 120_000, peak = false, available = true),
         TimeSlot(time = "08:00 - 09:00", price = 120_000, peak = false, available = false),
-        TimeSlot(time = "17:00 - 18:00", price = 180_000, peak = true, available = true),
-        TimeSlot(time = "18:00 - 19:00", price = 200_000, peak = true, available = false),
-        TimeSlot(time = "19:00 - 20:00", price = 200_000, peak = true, available = true),
-        TimeSlot(time = "20:00 - 21:00", price = 180_000, peak = true, available = true),
+        TimeSlot(time = "17:00 - 18:00", price = 180_000, peak = false, available = true),
+        TimeSlot(time = "18:00 - 19:00", price = 200_000, peak = false, available = false),
+        TimeSlot(time = "19:00 - 20:00", price = 200_000, peak = false, available = true),
+        TimeSlot(time = "20:00 - 21:00", price = 180_000, peak = false, available = true),
         TimeSlot(time = "21:00 - 22:00", price = 140_000, peak = false, available = true),
     )
 
@@ -120,9 +120,7 @@ object PreviewData {
     )
 
     val paymentMethods = listOf(
-        PaymentMethod(id = "momo", title = "Ví MoMo", description = "Thanh toán qua ứng dụng MoMo"),
-        PaymentMethod(id = "vnpay", title = "VNPay QR", description = "Quét mã QR từ 40+ ứng dụng ngân hàng"),
-        PaymentMethod(id = "cash", title = "Thanh toán tại sân", description = "Trả tiền mặt khi đến nhận sân"),
+        PaymentMethod(id = "vnpay", title = "VNPay QR", description = "Quét mã QR từ 40+ ứng dụng ngân hàng và thẻ quốc tế"),
     )
 
     val booking = Booking(
@@ -139,7 +137,7 @@ object PreviewData {
         discount = 30_000,
         amount = 170_000,
         voucherCode = "SPORT30K",
-        paymentMethod = "Ví SportZone",
+        paymentMethod = "VNPay QR",
         bookedAt = "15:30 15/10/2026",
     )
 
@@ -159,7 +157,7 @@ object PreviewData {
             discount = 0,
             amount = 450_000,
             voucherCode = null,
-            paymentMethod = "Ví MoMo",
+            paymentMethod = "Chuyển khoản / VNPay",
             bookedAt = "10:15 10/10/2026",
         ),
         Booking(

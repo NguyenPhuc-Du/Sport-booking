@@ -34,6 +34,13 @@ class ForgotPasswordUseCase @Inject constructor(
     suspend operator fun invoke(email: String) = repository.forgotPassword(email.trim().lowercase())
 }
 
+class VerifyResetOtpUseCase @Inject constructor(
+    private val repository: AuthRepository,
+) {
+    suspend operator fun invoke(email: String, code: String) =
+        repository.verifyResetOtp(email.trim().lowercase(), code.trim())
+}
+
 class ResetPasswordUseCase @Inject constructor(
     private val repository: AuthRepository,
 ) {

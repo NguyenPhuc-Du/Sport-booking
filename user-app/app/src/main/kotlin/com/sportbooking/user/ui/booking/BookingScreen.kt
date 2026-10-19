@@ -1,8 +1,5 @@
 package com.sportbooking.user.ui.booking
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,15 +13,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.Bolt
-import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.EventBusy
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -34,6 +28,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -45,6 +40,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.PreviewFontScale
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
@@ -53,8 +49,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sportbooking.user.R
 import com.sportbooking.user.ui.components.CourtCard
 import com.sportbooking.user.ui.components.DateStrip
+import com.sportbooking.user.ui.components.EmptyState
 import com.sportbooking.user.ui.components.ErrorState
-import com.sportbooking.user.ui.components.ErrorText
 import com.sportbooking.user.ui.components.LoadingScreen
 import com.sportbooking.user.ui.components.PrimaryButton
 import com.sportbooking.user.ui.components.TimeSlotChip
@@ -91,7 +87,7 @@ fun BookingScreen(
                 is BookingUiEvent.SelectCourt -> viewModel.onCourtSelected(event.courtId)
                 is BookingUiEvent.SelectDate -> viewModel.onDateSelected(event.date)
                 is BookingUiEvent.SelectSlot -> viewModel.onSlotSelected(event.time)
-                BookingUiEvent.Retry -> Unit
+                BookingUiEvent.Retry -> viewModel.retry()
             }
         },
         modifier = modifier,
@@ -122,7 +118,11 @@ fun BookingContent(
                             fontWeight = FontWeight.Bold,
                         )
                         Text(
-                            text = "${state.date.dayLabel()} · ${selectedCourt?.name ?: "Chưa chọn sân"}",
+                            text = if (selectedCourt != null) {
+                                "${state.date.dayLabel()} · ${selectedCourt.name}"
+                            } else {
+                                state.date.dayLabel()
+                            },
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -142,48 +142,50 @@ fun BookingContent(
             )
         },
         bottomBar = {
-            Surface(
-                color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 8.dp,
-                shadowElevation = 8.dp,
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(MaterialTheme.spacing.normal),
-                    verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
+            if (state.courts.isNotEmpty()) {
+                Surface(
+                    color = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 8.dp,
+                    shadowElevation = 8.dp,
                 ) {
-                    if (selectedSlot != null) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Column {
-                                Text(
-                                    text = "${selectedCourt?.name} · ${selectedSlot.time}",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                                Text(
-                                    text = selectedSlot.price.toVnd(),
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary,
-                                )
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(MaterialTheme.spacing.normal),
+                        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
+                    ) {
+                        if (selectedSlot != null) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Column {
+                                    Text(
+                                        text = "${selectedCourt?.name} · ${selectedSlot.time}",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                    Text(
+                                        text = selectedSlot.price.toVnd(),
+                                        style = MaterialTheme.typography.titleLarge,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary,
+                                    )
+                                }
                             }
                         }
-                    }
 
-                    PrimaryButton(
-                        text = if (state.selectedTime != null) stringResource(R.string.booking_continue_cta) else "Vui lòng chọn khung giờ",
-                        enabled = state.selectedTime != null,
-                        leadingIcon = Icons.Rounded.Check,
-                        onClick = {
-                            val time = state.selectedTime ?: return@PrimaryButton
-                            onCheckout(state.courtId, state.date.toString(), time)
-                        },
-                    )
+                        PrimaryButton(
+                            text = if (state.selectedTime != null) stringResource(R.string.booking_continue_cta) else "Vui lòng chọn khung giờ",
+                            enabled = state.selectedTime != null,
+                            leadingIcon = Icons.Rounded.Check,
+                            onClick = {
+                                val time = state.selectedTime ?: return@PrimaryButton
+                                onCheckout(state.courtId, state.date.toString(), time)
+                            },
+                        )
+                    }
                 }
             }
         },
@@ -197,8 +199,21 @@ fun BookingContent(
             state.error != null && state.facility == null -> {
                 ErrorState(
                     message = state.error,
-                    onRetry = onBack,
+                    onRetry = { onEvent(BookingUiEvent.Retry) },
                     modifier = Modifier.padding(padding),
+                )
+            }
+
+            state.facility != null && state.courts.isEmpty() -> {
+                EmptyState(
+                    title = stringResource(R.string.booking_no_courts_title),
+                    message = stringResource(R.string.booking_no_courts_desc),
+                    icon = Icons.Rounded.EventBusy,
+                    actionLabel = stringResource(R.string.btn_back),
+                    onAction = onBack,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding),
                 )
             }
 
@@ -270,7 +285,7 @@ fun BookingContent(
                         )
                     }
 
-                    // Step 3: Slots & Legend
+                    // Step 3: Slots & Legend Header
                     item(key = "booking_step_slots") {
                         Column(
                             modifier = Modifier
@@ -289,48 +304,141 @@ fun BookingContent(
                                     fontWeight = FontWeight.Bold,
                                 )
                                 if (state.slotsLoading) {
-                                    CircularProgressIndicator(
-                                        strokeWidth = 2.dp,
-                                        modifier = Modifier.size(16.dp),
-                                        color = MaterialTheme.colorScheme.primary,
-                                    )
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    ) {
+                                        Text(
+                                            text = stringResource(R.string.booking_slot_loading),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.primary,
+                                        )
+                                        CircularProgressIndicator(
+                                            strokeWidth = 2.dp,
+                                            modifier = Modifier.size(14.dp),
+                                            color = MaterialTheme.colorScheme.primary,
+                                        )
+                                    }
                                 }
                             }
 
-                            // Slot Legend
-                            SlotLegend()
-                        }
-                    }
-
-                    // Slot Matrix (chunked 3 per row)
-                    items(
-                        items = state.slots.chunked(3),
-                        key = { row -> row.joinToString("-") { it.time } },
-                    ) { row ->
-                        Box(modifier = Modifier.padding(horizontal = MaterialTheme.spacing.normal)) {
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
-                                modifier = Modifier.fillMaxWidth(),
-                            ) {
-                                row.forEach { slot ->
-                                    TimeSlotChip(
-                                        slot = slot,
-                                        selected = slot.time == state.selectedTime,
-                                        onClick = { onEvent(BookingUiEvent.SelectSlot(slot.time)) },
-                                        modifier = Modifier.weight(1f),
-                                    )
-                                }
-                                repeat(3 - row.size) {
-                                    Spacer(Modifier.weight(1f))
-                                }
+                            // Chú thích màu chỉ hiện khi đã có khung giờ khả dụng
+                            if (state.slots.isNotEmpty()) {
+                                SlotLegend()
                             }
                         }
                     }
 
+                    // Khối hiển thị thông báo lỗi tải khung giờ
                     if (state.error != null) {
-                        item(key = "booking_error") {
+                        item(key = "booking_slots_error") {
+                            Surface(
+                                color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f),
+                                shape = MaterialTheme.shapes.medium,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = MaterialTheme.spacing.normal),
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(MaterialTheme.spacing.medium),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = "Không thể tải khung giờ",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.error,
+                                        )
+                                        Text(
+                                            text = state.error,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                    TextButton(
+                                        onClick = { onEvent(BookingUiEvent.Retry) },
+                                    ) {
+                                        Text(
+                                            text = stringResource(R.string.btn_retry),
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary,
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    } else if (!state.slotsLoading && state.slots.isEmpty()) {
+                        // Sân chưa có khung giờ / price rule cho ngày đã chọn
+                        item(key = "booking_no_slots") {
+                            Surface(
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                                shape = MaterialTheme.shapes.medium,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = MaterialTheme.spacing.normal),
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = MaterialTheme.spacing.large, horizontal = MaterialTheme.spacing.medium),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(48.dp)
+                                            .clip(CircleShape)
+                                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Rounded.EventBusy,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(24.dp),
+                                        )
+                                    }
+                                    Text(
+                                        text = stringResource(R.string.booking_no_slots_title),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        textAlign = TextAlign.Center,
+                                    )
+                                    Text(
+                                        text = stringResource(R.string.booking_no_slots_desc),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        textAlign = TextAlign.Center,
+                                    )
+                                }
+                            }
+                        }
+                    } else {
+                        // Ma trận khung giờ (3 ô một hàng)
+                        items(
+                            items = state.slots.chunked(3),
+                            key = { row -> row.joinToString("-") { it.time } },
+                        ) { row ->
                             Box(modifier = Modifier.padding(horizontal = MaterialTheme.spacing.normal)) {
-                                ErrorText(message = state.error)
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
+                                    modifier = Modifier.fillMaxWidth(),
+                                ) {
+                                    row.forEach { slot ->
+                                        TimeSlotChip(
+                                            slot = slot,
+                                            selected = slot.time == state.selectedTime,
+                                            onClick = { onEvent(BookingUiEvent.SelectSlot(slot.time)) },
+                                            modifier = Modifier.weight(1f),
+                                        )
+                                    }
+                                    repeat(3 - row.size) {
+                                        Spacer(Modifier.weight(1f))
+                                    }
+                                }
                             }
                         }
                     }
@@ -358,11 +466,6 @@ private fun SlotLegend(modifier: Modifier = Modifier) {
             color = MaterialTheme.colorScheme.primary,
             borderColor = MaterialTheme.colorScheme.primary,
             label = stringResource(R.string.booking_slot_legend_selected),
-        )
-        LegendItem(
-            color = MaterialTheme.extraColors.peakSlotContainer,
-            borderColor = MaterialTheme.extraColors.peakSlot,
-            label = stringResource(R.string.booking_slot_legend_peak),
         )
         LegendItem(
             color = MaterialTheme.extraColors.bookedSlotContainer,
@@ -416,6 +519,45 @@ private fun BookingContentSuccessPreview() {
                     date = LocalDate.now(),
                     slots = PreviewData.timeSlots,
                     selectedTime = "18:00 - 19:00",
+                ),
+                onBack = {},
+                onCheckout = { _, _, _ -> },
+                onEvent = {},
+            )
+        }
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun BookingContentNoCourtsPreview() {
+    SportBookingTheme {
+        Surface {
+            BookingContent(
+                state = BookingUiState(
+                    loading = false,
+                    facility = PreviewData.facilityDetail.copy(courts = emptyList()),
+                ),
+                onBack = {},
+                onCheckout = { _, _, _ -> },
+                onEvent = {},
+            )
+        }
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun BookingContentNoSlotsPreview() {
+    SportBookingTheme {
+        Surface {
+            BookingContent(
+                state = BookingUiState(
+                    loading = false,
+                    facility = PreviewData.facilityDetail,
+                    courtId = "c_1",
+                    date = LocalDate.now(),
+                    slots = emptyList(),
                 ),
                 onBack = {},
                 onCheckout = { _, _, _ -> },
