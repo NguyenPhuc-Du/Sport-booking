@@ -28,22 +28,22 @@ aside.sz-sidebar
 
     .sz-menu-title PHÂN HỆ CHỦ SÂN
     nav.sz-menu(aria-label="Menu chủ sân")
-      a.sz-menu-item(href=`${prefixAdmin}/dashboard` class=(activeMenu === "dashboard" ? "active" : undefined))
+      a.sz-menu-item(href=`${prefixAdmin}/dashboard` class={ active: activeMenu === "dashboard" })
         i.bi.bi-grid
         span.sz-menu-text Tổng quan & Thống kê
-      a.sz-menu-item(href=`${prefixAdmin}/facilities` class=(activeMenu === "facilities" ? "active" : undefined))
+      a.sz-menu-item(href=`${prefixAdmin}/facilities` class={ active: activeMenu === "facilities" })
         i.bi.bi-buildings
         span.sz-menu-text Quản lý Cơ sở & Sân
-      a.sz-menu-item(href=`${prefixAdmin}/bookings` class=(activeMenu === "bookings" ? "active" : undefined))
+      a.sz-menu-item(href=`${prefixAdmin}/bookings` class={ active: activeMenu === "bookings" })
         i.bi.bi-calendar-check
         span.sz-menu-text Lịch đặt & Sơ đồ Timeline
-      a.sz-menu-item(href=`${prefixAdmin}/finance` class=(activeMenu === "finance" ? "active" : undefined))
+      a.sz-menu-item(href=`${prefixAdmin}/finance` class={ active: activeMenu === "finance" })
         i.bi.bi-credit-card-2-front
         span.sz-menu-text Tài chính & Khuyến mãi
-      a.sz-menu-item(href=`${prefixAdmin}/refreshments` class=(activeMenu === "refreshments" ? "active" : undefined))
+      a.sz-menu-item(href=`${prefixAdmin}/refreshments` class={ active: activeMenu === "refreshments" })
         i.bi.bi-cup-straw
         span.sz-menu-text Dịch vụ giải khát
-      a.sz-menu-item(href=`${prefixAdmin}/profile` class=(activeMenu === "profile" ? "active" : undefined))
+      a.sz-menu-item(href=`${prefixAdmin}/profile` class={ active: activeMenu === "profile" })
         i.bi.bi-person-badge
         span.sz-menu-text Hồ sơ & Avatar
 

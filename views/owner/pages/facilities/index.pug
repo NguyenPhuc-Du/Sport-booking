@@ -58,42 +58,5 @@ block main
                   i.bi.bi-check2-circle
                   | Mở lại sân
 
-  //- Form bảo trì: mặc định ẩn, bấm nút thì hiện
-  #maintainBox.sz-maint-overlay(style="display: none;")
-    .sz-maint-modal
-      .sz-maint-head
-        .sz-maint-head-icon
-          i.bi.bi-exclamation-triangle
-        div
-          h2.sz-maint-title Đưa sân vào bảo trì
-          p.sz-maint-sub Nhập lý do bảo trì (tuỳ chọn)
-        button.sz-maint-close.btn-close-maintain(type="button" aria-label="Đóng")
-          i.bi.bi-x-lg
-      form.sz-maint-body(method="POST" action="")
-        .sz-maint-field
-          label.sz-maint-label(for="maintainNote") Lý do bảo trì
-            span.sz-maint-optional (tuỳ chọn)
-          textarea#maintainNote.sz-maint-textarea(
-            name="note"
-            rows="4"
-            placeholder="Ví dụ: Thay thảm sân, sửa hệ thống đèn..."
-          )
-        .sz-maint-foot
-          button.sz-btn.sz-btn-ghost.btn-close-maintain(type="button") Hủy
-          button.sz-btn.sz-btn-danger(type="submit")
-            i.bi.bi-tools
-            | Xác nhận bảo trì
+    script(src="/admin/js/courts.js")
 
-block script
-  script.
-    var box = document.getElementById("maintainBox");
-    document.querySelectorAll(".btn-open-maintain").forEach(function (btn) {
-      btn.onclick = function () {
-        box.style.display = "flex";
-      };
-    });
-    document.querySelectorAll(".btn-close-maintain").forEach(function (btn) {
-      btn.onclick = function () {
-        box.style.display = "none";
-      };
-    });
