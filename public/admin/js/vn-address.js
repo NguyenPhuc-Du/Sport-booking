@@ -1,9 +1,11 @@
 (function () {
   const citySelect = document.getElementById("venueCity");
   const wardSelect = document.getElementById("venueWard");
-
+  const city = citySelect.getAttribute("select_city");
+  const ward = wardSelect.getAttribute("select_ward");
+  console.log(city);
+  console.log(ward);
   if (!citySelect || !wardSelect) return;
-
   const emptyWardOption = () => {
     const opt = document.createElement("option");
     opt.value = "";
@@ -25,6 +27,10 @@
       const opt = document.createElement("option");
       opt.value = name;
       opt.textContent = name;
+      console.log(opt.value + ward);
+      if (opt.value == ward) {
+        opt.selected = true;
+      }
       wardSelect.appendChild(opt);
     });
     wardSelect.disabled = false;
@@ -45,6 +51,11 @@
       const opt = document.createElement("option");
       opt.value = name;
       opt.textContent = name;
+
+      if (opt.value == city) {
+        console.log(opt.value + city);
+        opt.selected = true;
+      }
       citySelect.appendChild(opt);
     });
   };
@@ -58,7 +69,9 @@
     })
     .then((data) => {
       fillProvinces(data);
-
+      if (city && data[city]) {
+        fillWards(data[city]);
+      }
       citySelect.addEventListener("change", () => {
         const province = citySelect.value;
         fillWards(province ? data[province] : []);
