@@ -24,7 +24,6 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.ConfirmationNumber
 import androidx.compose.material.icons.rounded.Payments
-import androidx.compose.material.icons.rounded.PhoneAndroid
 import androidx.compose.material.icons.rounded.QrCode
 import androidx.compose.material.icons.rounded.RadioButtonUnchecked
 import androidx.compose.material3.Card
@@ -374,7 +373,6 @@ private fun PaymentMethodTile(
     )
 
     val icon: ImageVector = when (method.id.lowercase()) {
-        "momo" -> Icons.Rounded.PhoneAndroid
         "vnpay" -> Icons.Rounded.QrCode
         else -> Icons.Rounded.Payments
     }

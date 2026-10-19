@@ -58,6 +58,9 @@ class AuthRepositoryImpl @Inject constructor(
     override suspend fun forgotPassword(email: String): DomainResult<String> =
         caller.call { api.forgotPassword(ForgotPasswordRequest(email)).message }
 
+    override suspend fun verifyResetOtp(email: String, code: String): DomainResult<String> =
+        caller.call { api.verifyResetOtp(VerifyOtpRequest(email, code)).message }
+
     override suspend fun resetPassword(email: String, code: String, newPassword: String): DomainResult<String> =
         caller.call { api.resetPassword(ResetPasswordRequest(email, code, newPassword)).message }
 

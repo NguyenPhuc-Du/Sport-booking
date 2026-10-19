@@ -39,6 +39,9 @@ interface SportApi {
     @POST("auth/password/forgot")
     suspend fun forgotPassword(@Body body: ForgotPasswordRequest): MessageDto
 
+    @POST("auth/password/verify-otp")
+    suspend fun verifyResetOtp(@Body body: VerifyOtpRequest): MessageDto
+
     @POST("auth/password/reset")
     suspend fun resetPassword(@Body body: ResetPasswordRequest): MessageDto
 

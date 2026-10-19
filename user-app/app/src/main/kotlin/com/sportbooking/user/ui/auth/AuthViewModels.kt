@@ -11,6 +11,7 @@ import com.sportbooking.domain.usecase.RegisterUseCase
 import com.sportbooking.domain.usecase.ResendOtpUseCase
 import com.sportbooking.domain.usecase.ResetPasswordUseCase
 import com.sportbooking.domain.usecase.VerifyRegisterOtpUseCase
+import com.sportbooking.domain.usecase.VerifyResetOtpUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -129,6 +130,7 @@ class RegisterViewModel @Inject constructor(
 class OtpViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val verifyRegister: VerifyRegisterOtpUseCase,
+    private val verifyResetOtp: VerifyResetOtpUseCase,
     private val resendOtp: ResendOtpUseCase,
 ) : ViewModel() {
     val email: String = checkNotNull(savedStateHandle["email"])
@@ -153,11 +155,19 @@ class OtpViewModel @Inject constructor(
             return
         }
         viewModelScope.launch {
+            _state.update { it.copy(verifying = true, error = null) }
             if (purpose == OTP_PURPOSE_RESET) {
-                _resetCode.emit(code)
+                when (val result = verifyResetOtp(email, code)) {
+                    is DomainResult.Success -> {
+                        _state.update { it.copy(verifying = false) }
+                        _resetCode.emit(code)
+                    }
+                    is DomainResult.Failure -> {
+                        _state.update { it.copy(verifying = false, error = result.message) }
+                    }
+                }
                 return@launch
             }
-            _state.update { it.copy(verifying = true, error = null) }
             when (val result = verifyRegister(email, code)) {
                 is DomainResult.Success -> {
                     _state.update { it.copy(verifying = false) }

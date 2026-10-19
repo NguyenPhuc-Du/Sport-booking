@@ -15,7 +15,6 @@
     <string name="label_loading">Loading…</string>
     <string name="label_today">Today</string>
     <string name="label_tomorrow">Tomorrow</string>
-    <string name="label_peak_hour">Peak Hour</string>
     <string name="label_rating_format">%1$.1f (%2$d reviews)</string>
     <string name="label_no_reviews">No reviews yet</string>
 
@@ -36,6 +35,8 @@
     <string name="facility_operating_hours">Hours</string>
     <string name="facility_phone">Hotline</string>
     <string name="facility_book_cta">Select Court &amp; Slot</string>
+    <string name="facility_no_courts_cta">No courts available</string>
+    <string name="facility_no_courts_desc">This venue currently has no courts configured for booking.</string>
 
     <!-- Booking Screen -->
     <string name="booking_title">Select Court &amp; Time</string>
@@ -46,7 +47,10 @@
     <string name="booking_slot_legend_available">Available</string>
     <string name="booking_slot_legend_selected">Selected</string>
     <string name="booking_slot_legend_booked">Booked</string>
-    <string name="booking_slot_legend_peak">Peak</string>
+    <string name="booking_no_courts_title">No Courts Available</string>
+    <string name="booking_no_courts_desc">This venue currently has no courts open for booking. Please check back later.</string>
+    <string name="booking_no_slots_title">No Available Time Slots</string>
+    <string name="booking_no_slots_desc">No time slots are available for this date or pricing rules are not set. Please select another date.</string>
     <string name="booking_continue_cta">Continue to Checkout</string>
 
     <!-- Checkout Screen -->

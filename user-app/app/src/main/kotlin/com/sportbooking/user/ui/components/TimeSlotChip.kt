@@ -48,7 +48,6 @@ fun TimeSlotChip(
     modifier: Modifier = Modifier,
 ) {
     val isAvailable = slot.available
-    val isPeak = slot.peak
 
     val containerColor by animateColorAsState(
         targetValue = when {
@@ -72,7 +71,6 @@ fun TimeSlotChip(
         targetValue = when {
             !isAvailable -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
             selected -> MaterialTheme.colorScheme.primary
-            isPeak -> MaterialTheme.extraColors.peakSlot.copy(alpha = 0.8f)
             else -> MaterialTheme.colorScheme.outlineVariant
         },
         label = "SlotBorder",
@@ -82,7 +80,7 @@ fun TimeSlotChip(
         color = containerColor,
         contentColor = contentColor,
         shape = MaterialTheme.shapes.medium,
-        border = BorderStroke(if (selected || (isAvailable && isPeak)) 1.5.dp else 1.dp, borderColor),
+        border = BorderStroke(if (selected) 1.5.dp else 1.dp, borderColor),
         shadowElevation = if (selected) 3.dp else 0.dp,
         modifier = modifier
             .clip(MaterialTheme.shapes.medium)
@@ -94,7 +92,7 @@ fun TimeSlotChip(
             .semantics {
                 this.role = Role.RadioButton
                 this.selected = selected
-                this.contentDescription = "${slot.time}, ${slot.price.toVnd()}${if (isPeak) ", Giờ vàng" else ""}${if (!isAvailable) ", Đã đặt" else ""}"
+                this.contentDescription = "${slot.time}, ${slot.price.toVnd()}${if (!isAvailable) ", Đã đặt" else ""}"
             },
     ) {
         Column(
@@ -108,14 +106,6 @@ fun TimeSlotChip(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(2.dp),
             ) {
-                if (isPeak && isAvailable && !selected) {
-                    Icon(
-                        imageVector = Icons.Rounded.Bolt,
-                        contentDescription = null,
-                        tint = MaterialTheme.extraColors.peakSlot,
-                        modifier = Modifier.size(14.dp),
-                    )
-                }
                 Text(
                     text = slot.time,
                     style = MaterialTheme.typography.labelMedium,

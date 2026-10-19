@@ -165,6 +165,22 @@ module.exports.forgotPassword = async (req, res) => {
   }
 };
 
+module.exports.verifyResetOtp = async (req, res) => {
+  try {
+    const email = (req.body.email || "").trim().toLowerCase();
+    const code = (req.body.code || "").trim();
+    if (!email || !code) return fail(res, 400, "Thiếu email hoặc mã OTP");
+
+    await checkOtp(email, "reset_password", code);
+
+    return res.json({ message: "Mã xác thực hợp lệ" });
+  } catch (error) {
+    if (error.status) return fail(res, error.status, error.message);
+    console.error(error);
+    return fail(res, 500, "Xác minh mã thất bại");
+  }
+};
+
 module.exports.resetPassword = async (req, res) => {
   try {
     const email = (req.body.email || "").trim().toLowerCase();

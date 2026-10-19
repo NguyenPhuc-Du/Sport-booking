@@ -20,7 +20,6 @@ block main
             th NGƯỜI DÙNG
             th SỐ ĐIỆN THOẠI
             th EMAIL
-            th SỐ DƯ VÍ
             th VAI TRÒ HIỆN TẠI
             th ĐỔI VAI TRÒ
         tbody
@@ -34,8 +33,6 @@ block main
                     small= u.id
               td= u.phone
               td= u.email
-              td
-                strong= u.wallet
               td
                 span.sz-role(class=`role-${u.role.toLowerCase()}`)= u.role
               td

@@ -27,6 +27,7 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Call
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.EventAvailable
+import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.LocationOn
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.Share
@@ -139,6 +140,7 @@ fun FacilityDetailContent(
         },
         bottomBar = {
             if (facility != null) {
+                val hasCourts = facility.courts.isNotEmpty()
                 Surface(
                     color = MaterialTheme.colorScheme.surface,
                     tonalElevation = 8.dp,
@@ -150,9 +152,18 @@ fun FacilityDetailContent(
                             .padding(MaterialTheme.spacing.normal),
                     ) {
                         PrimaryButton(
-                            text = stringResource(R.string.facility_book_cta),
+                            text = if (hasCourts) {
+                                stringResource(R.string.facility_book_cta)
+                            } else {
+                                stringResource(R.string.facility_no_courts_cta)
+                            },
+                            enabled = hasCourts,
                             leadingIcon = Icons.Rounded.EventAvailable,
-                            onClick = { onBook(facility.id) },
+                            onClick = {
+                                if (hasCourts) {
+                                    onBook(facility.id)
+                                }
+                            },
                         )
                     }
                 }
@@ -318,44 +329,46 @@ fun FacilityDetailContent(
                         }
                     }
 
-                    // Amenities Section
-                    item(key = "facility_amenities") {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = MaterialTheme.spacing.normal),
-                            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
-                        ) {
-                            Text(
-                                text = stringResource(R.string.facility_amenities),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                            )
-                            FlowRow(
-                                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
+                    // Amenities Section (chỉ hiện khi cơ sở có tiện ích)
+                    if (facility.amenities.isNotEmpty()) {
+                        item(key = "facility_amenities") {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = MaterialTheme.spacing.normal),
                                 verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
                             ) {
-                                facility.amenities.forEach { amenity ->
-                                    Surface(
-                                        color = MaterialTheme.colorScheme.surfaceVariant,
-                                        shape = PillShape,
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                Text(
+                                    text = stringResource(R.string.facility_amenities),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                )
+                                FlowRow(
+                                    horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
+                                    verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
+                                ) {
+                                    facility.amenities.forEach { amenity ->
+                                        Surface(
+                                            color = MaterialTheme.colorScheme.surfaceVariant,
+                                            shape = PillShape,
                                         ) {
-                                            Icon(
-                                                imageVector = Icons.Rounded.CheckCircle,
-                                                contentDescription = null,
-                                                tint = MaterialTheme.colorScheme.primary,
-                                                modifier = Modifier.size(16.dp),
-                                            )
-                                            Text(
-                                                text = amenity,
-                                                style = MaterialTheme.typography.labelMedium,
-                                                color = MaterialTheme.colorScheme.onSurface,
-                                            )
+                                            Row(
+                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Rounded.CheckCircle,
+                                                    contentDescription = null,
+                                                    tint = MaterialTheme.colorScheme.primary,
+                                                    modifier = Modifier.size(16.dp),
+                                                )
+                                                Text(
+                                                    text = amenity,
+                                                    style = MaterialTheme.typography.labelMedium,
+                                                    color = MaterialTheme.colorScheme.onSurface,
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -363,26 +376,56 @@ fun FacilityDetailContent(
                         }
                     }
 
-                    // Courts Section
-                    item(key = "facility_courts_header") {
-                        Text(
-                            text = stringResource(R.string.facility_courts),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = MaterialTheme.spacing.normal),
-                        )
-                    }
-
-                    items(
-                        items = facility.courts,
-                        key = { it.id },
-                    ) { court ->
-                        Box(modifier = Modifier.padding(horizontal = MaterialTheme.spacing.normal)) {
-                            CourtCard(
-                                court = court,
-                                selected = false,
-                                onClick = { onBook(facility.id) },
+                    // Courts Section (chỉ hiện khi cơ sở có danh sách sân)
+                    if (facility.courts.isNotEmpty()) {
+                        item(key = "facility_courts_header") {
+                            Text(
+                                text = stringResource(R.string.facility_courts),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = MaterialTheme.spacing.normal),
                             )
+                        }
+
+                        items(
+                            items = facility.courts,
+                            key = { it.id },
+                        ) { court ->
+                            Box(modifier = Modifier.padding(horizontal = MaterialTheme.spacing.normal)) {
+                                CourtCard(
+                                    court = court,
+                                    selected = false,
+                                    onClick = { onBook(facility.id) },
+                                )
+                            }
+                        }
+                    } else {
+                        item(key = "facility_no_courts_notice") {
+                            Surface(
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                                shape = MaterialTheme.shapes.medium,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = MaterialTheme.spacing.normal),
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(MaterialTheme.spacing.medium),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.Info,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(20.dp),
+                                    )
+                                    Text(
+                                        text = stringResource(R.string.facility_no_courts_desc),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
                         }
                     }
                 }
