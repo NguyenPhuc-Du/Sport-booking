@@ -1,16 +1,14 @@
-const Venue = require("../../models/facilities.model");
 const User = require("../../models/user.model");
+
+const venueService = require("../../services/owner/facility.service");
+const ownerService = require("../../services/owner/owner-profile.service");
 
 module.exports.index = async (req, res) => {
   const ownerId = res.locals.user.id;
 
-  const owner = await User.findOne({
-    _id: ownerId,
-  });
+  const owner = await ownerService.getOwnerById(ownerId);
 
-  const venues = await Venue.find({
-    owner_id: ownerId
-  });
+  const venues = await venueService.getAllVenueByOwnerId(ownerId, req.body);
 
   res.render("owner/pages/owner-profile/index", {
     pageTitle: "Hồ sơ chủ sân",
@@ -24,19 +22,7 @@ module.exports.update = async (req, res) => {
   try {
     const id = res.locals.user.id;
 
-    const { email, phone, fullName, avatar_url } = req.body;
-
-    await User.updateOne(
-      {
-        _id: id,
-      },
-      {
-        email,
-        phone,
-        fullName,
-        avatar_url
-      },
-    );
+    await ownerService.updateUserProfile(id, req.body);
 
     req.flash("success", "Cập nhật thông tin thành công");
     res.redirect(req.get("Referrer"));
