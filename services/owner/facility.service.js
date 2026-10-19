@@ -38,3 +38,18 @@ module.exports.getCourtsByVenueIds = async (venueIds) => {
     deleted: false,
   }).lean();
 };
+module.exports.countCourts = async () => {
+  const courts = await Courts.countDocuments({});
+  return courts;
+};
+module.exports.countVenues = async () => {
+  const venues = await Venues.countDocuments({ deleted: false });
+  return venues;
+};
+module.exports.findCourtsByIdVenue = async (id) => {
+  console.log(id);
+  const courts = await Courts.find()
+    .populate("court_type_id", "name icon_url description")
+    .lean();
+  return courts.filter((c) => String(c.venue_id) === String(id));
+};

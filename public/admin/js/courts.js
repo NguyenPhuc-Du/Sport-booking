@@ -1,3 +1,4 @@
+//cchage status
 console.log("ok");
 const btnChange = document.querySelectorAll(".btn");
 console.log(btnChange);
@@ -16,3 +17,24 @@ if (btnChange) {
     });
   });
 }
+//end change status
+//filter courts
+const venuesFilter = document.querySelector("#venueFilter");
+console.log(venuesFilter);
+if (venuesFilter) {
+  let url = new URL(window.location.href);
+  venuesFilter.addEventListener("change", () => {
+    const optionSelect = venuesFilter.querySelector("option:checked");
+    const id = optionSelect.value;
+    if (id) {
+      url.searchParams.set("id", id);
+    } else {
+      url.searchParams.delete("id");
+    }
+    window.location.href = url.href;
+  });
+}
+//end filter courts
+//change button Courts
+
+//end change button courts
