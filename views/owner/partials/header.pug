@@ -12,14 +12,11 @@ header.sz-header
         .sz-role-pill
           span.dot
           | Super Admin
-        button.sz-bell(type="button" aria-label="Thông báo")
-          i.bi.bi-bell
-          span.sz-bell-dot
         .sz-user
-          img(src="https://i.pravatar.cc/100?img=12" alt="Avatar admin")
           div
-            .sz-user-name Lê Thanh Bình
-            .sz-user-wallet Hệ thống
+            .sz-user-name= user && user.fullName ? user.fullName : "Quản trị"
+            .sz-user-wallet Quản trị hệ thống
+        a.pf-logout(href="/admin/auth/logout") Thoát  
       else
         .sz-role-pill
           span.dot

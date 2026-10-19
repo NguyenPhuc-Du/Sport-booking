@@ -1,0 +1,85 @@
+extends ../../../owner/layouts/default.pug
+include ../../../mixins/alert.pug
+ 
+block main
+  +alert-success(3000)
+  +alert-error(5000)
+ 
+  header.pf-head
+    div
+      p.pf-kicker Quản trị hệ thống
+      h1.pf-title Tài khoản
+      p.pf-sub Gán role là cấp quyền đăng nhập. Không tạo sân và không tạo voucher.
+    form.pf-filters(method="get" action="/admin/users")
+      input.sz-input(type="search" name="q" value=q placeholder="Tên, email, số điện thoại")
+      select.sz-select(name="role")
+        option(value="" selected=!role) Mọi role
+        option(value="USER" selected=role === "USER") USER
+        option(value="OWNER" selected=role === "OWNER") OWNER
+        option(value="ADMIN" selected=role === "ADMIN") ADMIN
+      select.sz-select(name="status")
+        option(value="" selected=!status) Mọi trạng thái
+        option(value="active" selected=status === "active") Đang hoạt động
+        option(value="inactive" selected=status === "inactive") Đã khóa
+      button.sz-btn.sz-btn-dark(type="submit") Lọc
+ 
+  section.sz-card.sz-panel
+    if users.length
+      .table-responsive
+        table.sz-table
+          thead
+            tr
+              th Tài khoản
+              th Liên hệ
+              th Role
+              th Trạng thái
+              th Tạo lúc
+              th
+          tbody
+            each u in users
+              tr
+                td
+                  strong= u.fullName
+                td
+                  div= u.email
+                  small.sz-muted= u.phone
+                td
+                  if u.roles.length
+                    each item in u.roles
+                      span.sz-role(class=`role-${item.code.toLowerCase()}`)= item.code
+                  else
+                    span.sz-muted Chưa gán
+                td
+                  if u.status === "active"
+                    span.sz-badge.sz-badge-ok Hoạt động
+                  else
+                    span.sz-badge.sz-badge-danger Đã khóa
+                td= u.createdAt ? new Date(u.createdAt).toLocaleString("vi-VN") : "—"
+                td
+                  details.pf-menu
+                    summary Thao tác
+                    form(method="post" action=`/admin/users/${u._id}/roles`)
+                      select.sz-select(name="roleId" required)
+                        option(value="") Chọn role
+                        each item in allRoles
+                          option(value=item._id)= item.code
+                      button.sz-btn.sz-btn-dark.sz-btn-sm(type="submit") Gán
+                    each item in u.roles
+                      form(method="post" action=`/admin/users/${u._id}/roles/${item.id}/remove` data-confirm=`Gỡ ${item.code} của ${u.fullName}?`)
+                        button.sz-btn.sz-btn-outline-danger.sz-btn-sm(type="submit") Gỡ #{item.code}
+                    - const nextStatus = u.status === "active" ? "inactive" : "active"
+                    form(method="post" action=`/admin/users/${u._id}/status` data-confirm=u.status === "active" ? `Khóa đăng nhập của ${u.fullName}? Sân của họ không bị đổi.` : `Mở khóa ${u.fullName}?`)
+                      input(type="hidden" name="status" value=nextStatus)
+                      button.sz-btn.sz-btn-sm(type="submit" class=u.status === "active" ? "sz-btn-outline-danger" : "sz-btn-green")
+                        = u.status === "active" ? "Khóa đăng nhập" : "Mở khóa"
+      nav.pf-pager
+        if page > 1
+          a(href=`/admin/users?page=${page - 1}&q=${q}&role=${role}&status=${status}`) Trước
+        span Trang #{page} / #{pages} · #{total} tài khoản
+        if page < pages
+          a(href=`/admin/users?page=${page + 1}&q=${q}&role=${role}&status=${status}`) Sau
+    else
+      p.sz-empty Không có tài khoản khớp bộ lọc.
+ 
+block script
+  script(src="/admin/js/platform.js")
