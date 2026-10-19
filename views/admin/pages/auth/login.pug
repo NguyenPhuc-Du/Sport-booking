@@ -37,13 +37,23 @@ html(lang="vi")
           h1 Đăng nhập quản trị
           p.lead Dùng tài khoản quản trị do hệ thống cấp để tiếp tục.
 
-          //- Lỗi do server trả về (render lại trang với biến error)
-          if error
+          //- form cũ
+          //- //- Lỗi do server trả về (render lại trang với biến error)
+          //- if error
+          //-   div.alert(role="alert")
+          //-     i.bi.bi-exclamation-circle
+          //-     span= error
+
+          //- form(method="post" action="/admin/login" autocomplete="on")
+
+          //- check tk admin đăng nhập 
+          if message && message.error
             div.alert(role="alert")
               i.bi.bi-exclamation-circle
-              span= error
+              span = messages.error
+          
+          form(method="post" action="/admin/auth/login" autocomplete="on")
 
-          form(method="post" action="/admin/login" autocomplete="on")
             //- CSRF (bật nếu dùng csurf): input(type="hidden" name="_csrf" value=csrfToken)
 
             div.field

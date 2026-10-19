@@ -1,8 +1,11 @@
 const express = require("express");
-const router = express.Router();
 const controller = require("../../controllers/admin/auth.controller");
-const validate = require("../../validates/auth.validate");
+const validate = require("../../validates/admin/platform-auth.validate");
 
-router.get("/login", validate.loginPost, controller.login);
+const router = express.Router();
+
+router.get("/login", controller.loginForm);
+router.post("/login", validate.login, controller.login);
+router.get("/logout", controller.logout);
 
 module.exports = router;
