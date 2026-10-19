@@ -1,8 +1,6 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const User = require("../../models/user.model");
-const Role = require("../../models/role.model");
-const UserRole = require("../../models/user-role.model");
 
 class ServiceError extends Error {
   constructor(message) {

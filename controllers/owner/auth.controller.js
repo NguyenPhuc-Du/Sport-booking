@@ -1,5 +1,4 @@
 const User = require("../../models/user.model");
-const UserRole = require("../../models/user-role.model");
 const jwt = require("jsonwebtoken");
 
 module.exports.login = async (req, res) =>{
