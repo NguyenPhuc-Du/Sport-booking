@@ -1,6 +1,7 @@
 extends ../../layouts/default.pug
-
+include ../../../mixins/alert.pug
 block main
+  +alert-success(5000)
   .d-flex.justify-content-between.align-items-start.flex-wrap.gap-3.mb-4
     div
       h1.sz-title #{pageTitle}
@@ -38,9 +39,9 @@ block main
                   img(src= court.court_type_id.icon_url)
                 strong.sz-court-name= court.name
               if court.status === "active"
-                span.sz-badge.sz-badge-ok HOẠT ĐỘNG
+                span(class="sz-badge sz-badge-ok" ) HOẠT ĐỘNG
               else
-                span.sz-badge.sz-badge-danger ĐANG BẢO TRÌ
+                span(class="sz-badge sz-badge-danger" ) ĐANG BẢO TRÌ
             ul.sz-court-meta
               li
                 span Mặt sân 
@@ -50,13 +51,13 @@ block main
                 strong  #{court.court_type_id.name}
             .sz-court-actions
               if court.status === "active"
-                button.sz-btn.sz-btn-outline-danger.sz-btn-sm.btn-open-maintain(type="button")
+                button.sz-btn.sz-btn-outline-danger.sz-btn-sm.btn-open-maintain.btn(type="button" data-status= court.status data-id=court._id)
                   i.bi.bi-exclamation-triangle
-                  | Đưa vào bảo trì
+                  | ĐANG BẢO TRÌ
               else
-                button.sz-btn.sz-btn-green.sz-btn-sm(type="button")
+                button.sz-btn.sz-btn-green.sz-btn-sm.btn(type="button" data-status= court.status data-id=court._id)
                   i.bi.bi-check2-circle
                   | Mở lại sân
-
+    form(method='POST' action="" id="form-changeStatus" data-path=`${prefixAdmin}/facilities/changeStatus`)
     script(src="/admin/js/courts.js")
 
