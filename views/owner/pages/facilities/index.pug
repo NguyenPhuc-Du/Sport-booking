@@ -14,9 +14,9 @@ block main
       .fv-filter
         i.bi.bi-buildings.fv-filter-icon(aria-hidden="true")
         select.fv-select#venueFilter(name="venue_filter" aria-label="Lọc theo cơ sở")
-          option(value="ALL") Tất cả sân con
+          option(value="") Tất cả sân con 
           each item in venues
-            option(value=item._id)= item.name
+            option(value=item._id selected=(item._id==VenueSelected))= item.name
   .sz-tabs.mb-4#facilityTabs
     button.sz-tab.active(type="button" data-tab="courts") Sân con (#{countCourts})
     button.sz-tab(type="button" data-tab="pricing") Bảng giá & Giờ vàng (5)

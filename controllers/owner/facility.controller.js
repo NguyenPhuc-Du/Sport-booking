@@ -6,12 +6,21 @@ const Court = require("../../models/court.model");
 const Venue = require("../../models/facilities.model");
 module.exports.index = async (req, res) => {
   const userId = res.locals.user.id;
-  const courts = await facilities.findCourtById(userId);
+  let courts = "";
   // console.log(courtType);
   const venues = await facilities.getAllVenueByOwnerId(userId);
   console.log(venues);
   const countVenues = await facilities.countVenues();
   const countCourts = await facilities.countCourts();
+  const VenueSelected = req.query.id;
+  if (VenueSelected) {
+    console.log("haha");
+    courts = await facilities.findCourtsByIdVenue(VenueSelected);
+  } else {
+    console.log("hihi");
+    courts = await facilities.findCourtById(userId);
+  }
+  console.log(courts);
   res.render("owner/pages/facilities/index", {
     pageTitle: "Quản lý Cơ sở & Sân",
     activeMenu: "facilities",
@@ -19,6 +28,7 @@ module.exports.index = async (req, res) => {
     venues: venues,
     countVenues,
     countCourts,
+    VenueSelected,
   });
 };
 module.exports.indexVenues = async (req, res) => {

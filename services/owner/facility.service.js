@@ -24,11 +24,19 @@ module.exports.findCourtById = async (id) => {
     .lean();
   return courts;
 };
-module.exports.updateStatusCourts = async (id, status) => {
-  if (status) {
-    status = status == "active" ? "maintenance" : "active";
-  }
-  await Courts.updateOne({ _id: id }, { status: status });
+
+module.exports.getActiveVenuesByOwnerId = async (ownerId) => {
+  return await Venues.find({
+    owner_id: ownerId,
+    status: "active",
+    deleted: false,
+  }).lean();
+};
+module.exports.getCourtsByVenueIds = async (venueIds) => {
+  return await Courts.find({
+    venueId: { $in: venueIds },
+    deleted: false,
+  }).lean();
 };
 module.exports.countCourts = async () => {
   const courts = await Courts.countDocuments({});
@@ -37,4 +45,11 @@ module.exports.countCourts = async () => {
 module.exports.countVenues = async () => {
   const venues = await Venues.countDocuments({ deleted: false });
   return venues;
+};
+module.exports.findCourtsByIdVenue = async (id) => {
+  console.log(id);
+  const courts = await Courts.find()
+    .populate("court_type_id", "name icon_url description")
+    .lean();
+  return courts.filter((c) => String(c.venue_id) === String(id));
 };
