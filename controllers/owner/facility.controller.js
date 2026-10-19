@@ -11,6 +11,7 @@ module.exports.index = async (req, res) => {
   // console.log(courtType);
   res.render("owner/pages/facilities/index", {
     pageTitle: "Quản lý Cơ sở & Sân",
+    activeMenu: "facilities",
     courts: courts,
   });
 };
@@ -19,6 +20,7 @@ module.exports.indexVenues = async (req, res) => {
 
   res.render("owner/pages/facilities/indexVenues", {
     pageTitle: "Cơ sở",
+    activeMenu: "facilities",
     venues: venues,
   });
 };
@@ -27,6 +29,7 @@ module.exports.createVenues = async (req, res) => {
   console.log(userId + "user");
   res.render("owner/pages/facilities/createVenues", {
     pageTitle: "Cơ sở",
+    activeMenu: "facilities",
     userId: userId,
   });
 };
@@ -52,6 +55,7 @@ module.exports.editVenues = async (req, res) => {
   const venues = await Venues.findById(req.params.id);
   res.render("owner/pages/facilities/editVenues", {
     pageTitle: "Cơ sở",
+    activeMenu: "facilities",
     userId: userId,
     venues: venues,
   });

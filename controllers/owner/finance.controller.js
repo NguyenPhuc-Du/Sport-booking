@@ -19,6 +19,7 @@ module.exports.index = async (req, res) => {
   console.log(voucher);
   res.render("owner/pages/finance/index", {
     pageTitle: "Trang Khuyến mãi",
+    activeMenu: "finance",
     voucher: voucher,
   });
 };
@@ -26,6 +27,7 @@ module.exports.create = async (req, res) => {
   const venues = await Venues.find({ deleted: false });
   res.render("owner/pages/finance/create", {
     pageTitle: "Tạo Voucher",
+    activeMenu: "finance",
     venues: venues,
   });
 };
@@ -63,6 +65,7 @@ module.exports.edit = async (req, res) => {
   const venues = await Venues.find({ deleted: false });
   res.render("owner/pages/finance/edit", {
     pageTitle: "Trang Khuyến mãi",
+    activeMenu: "finance",
     voucher: voucher,
     venues: venues,
   });
