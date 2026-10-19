@@ -6,7 +6,6 @@ const Court = require("../../models/court.model");
 module.exports.index = async (req, res) => {
   const userId = res.locals.user.id;
   const courts = await facilities.findCourtById(userId);
-  console.log(courts);
   // console.log(courtType);
   res.render("owner/pages/facilities/index", {
     pageTitle: "Quản lý Cơ sở & Sân",
@@ -63,5 +62,16 @@ module.exports.editVenuesPost = async (req, res) => {
   const id = req.params.id;
   facilities.updateOneVenues(id, req.body);
   req.flash("success", "Thay đổi dữ liệu cơ sở thành công");
+  res.redirect(req.get("Referer"));
+};
+module.exports.changeStatus = async (req, res) => {
+  const id = req.params.id;
+  let status = req.params.status;
+  await facilities.updateStatusCourts(id, status);
+  if (status == "active") {
+    req.flash("success", "Bảo trì sân thành công");
+  } else {
+    req.flash("success", "Mở lại sân thành công");
+  }
   res.redirect(req.get("Referer"));
 };
