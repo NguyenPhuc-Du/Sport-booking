@@ -22,5 +22,6 @@ router.post(
   uploadCloud.upload,
   controller.editVenuesPost,
 );
+router.patch("/changeStatus/:id/:status", controller.changeStatus);
 router.use("/price-rules", priceRuleRoute);
 module.exports = router;

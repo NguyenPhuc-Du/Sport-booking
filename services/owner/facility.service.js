@@ -24,3 +24,9 @@ module.exports.findCourtById = async (id) => {
     .lean();
   return courts;
 };
+module.exports.updateStatusCourts = async (id, status) => {
+  if (status) {
+    status = status == "active" ? "maintenance" : "active";
+  }
+  await Courts.updateOne({ _id: id }, { status: status });
+};
