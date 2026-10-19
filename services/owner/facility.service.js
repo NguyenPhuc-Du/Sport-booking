@@ -30,3 +30,11 @@ module.exports.updateStatusCourts = async (id, status) => {
   }
   await Courts.updateOne({ _id: id }, { status: status });
 };
+module.exports.countCourts = async () => {
+  const courts = await Courts.countDocuments({});
+  return courts;
+};
+module.exports.countVenues = async () => {
+  const venues = await Venues.countDocuments({ deleted: false });
+  return venues;
+};

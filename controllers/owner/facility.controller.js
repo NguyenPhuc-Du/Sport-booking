@@ -3,24 +3,35 @@ const Courts = require("../../models/court.model");
 const CourtsType = require("../../models/court-types.model");
 const prefixAdmin = require("../../config/system");
 const Court = require("../../models/court.model");
+const Venue = require("../../models/facilities.model");
 module.exports.index = async (req, res) => {
   const userId = res.locals.user.id;
   const courts = await facilities.findCourtById(userId);
   // console.log(courtType);
+  const venues = await facilities.getAllVenueByOwnerId(userId);
+  console.log(venues);
+  const countVenues = await facilities.countVenues();
+  const countCourts = await facilities.countCourts();
   res.render("owner/pages/facilities/index", {
     pageTitle: "Quản lý Cơ sở & Sân",
     activeMenu: "facilities",
     courts: courts,
+    venues: venues,
+    countVenues,
+    countCourts,
   });
 };
 module.exports.indexVenues = async (req, res) => {
   const userId = res.locals.user.id;
   const venues = await facilities.getAllVenueByOwnerId(userId);
-
+  const countVenues = await facilities.countVenues();
+  const countCourts = await facilities.countCourts();
   res.render("owner/pages/facilities/indexVenues", {
     pageTitle: "Cơ sở",
     activeMenu: "facilities",
     venues: venues,
+    countVenues,
+    countCourts,
   });
 };
 module.exports.createVenues = async (req, res) => {
