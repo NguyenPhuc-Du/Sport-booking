@@ -1,9 +1,12 @@
 extends ../../layouts/default.pug
+include ../../../mixins/alert.pug
 
 block main
+  +alert-success(3000)
+  +alert-error(5000)
   link(rel="stylesheet", href="/admin/css/price-rules.css")
   .pr-wrap
-    a.pr-back(href="/admin/price-rules") ← Quay lại Bảng giá & Giờ vàng
+    a.pr-back(href=`${prefixOwner}/facilities/price-rules`) ← Quay lại Bảng giá & Giờ vàng
     .pr-card
       h1 Cấu hình Quy tắc Giá (Price Rule)
       p.pr-sub Hệ thống sẽ tự động nhân tỷ lệ giá khi khách chọn slot trùng khung giờ này.
@@ -18,8 +21,8 @@ block main
             input#name(type="text" name="name" required placeholder="VD: Giờ vàng tối" value=values.name)
 
           div
-            label(for="sportType") Cơ sở *
-            select#sportType(name="sportType" required)
+            label(for="venue") Cơ sở *
+            select#venue(name="venueId" required)
               option(value="") -- Chọn cơ sở --
               each v in venues
                 option(value=v.id)= v.name
@@ -27,9 +30,9 @@ block main
           div
             label(for="court") Sân con (tương ứng) *
             select#court(name="court")
-              option(value="") Tất cả sân của bộ môn
+              option(value="") Tất cả sân của cơ sở
               each c in courts
-                option(value=c._id data-sport=c.sportType selected=(String(values.court) === String(c._id)))= c.name
+                option(value=c._id data-venue=c.venueId selected=(String(values.court) === String(c._id)))= c.name
 
           div
             label(for="dayType") Áp dụng ngày *
@@ -52,26 +55,40 @@ block main
             label(for="timeEnd") Đến giờ *
             input#timeEnd(type="time" name="timeEnd" required value=values.timeEnd)
 
-          div
-            label(for="effectiveFrom") Hiệu lực từ ngày *
-            input#effectiveFrom(type="date" name="effectiveFrom" required value=values.effectiveFrom)
-
-          div
-            label(for="effectiveTo") Hiệu lực đến ngày *
-            input#effectiveTo(type="date" name="effectiveTo" required value=values.effectiveTo)
-            .pr-hint Chọn xa (VD 2099-12-31) nếu không giới hạn
-
         .pr-actions
-          a.pr-btn.pr-btn-ghost(href="/admin/price-rules") Hủy
+          a.pr-btn.pr-btn-ghost(href=`${prefixOwner}/facilities/price-rules`) Hủy
           button.pr-btn.pr-btn-main(type="submit") Lưu khung giá
 
   script.
-    // Chỉ hiện sân con thuộc bộ môn đã chọn
-    const sport = document.getElementById('sportType');
+    const venue = document.getElementById('venue');
     const court = document.getElementById('court');
-    const filter = () => [...court.options].forEach(o => {
-      if (!o.value) return;
-      o.hidden = o.dataset.sport && o.dataset.sport !== sport.value;
+    const allCourts = [...court.options].filter(o => o.value).map(o => ({
+      value: o.value,
+      venueId: o.dataset.venue,
+      name: o.textContent
+    }));
+
+    const filter = () => {
+      const venueId = venue.value;
+      const current = court.value;
+      court.replaceChildren();
+      const blank = document.createElement('option');
+      blank.value = '';
+      blank.textContent = 'Tất cả sân của cơ sở';
+      court.appendChild(blank);
+      allCourts.forEach(item => {
+        if (item.venueId !== venueId) return;
+        const option = document.createElement('option');
+        option.value = item.value;
+        option.dataset.venue = item.venueId;
+        option.textContent = item.name;
+        option.selected = item.value === current;
+        court.appendChild(option);
+      });
+    };
+
+    venue.addEventListener('change', () => {
+      court.value = '';
+      filter();
     });
-    sport.addEventListener('change', () => { court.value = ''; filter(); });
     filter();

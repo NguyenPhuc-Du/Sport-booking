@@ -1,0 +1,169 @@
+extends ../../layouts/default.pug
+include ../../../mixins/alert.pug
+
+block head
+  +alert-success(5000)
+  +alert-error(5000)
+  link(rel="stylesheet" href="/admin/css/facilities.css")
+  link(rel="stylesheet" href="/admin/css/price-rules-index.css")
+
+block main
+  .fv-page
+    //- ===== Helpers =====
+    - const fmtMoney = (n) => Number(n || 0).toLocaleString("vi-VN") + "đ"
+    - const dayTypeMap = { weekday: "Ngày thường", weekend: "Cuối tuần", all: "Tất cả các ngày" }
+    - const isGold = (r) => r.timeStart >= "17:00" && r.timeStart < "22:00"
+    - const rules = priceRules || []
+    - const q = query || {}
+    - const goldCount = rules.filter(isGold).length
+
+    //- ===== Header =====
+    .fv-head
+      div
+        h1.fv-title Quản lý Cơ sở &amp; Cụm sân
+        p.fv-sub Cấu hình sân con, phân định khung giờ giờ vàng và điều phối lịch bảo dưỡng.
+      .fv-head-actions
+        .fv-filter
+          i.bi.bi-buildings.fv-filter-icon
+          select.fv-select#facilitySelect(name="venue_filter")
+            option(value="") Tất cả cơ sở
+            each f in (facilities || [])
+              option(value=f._id selected=(String(f._id) === String(currentFacilityId)))= f.name
+        a.fv-btn-add(href=`${prefixAdmin}/facilities/venues/create`)
+          i.bi.bi-plus-lg
+          | Thêm cơ sở
+
+    //- ===== Tabs =====
+    .fv-tabs
+      a.fv-tab(href=`${prefixAdmin}/facilities`) Sân con (#{courtCount || 0})
+      a.fv-tab.active(href=`${prefixOwner}/facilities/price-rules`) Bảng giá &amp; Giờ vàng (#{rules.length})
+      a.fv-tab(href="#") Khóa slot bảo trì (#{maintenanceCount || 0})
+      a.fv-tab(href=`${prefixAdmin}/facilities/venues`) Danh sách cơ sở (#{facilityCount || 0})
+
+    //- ===== Table card =====
+    .sz-card
+      .d-flex.justify-content-between.align-items-center.flex-wrap.gap-3
+        .sz-card-head
+          span.sz-card-icon
+            i.bi.bi-tags
+          div
+            h2.sz-card-title Bảng giá theo khung giờ
+            p.sz-card-sub Thiết lập giá thuê theo sân, loại ngày và khung giờ (giờ vàng / thấp điểm).
+        a.btn.sz-btn-green(href=`${prefixOwner}/facilities/price-rules/create`)
+          i.bi.bi-plus-lg
+          | Tạo quy tắc giá
+
+      //- Filter
+      form.sz-filter.row.g-2(method="GET" action=`${prefixOwner}/facilities/price-rules`)
+        .col-12.col-md-3
+          .sz-search
+            i.bi.bi-search
+            input.form-control(type="text" name="keyword" placeholder="Tìm theo tên quy tắc..." value=q.keyword || "")
+        .col-6.col-md-2
+          select.form-select(name="facility")
+            option(value="") Tất cả cơ sở
+            each f in (facilities || [])
+              option(value=f._id selected=(String(q.facility) === String(f._id)))= f.name
+        .col-6.col-md-2
+          select.form-select(name="court")
+            option(value="") Tất cả sân
+            each c in (courts || [])
+              option(value=c._id selected=(String(q.court) === String(c._id)))= c.name
+        .col-6.col-md-2
+          select.form-select(name="dayType")
+            option(value="") Mọi loại ngày
+            each label, key in dayTypeMap
+              option(value=key selected=(q.dayType === key))= label
+        .col-6.col-md-2
+          select.form-select(name="status")
+            option(value="") Mọi trạng thái
+            option(value="active" selected=(q.status === "active")) Hoạt động
+            option(value="inactive" selected=(q.status === "inactive")) Ngưng hoạt động
+        .col-12.col-md-1.d-flex.gap-2
+          button.btn.sz-btn-dark.flex-fill(type="submit" title="Lọc")
+            i.bi.bi-funnel
+          a.btn.sz-btn-outline(href=`${prefixOwner}/facilities/price-rules` title="Xóa bộ lọc")
+            i.bi.bi-x-lg
+
+      //- Table
+      .table-responsive
+        table.table.sz-table.align-middle
+          thead
+            tr
+              th TÊN QUY TẮC
+              th CƠ SỞ
+              th SÂN
+              th LOẠI NGÀY
+              th KHUNG GIỜ
+              th GIÁ / GIỜ
+              th TRẠNG THÁI
+              th.text-end HÀNH ĐỘNG
+          tbody
+            if rules.length === 0
+              tr
+                td.text-center(colspan="8")
+                  .sz-empty
+                    i.bi.bi-inbox
+                    | Chưa có quy tắc giá nào.
+            else
+              each r in rules
+                tr(class=(isGold(r) ? "sz-row-gold" : undefined))
+                  td
+                    span.sz-rule-name= r.name
+                    if isGold(r)
+                      span.sz-gold-tag
+                        i.bi.bi-lightning-charge-fill
+                        | Giờ vàng
+                  td
+                    span.sz-venue
+                      i.bi.bi-buildings
+                      = r.court && r.court.venueId ? r.court.venueId.name : "—"
+                  td
+                    span.sz-court-chip= r.court ? r.court.name : "—"
+                  td
+                    span.sz-daytype(class=`sz-daytype-${r.dayType}`)= dayTypeMap[r.dayType]
+                  td
+                    span.sz-time
+                      i.bi.bi-clock
+                      | #{r.timeStart} - #{r.timeEnd}
+                  td
+                    span.sz-price= fmtMoney(r.pricePerHour)
+                    span.sz-price-unit /giờ
+                  td
+                    if r.status === "active"
+                      span.sz-badge.sz-badge-active hoạt động
+                    else
+                      span.sz-badge.sz-badge-inactive ngưng hoạt động
+                  td.text-end
+                    .d-inline-flex.gap-1
+                      a.sz-icon-btn(href=`${prefixOwner}/facilities/price-rules/edit/${r._id}` title="Chỉnh sửa")
+                        i.bi.bi-pencil-square
+                      form.d-inline(method="POST" action=`${prefixOwner}/facilities/price-rules/change-status/${r._id}?_method=PATCH`)
+                        input(type="hidden" name="status" value=(r.status === "active" ? "inactive" : "active"))
+                        button.sz-icon-btn(type="submit" title=(r.status === "active" ? "Tạm ngưng" : "Kích hoạt"))
+                          i.bi(class=(r.status === "active" ? "bi-pause-circle" : "bi-play-circle"))
+                      form.d-inline(method="POST" action=`${prefixOwner}/facilities/price-rules/delete/${r._id}?_method=DELETE` onsubmit="return confirm('Xóa quy tắc giá này?')")
+                        button.sz-icon-btn.danger(type="submit" title="Xóa")
+                          i.bi.bi-trash
+
+      //- Footer + Pagination
+      if rules.length > 0
+        .sz-table-foot
+          span Hiển thị <strong>#{rules.length}</strong> quy tắc · <strong>#{goldCount}</strong> khung giờ vàng
+          if pagination && pagination.totalPages > 1
+            nav(aria-label="Phân trang")
+              ul.pagination.sz-pagination.justify-content-end.mb-0
+                - const qs = (p) => `?page=${p}&keyword=${q.keyword || ""}&facility=${q.facility || ""}&court=${q.court || ""}&dayType=${q.dayType || ""}&status=${q.status || ""}`
+                li.page-item(class=(pagination.currentPage <= 1 ? "disabled" : undefined))
+                  a.page-link(href=qs(pagination.currentPage - 1)) &laquo;
+                - for (let p = 1; p <= pagination.totalPages; p++)
+                  li.page-item(class=(p === pagination.currentPage ? "active" : undefined))
+                    a.page-link(href=qs(p))= p
+                li.page-item(class=(pagination.currentPage >= pagination.totalPages ? "disabled" : undefined))
+                  a.page-link(href=qs(pagination.currentPage + 1)) &raquo;
+
+block script
+  script.
+    document.getElementById("facilitySelect")?.addEventListener("change", function () {
+      window.location.href = `#{prefixOwner}/facilities/price-rules?facility=${this.value}`;
+    });
