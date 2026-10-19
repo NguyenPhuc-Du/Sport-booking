@@ -223,3 +223,36 @@ module.exports.edit = async (req, res) => {
     venueId: String(currentCourt.venueId),
   });
 }
+
+//[PATCH] /owner/facilities/price-rules/edit/:id
+module.exports.editPatch = async (req, res) => {
+  try {
+    const priceRuleId = req.params.id;
+
+    const payload = {
+      name: req.body.name.trim(),
+      court: req.body.court,
+      pricePerHour: Number(req.body.pricePerHour),
+      dayType: req.body.dayType,
+      timeStart: req.body.timeStart.trim(),
+      timeEnd: req.body.timeEnd.trim(),
+    };
+
+    const updated = await PriceRule.updateOne({
+      _id: priceRuleId
+    }, payload, {
+      runValidators: true
+    });
+
+    if (!updated.matchedCount) {
+      req.flash("error", "Bảng giá không tồn tại");
+      return res.redirect(req.get("Referrer"));
+    }
+
+    req.flash("success", "Cập nhật bảng giá thành công");
+    res.redirect(req.get("Referrer"));
+  } catch (error) {
+    req.flash("error", "Cập nhật bảng giá thất bại");
+    res.redirect(req.get("Referrer"));
+  }
+}

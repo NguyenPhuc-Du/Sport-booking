@@ -296,8 +296,7 @@ module.exports = mongoose.model(
 Tạo `repositories/admin/role.repository.js`. Dùng model sẵn `models/role.model.js` và `models/user-role.model.js`.
 
 ```javascript
-const Role = require("../../models/role.model");
-const UserRole = require("../../models/user-role.model");
+
 
 function findAll() {
   return Role.find().sort({ code: 1 }).lean();

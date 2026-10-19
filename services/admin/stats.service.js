@@ -1,7 +1,5 @@
 const mongoose = require("mongoose");
 const User = require("../../models/user.model");
-const Role = require("../../models/role.model");
-const UserRole = require("../../models/user-role.model");
 const Venue = require("../../models/facilities.model");
 
 async function bookingsInfo() {

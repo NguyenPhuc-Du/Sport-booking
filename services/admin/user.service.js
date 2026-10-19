@@ -1,7 +1,5 @@
 const mongoose = require("mongoose"); // Nhúng thư viện mongoose vào
 const User = require("../../models/user.model"); // Nhúng hàm vô
-const Role = require("../../models/role.model");
-const UserRole = require("../../models/user-role.model");
 const { ServiceError, roleCodesOf } = require("./auth.service");
 
 const PAGE_SIZE = 8; //Số tài khoản được phép hiển thị trên 1 trang
