@@ -1,52 +1,17 @@
-const Venue = require("../../models/facilities.model");
-const Refreshment = require("../../models/refreshment.model");
-const searchHelper = require("../../helpers/search");
+const venueService = require("../../services/owner/facility.service");
+const refreshmentService = require("../../services/owner/refreshment.service");
 
 //[GET] /owner/refreshments
 module.exports.index = async (req, res) => {
     const ownerId = res.locals.user.id;
-    const venues = await Venue.find({
-        owner_id: ownerId
-    }).select("_id name").lean();
-
+    const venues = await venueService.getAllVenueByOwnerId(ownerId);
     const venueIds = venues.map(item => item._id);
   
-    const status = req.query.status;
-    const venueIdQuery = req.query.venueId;
+    const find = refreshmentService.buildRefreshmentFilterQuery(req.query, venueIds);
 
-    let find = {};
-    
-    const objectSearch = searchHelper(req.query);
-    if (objectSearch.regex) {
-        find.name = objectSearch.regex;
-    }
+    const refreshments = await refreshmentService.getRefreshments(find);
 
-    if(status == "low"){
-        find.stock = {
-            $lte: 10
-        };
-    } else if(status === "active" || status === "inactive") {
-        find.status = status;
-    }
-
-    // Xử lý lọc theo venueId
-    if (venueIdQuery && venueIds.some(id => String(id) === String(venueIdQuery))) {
-        find.venueId = venueIdQuery;
-    } else {
-        find.venueId = { $in: venueIds };
-    }
-
-    const refreshments = await Refreshment.find(find).populate("venueId", "name");
-
-    const stats = {
-        total: refreshments.length,
-        active: refreshments.filter((item) => item.status === "active").length,
-        inactive: refreshments.filter((item) => item.status === "inactive").length,
-        lowStock: refreshments.filter((item) => Number(item.stock) <= 10).length,
-        stockValue: refreshments.reduce((sum, item) => {
-            return sum + (Number(item.price) || 0) * (Number(item.stock) || 0);
-        }, 0)
-    }
+    const stats = refreshmentService.calculateRefreshmentStats(refreshments);
 
     res.render("owner/pages/refreshments/index",{
         pageTitle: "Giải khát",
@@ -62,10 +27,7 @@ module.exports.index = async (req, res) => {
 module.exports.create = async (req, res) => {
     const ownerId = res.locals.user.id;
 
-
-    const venues = await Venue.find({
-        owner_id: ownerId
-    });
+    const venues = await venueService.getAllVenueByOwnerId(ownerId);
 
     res.render("owner/pages/refreshments/create", {
         pageTitle: "Giải khát",
@@ -77,8 +39,7 @@ module.exports.create = async (req, res) => {
 //[POST] /owner/refreshments/create
 module.exports.createPost = async (req, res) => {
     try {
-        const refreshment = new Refreshment(req.body);
-        await refreshment.save();
+        await refreshmentService.createAnRefreshment(req.body);
 
         req.flash("success", "Thêm mới nước uống thành công");
         res.redirect(req.get("Referrer"));
@@ -94,13 +55,8 @@ module.exports.edit = async(req, res) => {
     const refreshId = req.params.id;
     const ownerId = res.locals.user.id;
 
-    const refreshment = await Refreshment.findOne({
-        _id: refreshId
-    }).populate("venueId", "name");
-
-    const venues = await Venue.find({
-        owner_id: ownerId
-    });
+    const refreshment = await refreshmentService.getRefreshmentWithVenueById(refreshId);
+    const venues = await venueService.getAllVenueByOwnerId(ownerId);
 
     res.render("owner/pages/refreshments/edit", {
         pageTitle: "Giải khát",
@@ -114,27 +70,8 @@ module.exports.edit = async(req, res) => {
 module.exports.editPatch = async (req, res) => {
     try {
         const refreshId = req.params.id;
-        const {
-            name,
-            venueId,
-            price,
-            stock,
-            supplier,
-            status,
-            image
-        } = req.body;
-
-        await Refreshment.updateOne({
-            _id: refreshId
-        },{
-            name,
-            venueId,
-            price: Number(price),
-            stock: Number(stock),
-            supplier,
-            status,
-            image
-        });
+        
+        await refreshmentService.updateRefreshment(refreshId, req.body);
 
         req.flash("success", "Cập nhật nước uống thành công");
         res.redirect(req.get("Referrer"));
@@ -149,11 +86,7 @@ module.exports.changeStatus = async (req, res) => {
         const refreshId = req.params.id;
         const status = req.body.status;
 
-        await Refreshment.updateOne({
-            _id: refreshId
-        }, {
-            status
-        });
+        await refreshmentService.updateRefreshmentStatus(refreshId, status);
 
         req.flash("success", "Cập nhật trạng thái nước uống thành công");
         res.redirect(req.get("Referrer"));

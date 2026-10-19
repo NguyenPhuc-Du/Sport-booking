@@ -24,3 +24,17 @@ module.exports.findCourtById = async (id) => {
     .lean();
   return courts;
 };
+
+module.exports.getActiveVenuesByOwnerId = async (ownerId) => {
+  return await Venues.find({
+    owner_id: ownerId,
+    status: "active",
+    deleted: false,
+  }).lean();
+};
+module.exports.getCourtsByVenueIds = async (venueIds) => {
+  return await Courts.find({
+    venueId: { $in: venueIds },
+    deleted: false,
+  }).lean();
+};
