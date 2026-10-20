@@ -70,3 +70,9 @@ module.exports.findCourtsByIdVenue = async (id) => {
     .lean();
   return courts.filter((c) => String(c.venue_id) === String(id));
 };
+module.exports.updateStatusCourts = async (id, status) => {
+  if (status) {
+    status = status == "active" ? "maintenance" : "active";
+  }
+  await Courts.updateOne({ _id: id }, { status: status });
+};
