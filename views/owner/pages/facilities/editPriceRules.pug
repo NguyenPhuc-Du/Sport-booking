@@ -31,7 +31,7 @@ block main
             label(for="court") Sân con (tương ứng) *
             select#court(name="court" required)
               each c in courts
-                if String(c.venueId) === String(venueId)
+                if String(c.venue_id) === String(venueId)
                   option(value=c._id selected=(String(priceRule.court) === String(c._id)))= c.name
 
           div
@@ -62,7 +62,7 @@ block main
   -
     const courtOptions = courts.map((c) => ({
       value: String(c._id),
-      venueId: String(c.venueId),
+      venueId: String(c.venue_id),
       name: c.name
     }));
   script.

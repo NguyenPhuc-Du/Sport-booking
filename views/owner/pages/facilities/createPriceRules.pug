@@ -14,7 +14,7 @@ block main
       if error
         .pr-error= error
 
-      form(method="POST" action=`${prefixOwner}/price-rules/create`)
+      form(method="POST" action=`${prefixOwner}/facilities/price-rules/create`)
         .pr-grid
           .pr-full
             label(for="name") Tên khung giá *
@@ -25,14 +25,14 @@ block main
             select#venue(name="venueId" required)
               option(value="") -- Chọn cơ sở --
               each v in venues
-                option(value=v.id)= v.name
+                option(value=String(v._id))= v.name
 
           div
             label(for="court") Sân con (tương ứng) *
             select#court(name="court")
               option(value="") Tất cả sân của cơ sở
               each c in courts
-                option(value=c._id data-venue=c.venueId selected=(String(values.court) === String(c._id)))= c.name
+                option(value=String(c._id) data-venue=String(c.venue_id) selected=(String(values.court) === String(c._id)))= c.name
 
           div
             label(for="dayType") Áp dụng ngày *

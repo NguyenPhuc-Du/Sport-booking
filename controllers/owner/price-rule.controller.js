@@ -73,7 +73,7 @@ module.exports.edit = async (req, res) => {
     priceRule,
     venues,
     courts,
-    venueId: String(currentCourt.venueId),
+    venueId: String(currentCourt.venue_id),
   });
 }
 
