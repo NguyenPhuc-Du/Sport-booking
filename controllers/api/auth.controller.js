@@ -2,8 +2,8 @@ const bcrypt = require("bcrypt");
 const crypto = require("crypto");
 const User = require("../../models/user.model");
 const Otp = require("../../models/otp.model");
-const tokenService = require("../../services/token.service");
-const mailService = require("../../services/mail.service");
+const tokenService = require("../../services/app/token.service");
+const mailService = require("../../services/app/mail.service");
 const { toUser } = require("./user.mapper");
 
 const EMAIL_PATTERN = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -34,6 +34,11 @@ function genOtp() {
 }
 
 async function createAndSendOtp({ email, purpose, payload }) {
+  const last = await Otp.findOne({ email, purpose });
+  if (last && last.expiresAt.getTime() - OTP_TTL_MS > Date.now() - 60 * 1000) {
+    throw httpError(429, "Vui lòng đợi 60 giây trước khi gửi lại mã");
+  }
+
   await Otp.deleteMany({ email, purpose });
 
   const code = genOtp();
@@ -126,6 +131,7 @@ module.exports.registerVerify = async (req, res) => {
     return issueSession(res, user, 201);
   } catch (error) {
     if (error.status) return fail(res, error.status, error.message);
+    if (error.code === 11000) return fail(res, 409, "Email này đã được đăng ký");
     console.error(error);
     return fail(res, 500, "Xác minh đăng ký thất bại");
   }

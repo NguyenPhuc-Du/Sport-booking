@@ -47,10 +47,11 @@ class ProfileViewModel @Inject constructor(
     fun onPhoneChange(value: String) = _state.update { it.copy(phone = value, error = null, message = null) }
     fun onEmailChange(value: String) = _state.update { it.copy(email = value, error = null, message = null) }
 
-    fun save() {
+   fun save() {
         val current = _state.value
+        if (current.saving) return
+        _state.update { it.copy(saving = true, error = null, message = null) }
         viewModelScope.launch {
-            _state.update { it.copy(saving = true, error = null, message = null) }
             when (val result = updateProfile(current.fullName, current.phone, current.email)) {
                 is DomainResult.Success -> {
                     _state.update {

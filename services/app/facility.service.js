@@ -1,6 +1,6 @@
-const Venue = require("../models/facilities.model");
-const Court = require("../models/court.model");
-const CourtType = require("../models/court-types.model");
+const Venue = require("../../models/facilities.model");
+const Court = require("../../models/court.model");
+const CourtType = require("../../models/court-types.model");
 
 const OBJECT_ID = /^[0-9a-fA-F]{24}$/;
 

@@ -40,8 +40,9 @@ class BookingsViewModel @Inject constructor(
     fun refresh() = load(_state.value.filter)
 
     fun cancel(code: String) {
+        if (_state.value.workingCode != null) return
+        _state.update { it.copy(workingCode = code, error = null) }
         viewModelScope.launch {
-            _state.update { it.copy(workingCode = code, error = null) }
             when (val result = cancelBooking(code)) {
                 is DomainResult.Success -> load(_state.value.filter)
                 is DomainResult.Failure -> _state.update { it.copy(workingCode = null, error = result.message) }
