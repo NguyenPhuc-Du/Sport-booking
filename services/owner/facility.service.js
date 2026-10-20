@@ -76,3 +76,10 @@ module.exports.updateStatusCourts = async (id, status) => {
   }
   await Courts.updateOne({ _id: id }, { status: status });
 };
+module.exports.getOneCourtsById = async (id) => {
+  const courts = await Courts.findById({ _id: id });
+  return courts;
+};
+module.exports.updateOneCourts = async (id, body) => {
+  await Courts.updateOne({ _id: id }, body);
+};

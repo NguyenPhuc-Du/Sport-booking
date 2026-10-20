@@ -41,10 +41,42 @@ module.exports.create = async (req, res) => {
     type,
   });
 };
+module.exports.edit = async (req, res) => {
+  const userId = res.locals.user.id;
+  const venues = await facilities.getAllVenueByOwnerId(userId);
+  const type = await facilities.getAllCourtTypes();
+  const courts = await facilities.getOneCourtsById(req.params.id);
+  res.render("owner/pages/facilities/edit", {
+    pageTitle: "sửa sân con",
+    venues,
+    type,
+    courts,
+  });
+};
 module.exports.createPost = async (req, res) => {
   await facilities.createCourts(req.body);
   req.flash("success", "Thêm mới sân con thành công");
   res.redirect(req.get("Referer"));
+};
+module.exports.editPost = async (req, res) => {
+  const kept = [].concat(req.body.keep_image_urls || []);
+  const added = req.body.new_image_urls || [];
+  const image_urls = [...kept, ...added].slice(0, 6);
+
+  const body = {
+    venue_id: req.body.venue_id,
+    court_type_id: req.body.court_type_id,
+    name: req.body.name,
+    surface: req.body.surface,
+    capacity: req.body.capacity,
+    note: req.body.note,
+    status: req.body.status,
+    image_urls,
+  };
+
+  await facilities.updateOneCourts(req.params.id, body);
+  req.flash("success", "Cập nhật sân con thành công");
+  res.redirect(`${prefixAdmin.prefixOwner}/facilities`);
 };
 module.exports.indexVenues = async (req, res) => {
   const userId = res.locals.user.id;

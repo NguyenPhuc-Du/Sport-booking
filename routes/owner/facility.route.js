@@ -31,5 +31,12 @@ router.post(
   uploadCloud.uploadMany, // đẩy lên Cloudinary → req.body.image_urls = [url, ...]
   controller.createPost, // handler lưu Court (bạn tự viết)
 );
+router.get("/editCourts/:id", controller.edit);
+router.post(
+  "/editCourts/:id",
+  upload.array("new_images", 6),
+  uploadCloud.uploadMany,
+  controller.editPost,
+);
 router.use("/price-rules", priceRuleRoute);
 module.exports = router;

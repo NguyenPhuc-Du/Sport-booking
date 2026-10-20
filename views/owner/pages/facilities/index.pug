@@ -54,14 +54,19 @@ block main
                 span Loại hình
                 strong  #{court.court_type_id.name}
             .sz-court-actions
+              a.sz-btn.sz-btn-edit.sz-btn-sm(
+                href=`${prefixAdmin}/facilities/editCourts/${court._id}`
+              )
+                i.bi.bi-pencil-square
+                | Sửa
               if court.status === "active"
                 button.sz-btn.sz-btn-outline-danger.sz-btn-sm.btn-open-maintain.btn(type="button" data-status= court.status data-id=court._id)
                   i.bi.bi-exclamation-triangle
-                  | ĐƯA VÀO BẢO TRÌ
+                  | Bảo trì
               else
                 button.sz-btn.sz-btn-green.sz-btn-sm.btn(type="button" data-status= court.status data-id=court._id)
                   i.bi.bi-check2-circle
-                  | Mở lại sân
+                  | Mở lại
     form(method='POST' action="" id="form-changeStatus" data-path=`${prefixAdmin}/facilities/changeStatus`)
     script(src="/admin/js/courts.js")
 
