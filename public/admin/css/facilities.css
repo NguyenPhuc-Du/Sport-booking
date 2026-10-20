@@ -502,6 +502,68 @@
   background: #d1fae5;
 }
 
+.fv-image-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.fv-image-drop {
+  grid-column: 1 / -1;
+  min-height: 140px;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 16px;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 20px;
+  text-align: center;
+  color: #64748b;
+}
+
+.fv-image-drop i {
+  font-size: 28px;
+  color: #94a3b8;
+  margin-bottom: 2px;
+}
+
+.fv-image-drop span {
+  font-size: 14px;
+  font-weight: 700;
+  color: #475569;
+}
+
+.fv-image-drop small {
+  font-size: 12px;
+  font-weight: 500;
+  color: #94a3b8;
+}
+
+.fv-image-thumb {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  background: #f1f5f9;
+}
+
+.fv-image-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.fv-image-hint {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #94a3b8;
+}
+
 .fv-field-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -690,5 +752,9 @@
 
   .fv-modal-title {
     font-size: 19px;
+  }
+
+  .fv-image-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }

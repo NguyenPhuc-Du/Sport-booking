@@ -31,6 +31,21 @@ module.exports.index = async (req, res) => {
     VenueSelected,
   });
 };
+module.exports.create = async (req, res) => {
+  const userId = res.locals.user.id;
+  const venues = await facilities.getAllVenueByOwnerId(userId);
+  const type = await facilities.getAllCourtTypes();
+  res.render("owner/pages/facilities/create", {
+    pageTitle: "Thêm mới sân con",
+    venues,
+    type,
+  });
+};
+module.exports.createPost = async (req, res) => {
+  await facilities.createCourts(req.body);
+  req.flash("success", "Thêm mới sân con thành công");
+  res.redirect(req.get("Referer"));
+};
 module.exports.indexVenues = async (req, res) => {
   const userId = res.locals.user.id;
   const venues = await facilities.getAllVenueByOwnerId(userId);
