@@ -19,28 +19,16 @@ block main
         method="POST"
         enctype="multipart/form-data"
       )
-        .fv-field-row
-          .fv-field
-            label.fv-label(for="venueId")
-              | Thuộc cơ sở
-              span.fv-req *
-            .fv-select-wrap
-              select#venueId.fv-input.fv-select-field(name="venue_id" required)
-                option(value="") -- Chọn cơ sở --
-                if venues
-                  each v in venues
-                    option(value=v._id selected=(String(v._id) === String(courts.venue_id)))= v.name
-
-          .fv-field
-            label.fv-label(for="courtTypeId")
-              | Loại sân
-              span.fv-req *
-            .fv-select-wrap
-              select#courtTypeId.fv-input.fv-select-field(name="court_type_id" required)
-                option(value="") -- Chọn loại sân --
-                if type
-                  each t in type
-                    option(value=t._id selected=(String(t._id) === String(courts.court_type_id)))= t.name
+        .fv-field
+          label.fv-label(for="courtTypeId")
+            | Loại sân
+            span.fv-req *
+          .fv-select-wrap
+            select#courtTypeId.fv-input.fv-select-field(name="court_type_id" required)
+              option(value="") -- Chọn loại sân --
+              if type
+                each t in type
+                  option(value=t._id selected=(String(t._id) === String(courts.court_type_id)))= t.name
 
         .fv-field
           label.fv-label(for="courtName")

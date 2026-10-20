@@ -80,6 +80,12 @@ module.exports.getOneCourtsById = async (id) => {
   const courts = await Courts.findById({ _id: id });
   return courts;
 };
+module.exports.getCourtDetailById = async (id) => {
+  return Courts.findById(id)
+    .populate("court_type_id", "name icon_url description")
+    .populate("venue_id", "name address district city open_time close_time image_url")
+    .lean();
+};
 module.exports.updateOneCourts = async (id, body) => {
   await Courts.updateOne({ _id: id }, body);
 };

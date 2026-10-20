@@ -1,0 +1,179 @@
+extends ../../layouts/default.pug
+include ../../../mixins/alert.pug
+
+block head
+  +alert-success(5000)
+  +alert-error(5000)
+  link(rel="stylesheet" href="/admin/css/facilities.css")
+
+block main
+  -
+    var images = (court.image_urls && court.image_urls.length) ? court.image_urls : []
+    var venue = court.venue_id || {}
+    var courtType = court.court_type_id || {}
+    var venueAddress = [venue.address, venue.district, venue.city].filter(Boolean).join(", ")
+
+  .cd-page
+    .cd-top
+      a.sz-btn.sz-btn-detail.cd-btn-back(href=`${prefixAdmin}/facilities`)
+        i.bi.bi-arrow-left
+        | Quay về
+      .cd-top-actions
+        if court.status === "active"
+          span.sz-badge.sz-badge-ok HOẠT ĐỘNG
+        else if court.status === "maintenance"
+          span.sz-badge.sz-badge-danger ĐANG BẢO TRÌ
+        else
+          span.sz-badge.sz-badge-muted NGƯNG HOẠT ĐỘNG
+        a.sz-btn.sz-btn-edit(href=`${prefixAdmin}/facilities/editCourts/${court._id}`)
+          i.bi.bi-pencil-square
+          | Sửa sân
+
+    .cd-hero
+      .cd-gallery
+        .cd-gallery-main#cdMainFrame
+          if images.length
+            img#cdMainImage(src=images[0] alt=court.name)
+            .cd-gallery-count
+              i.bi.bi-images
+              span#cdImageCount 1 / #{images.length}
+          else
+            .cd-gallery-empty
+              i.bi.bi-image
+              span Chưa có ảnh sân
+
+        if images.length > 1
+          .cd-gallery-thumbs#cdThumbs
+            each url, idx in images
+              button.cd-thumb(
+                type="button"
+                class=(idx === 0 ? "is-active" : "")
+                data-src=url
+                data-index=idx
+                aria-label=`Ảnh ${idx + 1}`
+              )
+                img(src=url alt="")
+
+      .cd-summary
+        .cd-summary-type
+          if courtType.icon_url
+            img.cd-type-icon(src=courtType.icon_url alt="")
+          else
+            span.cd-type-icon.cd-type-icon--fallback
+              i.bi.bi-trophy
+          .cd-type-text
+            span.cd-type-label Loại sân
+            strong= courtType.name || "Chưa phân loại"
+
+        h1.cd-title= court.name
+        p.cd-venue
+          i.bi.bi-geo-alt-fill
+          if venue.name
+            span #{venue.name}
+            if venueAddress
+              span.cd-venue-sep ·
+              span= venueAddress
+          else
+            span Chưa gắn cơ sở
+
+        .cd-stat-grid
+          .cd-stat
+            span.cd-stat-label Mặt sân
+            strong.cd-stat-value= court.surface || "—"
+          .cd-stat
+            span.cd-stat-label Sức chứa
+            strong.cd-stat-value= court.capacity || "—"
+          .cd-stat
+            span.cd-stat-label Trạng thái
+            strong.cd-stat-value= statusLabel
+          .cd-stat
+            span.cd-stat-label Số ảnh
+            strong.cd-stat-value #{images.length}
+
+        if venue.open_time || venue.close_time
+          .cd-hours
+            i.bi.bi-clock
+            span Giờ cơ sở:
+            strong #{venue.open_time || "—"} – #{venue.close_time || "—"}
+
+    .cd-body
+      .cd-panel
+        h2.cd-panel-title
+          i.bi.bi-info-circle
+          | Thông tin chi tiết
+        .cd-info-list
+          .cd-info-row
+            span Nhãn sân
+            strong= court.name
+          .cd-info-row
+            span Loại hình
+            strong= courtType.name || "—"
+          .cd-info-row
+            span Mô tả loại sân
+            strong= courtType.description || "Không có mô tả"
+          .cd-info-row
+            span Cơ sở quản lý
+            strong= venue.name || "—"
+          .cd-info-row
+            span Địa chỉ
+            strong= venueAddress || "—"
+
+      .cd-panel
+        h2.cd-panel-title
+          i.bi.bi-journal-text
+          | Ghi chú vận hành
+        if court.note
+          p.cd-note= court.note
+        else
+          p.cd-note.cd-note--empty Chưa có ghi chú nội bộ cho sân này.
+
+      if images.length
+        .cd-panel.cd-panel--full
+          h2.cd-panel-title
+            i.bi.bi-collection
+            | Bộ sưu tập ảnh (#{images.length})
+          .cd-album
+            each url, idx in images
+              button.cd-album-item(
+                type="button"
+                data-src=url
+                data-index=idx
+                aria-label=`Xem ảnh ${idx + 1}`
+              )
+                img(src=url alt=`Ảnh sân ${idx + 1}`)
+                span.cd-album-index= idx + 1
+
+    .cd-footer
+      a.sz-btn.sz-btn-detail.cd-btn-back(href=`${prefixAdmin}/facilities`)
+        i.bi.bi-arrow-left
+        | Quay về danh sách sân
+
+block script
+  script.
+    (function () {
+      var main = document.getElementById("cdMainImage");
+      var count = document.getElementById("cdImageCount");
+      if (!main) return;
+
+      function setActive(src, index, total) {
+        main.src = src;
+        if (count) count.textContent = (index + 1) + " / " + total;
+        document.querySelectorAll(".cd-thumb").forEach(function (btn) {
+          btn.classList.toggle("is-active", Number(btn.dataset.index) === index);
+        });
+        var frame = document.getElementById("cdMainFrame");
+        if (frame) {
+          frame.classList.remove("cd-flash");
+          void frame.offsetWidth;
+          frame.classList.add("cd-flash");
+        }
+      }
+
+      document.querySelectorAll(".cd-thumb, .cd-album-item").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var total = document.querySelectorAll(".cd-thumb").length || document.querySelectorAll(".cd-album-item").length;
+          setActive(btn.dataset.src, Number(btn.dataset.index), total);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+      });
+    })();

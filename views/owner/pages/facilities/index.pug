@@ -54,6 +54,11 @@ block main
                 span Loại hình
                 strong  #{court.court_type_id.name}
             .sz-court-actions
+              a.sz-btn.sz-btn-detail.sz-btn-sm(
+                href=`${prefixAdmin}/facilities/detailCourts/${court._id}`
+              )
+                i.bi.bi-eye
+                | Chi tiết
               a.sz-btn.sz-btn-edit.sz-btn-sm(
                 href=`${prefixAdmin}/facilities/editCourts/${court._id}`
               )

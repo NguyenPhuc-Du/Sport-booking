@@ -53,6 +53,26 @@ module.exports.edit = async (req, res) => {
     courts,
   });
 };
+module.exports.detail = async (req, res) => {
+  const court = await facilities.getCourtDetailById(req.params.id);
+  if (!court) {
+    req.flash("error", "Không tìm thấy sân con");
+    return res.redirect(`${prefixAdmin.prefixOwner}/facilities`);
+  }
+
+  const statusLabel = {
+    active: "Đang hoạt động",
+    inactive: "Ngưng hoạt động",
+    maintenance: "Đang bảo trì",
+  };
+
+  res.render("owner/pages/facilities/detail", {
+    pageTitle: court.name || "Chi tiết sân con",
+    activeMenu: "facilities",
+    court,
+    statusLabel: statusLabel[court.status] || court.status,
+  });
+};
 module.exports.createPost = async (req, res) => {
   await facilities.createCourts(req.body);
   req.flash("success", "Thêm mới sân con thành công");
@@ -64,7 +84,6 @@ module.exports.editPost = async (req, res) => {
   const image_urls = [...kept, ...added].slice(0, 6);
 
   const body = {
-    venue_id: req.body.venue_id,
     court_type_id: req.body.court_type_id,
     name: req.body.name,
     surface: req.body.surface,

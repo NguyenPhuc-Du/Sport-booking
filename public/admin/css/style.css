@@ -939,6 +939,19 @@ select:focus-visible {
   color: var(--green);
 }
 
+.sz-btn-detail {
+  background: #f8fafc;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+  text-decoration: none;
+}
+
+.sz-btn-detail:hover {
+  background: #f1f5f9;
+  color: var(--ink);
+  border-color: #cbd5e1;
+}
+
 .sz-btn-sm {
   padding: 8px 12px;
   font-size: 12px;
@@ -1257,6 +1270,10 @@ select:focus-visible {
 .sz-badge-warn {
   background: #fef3c7;
   color: #b45309;
+}
+.sz-badge-muted {
+  background: #f1f5f9;
+  color: #64748b;
 }
 
 /* Timeline */
