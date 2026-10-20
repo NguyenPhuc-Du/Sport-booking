@@ -6,7 +6,7 @@ function sortObject(obj) {
   Object.keys(obj)
     .sort()
     .forEach((key) => {
-      sorted[key] = obj[key];
+      sorted[key] = encodeURIComponent(obj[key]).replace(/%20/g, "+");
     });
   return sorted;
 }
