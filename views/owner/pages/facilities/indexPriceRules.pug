@@ -12,10 +12,8 @@ block main
     //- ===== Helpers =====
     - const fmtMoney = (n) => Number(n || 0).toLocaleString("vi-VN") + "đ"
     - const dayTypeMap = { weekday: "Ngày thường", weekend: "Cuối tuần", all: "Tất cả các ngày" }
-    - const isGold = (r) => r.timeStart >= "17:00" && r.timeStart < "22:00"
     - const rules = priceRules || []
     - const q = query || {}
-    - const goldCount = rules.filter(isGold).length
 
     //- ===== Header =====
     .fv-head
@@ -107,17 +105,13 @@ block main
                     | Chưa có quy tắc giá nào.
             else
               each r in rules
-                tr(class=(isGold(r) ? "sz-row-gold" : undefined))
+                tr
                   td
                     span.sz-rule-name= r.name
-                    if isGold(r)
-                      span.sz-gold-tag
-                        i.bi.bi-lightning-charge-fill
-                        | Giờ vàng
                   td
                     span.sz-venue
                       i.bi.bi-buildings
-                      = r.court && r.court.venueId ? r.court.venueId.name : "—"
+                      = r.court && r.court.venue_id ? r.court.venue_id.name : "—"
                   td
                     span.sz-court-chip= r.court ? r.court.name : "—"
                   td
@@ -149,7 +143,7 @@ block main
       //- Footer + Pagination
       if rules.length > 0
         .sz-table-foot
-          span Hiển thị <strong>#{rules.length}</strong> quy tắc · <strong>#{goldCount}</strong> khung giờ vàng
+          span Hiển thị <strong>#{rules.length}</strong> quy tắc
           if pagination && pagination.totalPages > 1
             nav(aria-label="Phân trang")
               ul.pagination.sz-pagination.justify-content-end.mb-0
