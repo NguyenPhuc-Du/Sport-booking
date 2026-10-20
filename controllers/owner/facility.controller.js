@@ -18,7 +18,7 @@ module.exports.index = async (req, res) => {
     courts = await facilities.findCourtsByIdVenue(VenueSelected);
   } else {
     console.log("hihi");
-    courts = await facilities.findCourtById(userId);
+    courts = await facilities.findCourtsByOwnerId(userId);
   }
   console.log(courts);
   res.render("owner/pages/facilities/index", {

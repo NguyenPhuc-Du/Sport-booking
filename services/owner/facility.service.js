@@ -18,11 +18,19 @@ module.exports.findVenuesById = async (id) => {
 module.exports.updateOneVenues = async (id, body) => {
   await Venues.updateOne({ _id: id }, body);
 };
-module.exports.findCourtById = async (id) => {
+module.exports.findCourtsByOwnerId = async (userId) => {
+  const venues = await Venues.find({
+    owner_id: userId,
+    deleted: false,
+  }).select("_id");
+
+  const venueIds = new Set(venues.map((v) => String(v._id)));
+
   const courts = await Courts.find({})
     .populate("court_type_id", "name icon_url description")
     .lean();
-  return courts;
+
+  return courts.filter((c) => venueIds.has(String(c.venue_id)));
 };
 
 module.exports.getActiveVenuesByOwnerId = async (ownerId) => {
