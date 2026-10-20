@@ -84,8 +84,9 @@ class CheckoutViewModel @Inject constructor(
 
     fun confirm() {
         val current = _state.value
+        if (current.submitting || current.quote == null) return
+        _state.update { it.copy(submitting = true, error = null) }
         viewModelScope.launch {
-            _state.update { it.copy(submitting = true, error = null) }
             when (val result = createBooking(draft(current.paymentMethod, current.appliedVoucher))) {
                 is DomainResult.Success -> {
                     val url = result.data.paymentUrl

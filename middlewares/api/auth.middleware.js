@@ -1,4 +1,4 @@
-const tokenService = require("../../services/token.service");
+const tokenService = require("../../services/app/token.service");
 
 module.exports = (req, res, next) => {
   const header = req.headers.authorization || "";

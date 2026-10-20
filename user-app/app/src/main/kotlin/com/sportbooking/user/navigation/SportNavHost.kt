@@ -13,6 +13,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.Lifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -218,4 +219,15 @@ private fun NavHostController.goToBookings() {
         popUpTo(graph.findStartDestination().id) { saveState = true }
         launchSingleTop = true
     }
+}
+
+private fun NavHostController.isResumed(): Boolean =
+    currentBackStackEntry?.lifecycle?.currentState == Lifecycle.State.RESUMED
+
+private fun NavHostController.navigateOnce(route: String) {
+    if (isResumed()) navigate(route)
+}
+
+private fun NavHostController.popOnce() {
+    if (isResumed()) popBackStack()
 }

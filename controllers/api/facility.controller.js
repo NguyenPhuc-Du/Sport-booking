@@ -1,5 +1,5 @@
-const facilityService = require("../../services/facility.service");
-const slotService = require("../../services/slot.service");
+const facilityService = require("../../services/app/facility.service");
+const slotService = require("../../services/app/slot.service");
 const Voucher = require("../../models/finance.model");
 
 module.exports.home = async (req, res) => {
