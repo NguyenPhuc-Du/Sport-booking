@@ -151,3 +151,17 @@ module.exports.getPriceRuleIndex = async (ownerId, query) => {
     pagination: { currentPage, totalPages },
   };
 };
+
+module.exports.changeStatusPriceRule = async (priceRuleId, status) => {
+  if (!mongoose.Types.ObjectId.isValid(priceRuleId)) {
+    throw new Error("Bảng giá không tồn tại");
+  }
+  if (!["active", "inactive"].includes(status)) {
+    throw new Error("Trạng thái không hợp lệ");
+  }
+  const updated = await PriceRule.updateOne({ _id: priceRuleId }, { status });
+  if (!updated.matchedCount) {
+    throw new Error("Bảng giá không tồn tại");
+  }
+  return updated;
+};

@@ -91,3 +91,19 @@ module.exports.editPatch = async (req, res) => {
     res.redirect(req.get("Referrer"));
   }
 }
+
+//[PATCH] /owner/facilities/price-rules/change-status/:id
+module.exports.changeStatus = async (req, res) => {
+  try {
+    const priceRuleId = req.params.id;
+    const status = req.body.status;
+
+    await priceruleService.changeStatusPriceRule(priceRuleId, status);
+    
+    req.flash("success", "Cập nhật bảng giá thành công");
+    res.redirect(req.get("Referrer"));
+  } catch (error) {
+    req.flash("error", "Cập nhật bảng giá thất bại");
+    res.redirect(req.get("Referrer"));
+  }
+}
