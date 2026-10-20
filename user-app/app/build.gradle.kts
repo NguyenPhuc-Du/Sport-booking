@@ -18,6 +18,7 @@ android {
         versionName = "1.0"
 
         buildConfigField("String", "API_BASE_URL", "\"https://contort-bust-golf.ngrok-free.dev/api/v1/\"")
+        buildConfigField("Boolean", "HTTP_LOGS", "true")
     }
 
     buildTypes {
