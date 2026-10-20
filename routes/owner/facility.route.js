@@ -22,6 +22,14 @@ router.post(
   uploadCloud.upload,
   controller.editVenuesPost,
 );
+//venues
 router.patch("/changeStatus/:id/:status", controller.changeStatus);
+router.get("/createCourts", controller.create);
+router.post(
+  "/createCourts",
+  upload.array("image_urls", 6), // đúng name trong create.pug
+  uploadCloud.uploadMany, // đẩy lên Cloudinary → req.body.image_urls = [url, ...]
+  controller.createPost, // handler lưu Court (bạn tự viết)
+);
 router.use("/price-rules", priceRuleRoute);
 module.exports = router;

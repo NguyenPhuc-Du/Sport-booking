@@ -17,7 +17,7 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:3000/api/v1/\"")
+        buildConfigField("String", "API_BASE_URL", "\"http://192.168.1.11:3000/api/v1/\"")
         buildConfigField("Boolean", "HTTP_LOGS", "true")
     }
 

@@ -1,5 +1,6 @@
 const Venues = require("../../models/facilities.model");
 const Courts = require("../../models/court.model");
+const CourtsType = require("../../models/court-types.model");
 module.exports.getAllVenueByOwnerId = async (id) => {
   const venues = await Venues.find({ deleted: false, owner_id: id });
   return venues;
@@ -7,6 +8,14 @@ module.exports.getAllVenueByOwnerId = async (id) => {
 module.exports.createOwner = async (body) => {
   const venues = new Venues(body);
   await venues.save();
+};
+module.exports.getAllCourtTypes = async (body) => {
+  const courtsType = await CourtsType.find({});
+  return courtsType;
+};
+module.exports.createCourts = async (body) => {
+  const courts = new Courts(body);
+  await courts.save();
 };
 module.exports.deleteVenues = async (id) => {
   await Venues.updateOne({ _id: id }, { deleted: true });

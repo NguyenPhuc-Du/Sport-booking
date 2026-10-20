@@ -29,8 +29,9 @@ block main
         h2.sz-panel-title Danh sách sân thi đấu thuộc SportPro Complex
         p.sz-panel-sub Quản lý trạng thái hoạt động / bảo trì từng sân con
       button.sz-btn.sz-btn-green(type="button")
-        i.bi.bi-plus-lg
-        | Thêm sân con
+        a(href=`${prefixAdmin}/facilities/createCourts` style="color:white;text-decoration: none")
+          i.bi.bi-plus-lg
+          | Thêm sân con
 
     .row.g-3
       each court in courts
@@ -56,7 +57,7 @@ block main
               if court.status === "active"
                 button.sz-btn.sz-btn-outline-danger.sz-btn-sm.btn-open-maintain.btn(type="button" data-status= court.status data-id=court._id)
                   i.bi.bi-exclamation-triangle
-                  | ĐANG BẢO TRÌ
+                  | ĐƯA VÀO BẢO TRÌ
               else
                 button.sz-btn.sz-btn-green.sz-btn-sm.btn(type="button" data-status= court.status data-id=court._id)
                   i.bi.bi-check2-circle
