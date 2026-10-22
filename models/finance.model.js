@@ -9,6 +9,11 @@ const voucherSchema = new mongoose.Schema(
       uppercase: true,
       trim: true,
     },
+    owner_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
     name: {
       type: String,
       required: true,
