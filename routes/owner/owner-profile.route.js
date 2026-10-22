@@ -10,6 +10,12 @@ const upload = multer();
 
 router.get("/", controller.index);
 
-router.post("/update", validate.updatePatch, upload.single("image"), uploadCloud.upload, controller.update);
+router.post(
+  "/update",
+  upload.single("avatar_url"),
+  validate.updatePatch,
+  uploadCloud.upload,
+  controller.update,
+);
 
 module.exports = router;
