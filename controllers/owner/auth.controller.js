@@ -30,7 +30,6 @@ module.exports.logout = (req, res) => {
     sameSite: "lax",
     path: "/",
   });
-  req.flash("success", "Đăng xuất thành công");
   return res.redirect("/auth/login");
 };
 
