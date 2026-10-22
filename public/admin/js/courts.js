@@ -33,6 +33,7 @@ if (venuesFilter) {
     } else {
       url.searchParams.delete("id");
     }
+    url.searchParams.delete("page");
     window.location.href = url.href;
   });
 }

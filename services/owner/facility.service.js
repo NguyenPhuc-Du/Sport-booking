@@ -27,19 +27,30 @@ module.exports.findVenuesById = async (id) => {
 module.exports.updateOneVenues = async (id, body) => {
   await Venues.updateOne({ _id: id }, body);
 };
-module.exports.findCourtsByOwnerId = async (userId) => {
+async function venueIdsOf(userId) {
   const venues = await Venues.find({
     owner_id: userId,
     deleted: false,
-  }).select("_id");
-
-  const venueIds = new Set(venues.map((v) => String(v._id)));
-
-  const courts = await Courts.find({})
-    .populate("court_type_id", "name icon_url description")
+  })
+    .select("_id")
     .lean();
+  return venues.map((venue) => venue._id);
+}
 
-  return courts.filter((c) => venueIds.has(String(c.venue_id)));
+function activeCourtFilter(venueIds) {
+  return {
+    venue_id: { $in: venueIds },
+    deleted: { $ne: true },
+  };
+}
+
+module.exports.findCourtsByOwnerId = async (userId, pagination) => {
+  const venueIds = await venueIdsOf(userId);
+  return Courts.find(activeCourtFilter(venueIds))
+    .populate("court_type_id", "name icon_url description")
+    .skip(pagination.skipPage)
+    .limit(pagination.limitPage)
+    .lean();
 };
 
 module.exports.getActiveVenuesByOwnerId = async (ownerId) => {
@@ -55,20 +66,34 @@ module.exports.getCourtsByVenueIds = async (venueIds) => {
     deleted: false,
   }).lean();
 };
-module.exports.countCourts = async () => {
-  const courts = await Courts.countDocuments({});
-  return courts;
+module.exports.countCourtsByOwner = async (userId) => {
+  const venueIds = await venueIdsOf(userId);
+  return Courts.countDocuments(activeCourtFilter(venueIds));
 };
-module.exports.countVenues = async () => {
-  const venues = await Venues.countDocuments({ deleted: false });
-  return venues;
+module.exports.countVenuesByOwner = async (userId) => {
+  return Venues.countDocuments({ owner_id: userId, deleted: false });
 };
-module.exports.findCourtsByIdVenue = async (id) => {
-  console.log(id);
-  const courts = await Courts.find()
+module.exports.countCourtsByVenue = async (venueId, userId) => {
+  const venue = await Venues.findOne({
+    _id: venueId,
+    owner_id: userId,
+    deleted: false,
+  }).select("_id");
+  if (!venue) return 0;
+  return Courts.countDocuments(activeCourtFilter([venue._id]));
+};
+module.exports.findCourtsByIdVenue = async (venueId, pagination, userId) => {
+  const venue = await Venues.findOne({
+    _id: venueId,
+    owner_id: userId,
+    deleted: false,
+  }).select("_id");
+  if (!venue) return [];
+  return Courts.find(activeCourtFilter([venue._id]))
     .populate("court_type_id", "name icon_url description")
+    .skip(pagination.skipPage)
+    .limit(pagination.limitPage)
     .lean();
-  return courts.filter((c) => String(c.venue_id) === String(id));
 };
 module.exports.updateStatusCourts = async (id, status) => {
   if (status) {
@@ -83,7 +108,10 @@ module.exports.getOneCourtsById = async (id) => {
 module.exports.getCourtDetailById = async (id) => {
   return Courts.findById(id)
     .populate("court_type_id", "name icon_url description")
-    .populate("venue_id", "name address district city open_time close_time image_url")
+    .populate(
+      "venue_id",
+      "name address district city open_time close_time image_url",
+    )
     .lean();
 };
 module.exports.updateOneCourts = async (id, body) => {

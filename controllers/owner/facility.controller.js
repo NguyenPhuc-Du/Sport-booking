@@ -2,25 +2,27 @@ const facilities = require("../../services/owner/facility.service");
 const Courts = require("../../models/court.model");
 const CourtsType = require("../../models/court-types.model");
 const prefixAdmin = require("../../config/system");
+const paginationHelper = require("../../helper/pagination.helper");
 const Court = require("../../models/court.model");
 const Venue = require("../../models/facilities.model");
 module.exports.index = async (req, res) => {
   const userId = res.locals.user.id;
-  let courts = "";
-  // console.log(courtType);
   const venues = await facilities.getAllVenueByOwnerId(userId);
-  console.log(venues);
-  const countVenues = await facilities.countVenues();
-  const countCourts = await facilities.countCourts();
+  const countVenues = await facilities.countVenuesByOwner(userId);
+  const countCourts = await facilities.countCourtsByOwner(userId);
   const VenueSelected = req.query.id;
-  if (VenueSelected) {
-    console.log("haha");
-    courts = await facilities.findCourtsByIdVenue(VenueSelected);
-  } else {
-    console.log("hihi");
-    courts = await facilities.findCourtsByOwnerId(userId);
-  }
-  console.log(courts);
+  const objectPagination = {
+    currentPage: 1,
+    limitPage: 4,
+  };
+  const countPage = VenueSelected
+    ? await facilities.countCourtsByVenue(VenueSelected, userId)
+    : countCourts;
+  const pagination = paginationHelper(objectPagination, req.query, countPage);
+  const courts = VenueSelected
+    ? await facilities.findCourtsByIdVenue(VenueSelected, pagination, userId)
+    : await facilities.findCourtsByOwnerId(userId, pagination);
+
   res.render("owner/pages/facilities/index", {
     pageTitle: "Quản lý Cơ sở & Sân",
     activeMenu: "facilities",
@@ -29,6 +31,7 @@ module.exports.index = async (req, res) => {
     countVenues,
     countCourts,
     VenueSelected,
+    pagination: pagination,
   });
 };
 module.exports.create = async (req, res) => {
@@ -100,8 +103,8 @@ module.exports.editPost = async (req, res) => {
 module.exports.indexVenues = async (req, res) => {
   const userId = res.locals.user.id;
   const venues = await facilities.getAllVenueByOwnerId(userId);
-  const countVenues = await facilities.countVenues();
-  const countCourts = await facilities.countCourts();
+  const countVenues = await facilities.countVenuesByOwner(userId);
+  const countCourts = await facilities.countCourtsByOwner(userId);
   res.render("owner/pages/facilities/indexVenues", {
     pageTitle: "Cơ sở",
     activeMenu: "facilities",
