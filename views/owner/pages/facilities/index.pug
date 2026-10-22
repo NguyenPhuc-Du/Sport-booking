@@ -21,7 +21,6 @@ block main
   .sz-tabs.mb-4#facilityTabs
     button.sz-tab.active(type="button" data-tab="courts") Sân con (#{countCourts})
     a.sz-tab(href=`${prefixOwner}/facilities/price-rules`) Bảng giá
-    button.sz-tab(type="button" data-tab="locks") Khóa slot bảo trì (2)
     a.sz-tab(href=`${prefixAdmin}/facilities/venues`) Danh sách cơ sở (#{countVenues})
 
   .sz-card.sz-panel
@@ -73,7 +72,8 @@ block main
                 button.sz-btn.sz-btn-green.sz-btn-sm.btn(type="button" data-status= court.status data-id=court._id)
                   i.bi.bi-check2-circle
                   | Mở lạ 
-    +pagination(pagination)    
+    nav.fv-pagination(aria-label="Phân trang sân")
+      +pagination(pagination)    
     form(method='POST' action="" id="form-changeStatus" data-path=`${prefixAdmin}/facilities/changeStatus`)
     script(src="/admin/js/courts.js")
     script(src="/admin/js/script.js")
