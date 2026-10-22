@@ -282,6 +282,31 @@ select:focus-visible {
   color: var(--green);
 }
 
+.sz-logout {
+  text-decoration: none;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 9px 14px;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--ink);
+  background: #fff;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  transition:
+    background 0.2s,
+    border-color 0.2s,
+    color 0.2s;
+}
+
+.sz-logout:hover {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
 /* ===== Layout ===== */
 .sz-wrap {
   max-width: 1520px;
