@@ -21,10 +21,10 @@ header.sz-header
         .sz-role-pill
           span.dot
           | Chủ sân
-        button.sz-bell(type="button" aria-label="Thông báo")
-          i.bi.bi-bell
-          span.sz-bell-dot
         a.sz-user(href="/owner/profile")
           img(src=user.avatar_url alt="Avatar chủ sân")
           div
             .sz-user-name #{user.fullName}
+        a.sz-logout(href="/auth/logout")
+          i.bi.bi-box-arrow-right
+          span Đăng xuất
