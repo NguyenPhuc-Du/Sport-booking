@@ -12,10 +12,8 @@ block main
     //- ===== Helpers =====
     - const fmtMoney = (n) => Number(n || 0).toLocaleString("vi-VN") + "đ"
     - const dayTypeMap = { weekday: "Ngày thường", weekend: "Cuối tuần", all: "Tất cả các ngày" }
-    - const isGold = (r) => r.timeStart >= "17:00" && r.timeStart < "22:00"
     - const rules = priceRules || []
     - const q = query || {}
-    - const goldCount = rules.filter(isGold).length
 
     //- ===== Header =====
     .fv-head
@@ -107,17 +105,13 @@ block main
                     | Chưa có quy tắc giá nào.
             else
               each r in rules
-                tr(class=(isGold(r) ? "sz-row-gold" : undefined))
+                tr
                   td
                     span.sz-rule-name= r.name
-                    if isGold(r)
-                      span.sz-gold-tag
-                        i.bi.bi-lightning-charge-fill
-                        | Giờ vàng
                   td
                     span.sz-venue
                       i.bi.bi-buildings
-                      = r.court && r.court.venueId ? r.court.venueId.name : "—"
+                      = r.court && r.court.venue_id ? r.court.venue_id.name : "—"
                   td
                     span.sz-court-chip= r.court ? r.court.name : "—"
                   td
@@ -142,14 +136,11 @@ block main
                         input(type="hidden" name="status" value=(r.status === "active" ? "inactive" : "active"))
                         button.sz-icon-btn(type="submit" title=(r.status === "active" ? "Tạm ngưng" : "Kích hoạt"))
                           i.bi(class=(r.status === "active" ? "bi-pause-circle" : "bi-play-circle"))
-                      form.d-inline(method="POST" action=`${prefixOwner}/facilities/price-rules/delete/${r._id}?_method=DELETE` onsubmit="return confirm('Xóa quy tắc giá này?')")
-                        button.sz-icon-btn.danger(type="submit" title="Xóa")
-                          i.bi.bi-trash
 
       //- Footer + Pagination
       if rules.length > 0
         .sz-table-foot
-          span Hiển thị <strong>#{rules.length}</strong> quy tắc · <strong>#{goldCount}</strong> khung giờ vàng
+          span Hiển thị <strong>#{rules.length}</strong> quy tắc
           if pagination && pagination.totalPages > 1
             nav(aria-label="Phân trang")
               ul.pagination.sz-pagination.justify-content-end.mb-0

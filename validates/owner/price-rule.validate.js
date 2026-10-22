@@ -63,11 +63,11 @@ function validatePriceRule({ isEdit } = {}) {
         ? await Court.findOne({
             _id: priceRule.court,
             deleted: false,
-          }).select("venueId")
+          }).select("venue_id")
         : null;
       const ownsCurrent = currentCourt
         ? await Venue.findOne({
-            _id: currentCourt.venueId,
+            _id: currentCourt.venue_id,
             owner_id: ownerId,
             deleted: false,
           }).select("_id")
@@ -88,7 +88,7 @@ function validatePriceRule({ isEdit } = {}) {
 
       const isBelongToVenue = await Court.findOne({
         _id: court,
-        venueId: isRightVenue._id,
+        venue_id: isRightVenue._id,
         deleted: false,
       });
 
@@ -103,7 +103,7 @@ function validatePriceRule({ isEdit } = {}) {
       return res.redirect(req.get("Referrer"));
     } else {
       const courts = await Court.find({
-        venueId: isRightVenue._id,
+        venue_id: isRightVenue._id,
         deleted: false,
       }).select("_id");
 

@@ -39,14 +39,6 @@ data class RegisterUiState(
     val submitting: Boolean = false,
     val error: String? = null,
 )
-
-data class OtpUiState(
-    val code: String = "",
-    val verifying: Boolean = false,
-    val error: String? = null,
-    val info: String? = null,
-)
-
 data class ForgotPasswordUiState(
     val sending: Boolean = false,
     val error: String? = null,

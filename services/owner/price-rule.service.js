@@ -19,7 +19,7 @@ module.exports.createPriceRule = async (body) => {
   // Nếu không chọn sân cụ thể  thì áp dụng cho tất cả sân thuộc venueId đó
   if (!court) {
     const courts = await Court.find({
-      venueId,
+      venue_id: venueId,
       deleted: false,
     })
       .select("_id")
@@ -91,10 +91,10 @@ module.exports.getPriceRuleIndex = async (ownerId, query) => {
       ? facility
       : "";
   const courts = await Court.find({
-    venueId: currentFacilityId || { $in: facilityIds },
+    venue_id: currentFacilityId || { $in: facilityIds },
     deleted: false,
   })
-    .select("name venueId status")
+    .select("name venue_id status")
     .sort({ name: 1 })
     .lean();
   const courtIds = courts.map((item) => item._id);
@@ -118,17 +118,17 @@ module.exports.getPriceRuleIndex = async (ownerId, query) => {
   const priceRules = await PriceRule.find(find)
     .populate({
       path: "court",
-      select: "name venueId",
-      populate: { path: "venueId", select: "name" },
+      select: "name venue_id",
+      populate: { path: "venue_id", select: "name" },
     })
     .sort({ timeStart: 1 })
     .skip((currentPage - 1) * limit)
     .limit(limit)
     .lean();
   const [courtCount, maintenanceCount] = await Promise.all([
-    Court.countDocuments({ venueId: { $in: facilityIds }, deleted: false }),
+    Court.countDocuments({ venue_id: { $in: facilityIds }, deleted: false }),
     Court.countDocuments({
-      venueId: { $in: facilityIds },
+      venue_id: { $in: facilityIds },
       deleted: false,
       status: "maintenance",
     }),
@@ -150,4 +150,18 @@ module.exports.getPriceRuleIndex = async (ownerId, query) => {
     },
     pagination: { currentPage, totalPages },
   };
+};
+
+module.exports.changeStatusPriceRule = async (priceRuleId, status) => {
+  if (!mongoose.Types.ObjectId.isValid(priceRuleId)) {
+    throw new Error("Bảng giá không tồn tại");
+  }
+  if (!["active", "inactive"].includes(status)) {
+    throw new Error("Trạng thái không hợp lệ");
+  }
+  const updated = await PriceRule.updateOne({ _id: priceRuleId }, { status });
+  if (!updated.matchedCount) {
+    throw new Error("Bảng giá không tồn tại");
+  }
+  return updated;
 };

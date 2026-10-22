@@ -73,7 +73,7 @@ module.exports.edit = async (req, res) => {
     priceRule,
     venues,
     courts,
-    venueId: String(currentCourt.venueId),
+    venueId: String(currentCourt.venue_id),
   });
 }
 
@@ -84,6 +84,22 @@ module.exports.editPatch = async (req, res) => {
 
     await priceruleService.updatePriceRule(priceRuleId, req.body);
 
+    req.flash("success", "Cập nhật bảng giá thành công");
+    res.redirect(req.get("Referrer"));
+  } catch (error) {
+    req.flash("error", "Cập nhật bảng giá thất bại");
+    res.redirect(req.get("Referrer"));
+  }
+}
+
+//[PATCH] /owner/facilities/price-rules/change-status/:id
+module.exports.changeStatus = async (req, res) => {
+  try {
+    const priceRuleId = req.params.id;
+    const status = req.body.status;
+
+    await priceruleService.changeStatusPriceRule(priceRuleId, status);
+    
     req.flash("success", "Cập nhật bảng giá thành công");
     res.redirect(req.get("Referrer"));
   } catch (error) {

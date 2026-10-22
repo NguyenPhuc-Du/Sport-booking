@@ -20,7 +20,7 @@ block main
             option(value=item._id selected=(String(item._id) === String(VenueSelected)))= item.name
   .sz-tabs.mb-4#facilityTabs
     button.sz-tab.active(type="button" data-tab="courts") Sân con (#{countCourts})
-    button.sz-tab(type="button" data-tab="pricing") Bảng giá & Giờ vàng (5)
+    a.sz-tab(href=`${prefixOwner}/facilities/price-rules`) Bảng giá
     button.sz-tab(type="button" data-tab="locks") Khóa slot bảo trì (2)
     a.sz-tab(href=`${prefixAdmin}/facilities/venues`) Danh sách cơ sở (#{countVenues})
 
