@@ -38,7 +38,12 @@ module.exports.uploadMany = async (req, res, next) => {
       const result = await streamUpload(file.buffer);
       urls.push(result.secure_url);
     }
-    req.body.image_urls = urls;
+    const field = req.files[0].fieldname;
+    if (field === "new_images") {
+      req.body.new_image_urls = urls;
+    } else {
+      req.body.image_urls = urls;
+    }
     next();
   } catch (err) {
     next(err);

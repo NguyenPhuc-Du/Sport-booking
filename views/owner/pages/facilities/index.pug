@@ -1,5 +1,6 @@
 extends ../../layouts/default.pug
 include ../../../mixins/alert.pug
+include ../../../mixins/pagination.pug
 
 block head
   link(rel="stylesheet" href="/admin/css/facilities.css")
@@ -16,7 +17,7 @@ block main
         select.fv-select#venueFilter(name="venue_filter" aria-label="Lọc theo cơ sở")
           option(value="") Tất cả sân con 
           each item in venues
-            option(value=item._id selected=(item._id==VenueSelected))= item.name
+            option(value=item._id selected=(String(item._id) === String(VenueSelected)))= item.name
   .sz-tabs.mb-4#facilityTabs
     button.sz-tab.active(type="button" data-tab="courts") Sân con (#{countCourts})
     a.sz-tab(href=`${prefixOwner}/facilities/price-rules`) Bảng giá
@@ -54,14 +55,26 @@ block main
                 span Loại hình
                 strong  #{court.court_type_id.name}
             .sz-court-actions
+              a.sz-btn.sz-btn-detail.sz-btn-sm(
+                href=`${prefixAdmin}/facilities/detailCourts/${court._id}`
+              )
+                i.bi.bi-eye
+                | Chi tiết
+              a.sz-btn.sz-btn-edit.sz-btn-sm(
+                href=`${prefixAdmin}/facilities/editCourts/${court._id}`
+              )
+                i.bi.bi-pencil-square
+                | Sửa
               if court.status === "active"
                 button.sz-btn.sz-btn-outline-danger.sz-btn-sm.btn-open-maintain.btn(type="button" data-status= court.status data-id=court._id)
                   i.bi.bi-exclamation-triangle
-                  | ĐƯA VÀO BẢO TRÌ
+                  | Bảo trì
               else
                 button.sz-btn.sz-btn-green.sz-btn-sm.btn(type="button" data-status= court.status data-id=court._id)
                   i.bi.bi-check2-circle
-                  | Mở lại sân
+                  | Mở lạ 
+    +pagination(pagination)    
     form(method='POST' action="" id="form-changeStatus" data-path=`${prefixAdmin}/facilities/changeStatus`)
     script(src="/admin/js/courts.js")
+    script(src="/admin/js/script.js")
 
