@@ -4,7 +4,6 @@ const CourtsType = require("../../models/court-types.model");
 const prefixAdmin = require("../../config/system");
 const paginationHelper = require("../../helper/pagination.helper");
 const Court = require("../../models/court.model");
-const Venue = require("../../models/facilities.model");
 module.exports.index = async (req, res) => {
   const userId = res.locals.user.id;
   const venues = await facilities.getAllVenueByOwnerId(userId);

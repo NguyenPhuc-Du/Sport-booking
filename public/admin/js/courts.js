@@ -5,19 +5,19 @@ console.log(btnChange);
 if (btnChange) {
   const form = document.querySelector("#form-changeStatus");
 
-if(form){
-  const path = form.getAttribute("data-path");
-  console.log(path);
-  btnChange.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const status = btn.getAttribute("data-status");
-      const id = btn.getAttribute("data-id");
-      const action = `${path}/${id}/${status}?_method=PATCH`;
-      form.action = action;
-      form.submit();
+  if (form) {
+    const path = form.getAttribute("data-path");
+    console.log(path);
+    btnChange.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const status = btn.getAttribute("data-status");
+        const id = btn.getAttribute("data-id");
+        const action = `${path}/${id}/${status}?_method=PATCH`;
+        form.action = action;
+        form.submit();
+      });
     });
-  });
-}
+  }
 }
 //end change status
 //filter courts
@@ -69,9 +69,11 @@ if (wrap) {
   }
 
   function reindexNewThumbs() {
-    grid.querySelectorAll(".fv-image-thumb[data-new-index]").forEach((el, i) => {
-      el.dataset.newIndex = String(i);
-    });
+    grid
+      .querySelectorAll(".fv-image-thumb[data-new-index]")
+      .forEach((el, i) => {
+        el.dataset.newIndex = String(i);
+      });
   }
 
   function makeThumb({ src, existingUrl, fileIndex }) {
