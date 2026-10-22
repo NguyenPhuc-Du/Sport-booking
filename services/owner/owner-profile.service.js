@@ -9,13 +9,8 @@ module.exports.getOwnerById = async (id) => {
 module.exports.updateOwnerProfile = async (userId, body) => {
   const { email, phone, fullName, avatar_url } = body;
 
-  return await User.updateOne(
-    { _id: userId },
-    {
-      email,
-      phone,
-      fullName,
-      avatar_url,
-    },
-  );
+  const update = { email, phone, fullName };
+  if (avatar_url) update.avatar_url = avatar_url;
+
+  return await User.updateOne({ _id: userId }, update);
 };
