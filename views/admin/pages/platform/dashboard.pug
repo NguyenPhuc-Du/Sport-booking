@@ -7,8 +7,8 @@ block main
     div
       p.pf-kicker Quản trị hệ thống
       h1.pf-title Tổng quan sàn
-      p.pf-sub Bốn số đọc từ database. Bấm thẻ để mở danh sách chỉ xem.
- 
+      p.pf-sub Số liệu toàn sàn tại thời điểm này.
+
   if loadError
     p.sz-empty= loadError
   else
@@ -22,15 +22,14 @@ block main
         i.bi.bi-person-badge
         span.pf-stat-label Chủ sân
         strong.pf-stat-value= stats.owners
-        span.pf-stat-note User có role OWNER
+        span.pf-stat-note Tài khoản đang là chủ sân
       a.pf-stat(href="/admin/venues")
         i.bi.bi-buildings
-        span.pf-stat-label Cơ sở đang chạy
+        span.pf-stat-label Cơ sở đang mở
         strong.pf-stat-value= stats.venues
-        span.pf-stat-note status active
+        span.pf-stat-note Đang nhận khách
       a.pf-stat(href="/admin/bookings")
         i.bi.bi-calendar-check
         span.pf-stat-label Đơn đặt
         strong.pf-stat-value= stats.bookings
-        span.pf-stat-note= stats.bookingsExists ? "Trong collection bookings" : "Collection bookings chưa có"
-
+        span.pf-stat-note= stats.bookingsExists ? "Có đơn trong hệ thống" : "Chưa có đơn đặt"

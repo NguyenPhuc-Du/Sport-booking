@@ -4,6 +4,34 @@ block main
   header.pf-head
     div
       p.pf-kicker Chỉ xem
+      h1.pf-title Cơ sở đang mở
+      p.pf-sub Chủ sân tự bật tắt sân trên trang chủ sân. Trang này không sửa sân.
+
+  section.sz-card.sz-panel
+    if items.length
+      .table-responsive
+        table.sz-table
+          thead
+            tr
+              th Tên
+              th Địa chỉ
+              th Chủ sân
+              th Trạng thái
+          tbody
+            each item in items
+              tr
+                td
+                  strong= item.name
+                td #{item.address || ""} #{item.district || ""} #{item.city || ""}
+                td= item.owner_id && item.owner_id.fullName ? item.owner_id.fullName : "—"
+                td
+                  span.sz-badge.sz-badge-ok Đang mở
+    else
+      p.sz-empty Chưa có cơ sở đang mở.
+
+  header.pf-head
+    div
+      p.pf-kicker Chỉ xem
       h1.pf-title Cơ sở đang hoạt động
       p.pf-sub Chủ sân tự bật tắt sân trên /owner. Trang này không có nút sửa.
   section.sz-card.sz-panel

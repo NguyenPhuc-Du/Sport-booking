@@ -5,24 +5,25 @@ block main
     div
       p.pf-kicker Chỉ xem
       h1.pf-title Đơn đặt
-      p.pf-sub Repo chưa có model bookings. Nếu collection chưa được nhóm đặt sân tạo, trang này báo trống.
+      p.pf-sub Danh sách đơn trên toàn sàn. Trang này không sửa đơn.
+
   section.sz-card.sz-panel
     if !exists
-      p.sz-empty Collection bookings chưa có trong database. Số trên dashboard là 0 vì lý do này.
+      p.sz-empty Chưa có đơn đặt.
     else if items.length
-      table.sz-table
-        thead
-          tr
-            th Id
-            th Mã
-            th Trạng thái
-            th Thanh toán
-        tbody
-          each item in items
+      .table-responsive
+        table.sz-table
+          thead
             tr
-              td= item._id
-              td= item.code || "—"
-              td= item.status || "—"
-              td= item.payment_status || "—"
+              th Mã
+              th Trạng thái
+              th Thanh toán
+          tbody
+            each item in items
+              tr
+                td= item.code || "—"
+                td= item.status || "—"
+                td= item.payment_status || "—"
     else
-      p.sz-empty Collection có nhưng chưa có đơn.
+      p.sz-empty Chưa có đơn đặt.
+
