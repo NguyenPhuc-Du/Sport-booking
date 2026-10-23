@@ -69,7 +69,10 @@
 }
 .pf-stat-value {
   font-size: 32px;
+  font-weight: 800;
   letter-spacing: -0.6px;
+  color: #0f172a;
+  line-height: 1.1;
 }
 .pf-stat-note {
   color: var(--green-dark);
