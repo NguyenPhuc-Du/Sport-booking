@@ -112,9 +112,18 @@
   background: linear-gradient(135deg, #3b82f6, #1d4ed8);
 }
 
+.sz-slot span,
+.sz-slot small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .sz-slot small {
   opacity: 0.85;
   font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
 #checkInForm[hidden] {
@@ -282,6 +291,25 @@ body.bk-modal-open {
 .bk-walkin-input:focus {
   outline: 2px solid var(--green-2);
   outline-offset: 1px;
+}
+
+.bk-walkin-input[readonly] {
+  background: #f8fafc;
+}
+
+.bk-walkin-hint {
+  margin: 6px 0 0;
+  min-height: 16px;
+  color: #047857;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+.bk-walkin-hint.is-warn {
+  margin: 0 0 12px;
+  color: #b45309;
 }
 
 .bk-walkin-foot {
