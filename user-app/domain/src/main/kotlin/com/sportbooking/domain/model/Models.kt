@@ -105,6 +105,7 @@ data class BookingDraft(
     val courtId: String,
     val date: String,
     val time: String,
+    val hours: Int = 1,
     val voucherCode: String? = null,
     val paymentMethod: String? = null,
 )

@@ -43,6 +43,7 @@ class CheckoutViewModel @Inject constructor(
     private val courtId: String = checkNotNull(savedStateHandle["courtId"])
     private val date: String = checkNotNull(savedStateHandle["date"])
     private val time: String = checkNotNull(savedStateHandle["time"])
+    private val hours: Int = savedStateHandle.get<Int>("hours")?.coerceIn(1, 3) ?: 1
 
     private val _state = MutableStateFlow(CheckoutUiState())
     val state = _state.asStateFlow()
@@ -51,7 +52,7 @@ class CheckoutViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            when (val options = getOptions()) {
+            when (val options = getOptions(facilityId)) {
                 is DomainResult.Success -> {
                     val method = options.data.payments.firstOrNull()?.id ?: "vnpay"
                     _state.update {
@@ -118,6 +119,7 @@ class CheckoutViewModel @Inject constructor(
         courtId = courtId,
         date = date,
         time = time,
+        hours = hours,
         voucherCode = voucher,
         paymentMethod = paymentMethod,
     )

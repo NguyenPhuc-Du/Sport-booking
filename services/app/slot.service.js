@@ -65,19 +65,18 @@ async function takenStarts(courtId, date) {
   })
     .select("timeStart timeEnd")
     .lean();
-  const taken = new Set();
-  for (const booking of bookings) {
-    const start = toMinutes(booking.timeStart || "00:00");
-    const end = toMinutes(booking.timeEnd || booking.timeStart || "00:00");
-    if (!(end > start)) {
-      taken.add(booking.timeStart);
-      continue;
+  
+    const taken = new Set();
+    for (const booking of bookings) {
+      let cursor = toMinutes(booking.timeStart);
+      const end = toMinutes(booking.timeEnd);
+
+      for (; cursor < end; cursor += 60) {
+        taken.add(fromMinutes(cursor));
+      }
     }
-    for (let minute = start; minute < end; minute += 60) {
-      taken.add(fromMinutes(minute));
-    }
-  }
-  return taken;
+    
+    return taken;
 }
 
 async function buildSlots(venue, courtId, date) {

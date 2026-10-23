@@ -65,7 +65,7 @@ interface SportApi {
     ): SlotScheduleDto
 
     @GET("checkout/options")
-    suspend fun checkoutOptions(): CheckoutOptionsDto
+    suspend fun checkoutOptions(@Query("facilityId") facilityId: String): CheckoutOptionsDto
 
     @POST("bookings/quote")
     suspend fun quote(@Body body: BookingRequest): BookingQuoteDto

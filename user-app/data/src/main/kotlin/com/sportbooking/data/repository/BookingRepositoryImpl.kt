@@ -19,8 +19,8 @@ class BookingRepositoryImpl @Inject constructor(
     private val api: SportApi,
     private val caller: ApiCaller,
 ) : BookingRepository {
-    override suspend fun checkoutOptions(): DomainResult<CheckoutOptions> {
-        return when (val result = caller.call { api.checkoutOptions() }) {
+    override suspend fun checkoutOptions(facilityId: String): DomainResult<CheckoutOptions> {
+        return when (val result = caller.call { api.checkoutOptions(facilityId) }) {
             is DomainResult.Success -> DomainResult.Success(result.data.toDomain())
             is DomainResult.Failure -> result
         }
@@ -59,6 +59,7 @@ class BookingRepositoryImpl @Inject constructor(
         courtId = courtId,
         date = date,
         time = time,
+        hours = hours,
         voucherCode = voucherCode,
         paymentMethod = paymentMethod,
     )
