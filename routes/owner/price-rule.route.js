@@ -12,4 +12,8 @@ router.post("/create", validate.createPost, controller.createPost);
 
 router.get("/edit/:id", controller.edit);
 
+router.patch("/edit/:id", validate.editPatch, controller.editPatch);
+
+router.patch("/change-status/:id/", controller.changeStatus);
+
 module.exports = router;

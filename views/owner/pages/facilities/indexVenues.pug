@@ -12,23 +12,16 @@ block main
         h1.fv-title Quản lý Cơ sở &amp; Cụm sân
         p.fv-sub Cấu hình sân con, phân định khung giờ giờ vàng và điều phối lịch bảo dưỡng.
       .fv-head-actions
-        .fv-filter
-          i.bi.bi-buildings.fv-filter-icon
-          select.fv-select(name="venue_filter")
-            option Star Basketball &amp; Futsal Dome
-            option SportPro Complex - Cầu Giấy
-            option Arena Tây Hồ Premium
         a.fv-btn-add(href=`${prefixAdmin}/facilities/venues/create`)
           i.bi.bi-plus-lg
           | Thêm cơ sở
 
     .fv-tabs
-      a.fv-tab(href=`${prefixAdmin}/facilities`) Sân con (6)
-      a.fv-tab(href="#") Bảng giá &amp; Giờ vàng (5)
-      a.fv-tab(href="#") Khóa slot bảo trì (2)
+      a.fv-tab(href=`${prefixAdmin}/facilities`) Sân con (#{countCourts})
+      a.fv-tab(href=`${prefixOwner}/facilities/price-rules`) Bảng giá
       a.fv-tab.active(href=`${prefixAdmin}/facilities/venues`)
         i.bi.bi-buildings
-        | Danh sách cơ sở (5)
+        | Danh sách cơ sở (#{countVenues})
     .fv-grid
       each item, index in venues
         article.fv-card

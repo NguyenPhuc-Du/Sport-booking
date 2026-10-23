@@ -1,8 +1,8 @@
 const mongoose = require("mongoose");
 const Booking = require("../../models/booking.model");
-const facilityService = require("../../services/facility.service");
-const slotService = require("../../services/slot.service");
-const vnpay = require("../../services/vnpay.service");
+const facilityService = require("../../services/app/facility.service");
+const slotService = require("../../services/app/slot.service");
+const vnpay = require("../../services/app/vnpay.service");
 
 const HOLD_MS = 15 * 60 * 1000;
 
@@ -172,17 +172,12 @@ module.exports.list = async (req, res) => {
 
 module.exports.cancel = async (req, res) => {
   try {
-    const booking = await Booking.findOne({
-      userId: req.auth.userId,
-      code: req.params.code,
-    });
-    if (!booking) return fail(res, 404, "Không tìm thấy đơn đặt sân");
-    if (!["upcoming", "pending_payment"].includes(booking.status)) {
-      return fail(res, 400, "Không thể hủy đơn này");
-    }
-    booking.status = "cancelled";
-    booking.statusLabel = "ĐÃ HỦY";
-    await booking.save();
+    const booking = await Booking.findOneAndUpdate(
+      { userId: req.auth.userId, code: req.params.code, status: { $in: ["upcoming", "pending_payment"] } },
+      { $set: { status: "cancelled", statusLabel: "ĐÃ HỦY" } },
+      { new: true },
+    );
+    if (!booking) return fail(res, 400, "Không thể hủy đơn này");
     return res.json({ booking: publicBooking(booking)});
   } catch (error) {
     return fail(res, 500, "Hủy đơn thất bại");

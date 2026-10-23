@@ -1,38 +1,44 @@
+const systemConfig = require("../../config/system");
+const bookingService = require("../../services/owner/booking.service");
+
+function timelinePath(date) {
+  return `${systemConfig.prefixOwner}/bookings${date ? `?date=${date}` : ""}`;
+}
+
+function postedDate(body) {
+  const date = String(body.date || "");
+  return /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : "";
+}
+
 module.exports.index = async (req, res) => {
-  const hours = ["06", "07", "08", "09", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21"];
+  const { date, dateMin, dateMax } = bookingService.resolveDate(req.query.date);
+  if (req.query.date && req.query.date !== date) {
+    return res.redirect(timelinePath(date));
+  }
+
+  const [year, month, day] = date.split("-");
+  const rows = await bookingService.getTimelineRows(res.locals.user.id, date);
 
   res.render("owner/pages/bookings/index", {
     pageTitle: "Lịch đặt & Timeline",
     activeMenu: "bookings",
-    hours,
-    dateLabel: "2026-09-22",
-    dateDisplay: "09/22/2026",
-    rows: [
-      {
-        name: "Sân Cầu Lông 01 (VIP)",
-        status: "open",
-        slots: { "18": { name: "Quân", id: "2194" }, "19": { name: "Hà", id: "2201" } },
-      },
-      {
-        name: "Sân Cầu Lông 02",
-        status: "open",
-        slots: { "07": { name: "Nam", id: "2088" }, "17": { name: "Tú", id: "1955" }, "18": { name: "Tú", id: "1955" } },
-      },
-      {
-        name: "Sân Pickleball A",
-        status: "open",
-        slots: { "19": { name: "Hà", id: "2201" }, "20": { name: "Linh", id: "2210" } },
-      },
-      {
-        name: "Sân Tennis 02",
-        status: "maintenance",
-        slots: {},
-      },
-      {
-        name: "Sân Bóng Đá Mini 1",
-        status: "open",
-        slots: { "20": { name: "Team FC", id: "1880" }, "21": { name: "Team FC", id: "1880" } },
-      },
-    ],
+    hours: bookingService.HOURS,
+    dateLabel: `${day}/${month}/${year}`,
+    dateValue: date,
+    dateMin,
+    dateMax,
+    rows,
   });
+};
+
+module.exports.checkIn = async (req, res) => {
+  const code = String(req.body.code || "").trim();
+  await bookingService.checkIn(res.locals.user.id, code);
+  return res.redirect(timelinePath(postedDate(req.body)));
+};
+
+module.exports.cancel = async (req, res) => {
+  const code = String(req.body.code || "").trim();
+  await bookingService.cancel(res.locals.user.id, code);
+  return res.redirect(timelinePath(postedDate(req.body)));
 };

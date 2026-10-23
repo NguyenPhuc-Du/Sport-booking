@@ -1,6 +1,6 @@
-const PriceRule = require("../models/price-rule.model");
-const Booking = require("../models/booking.model");
-const Voucher = require("../models/finance.model");
+const PriceRule = require("../../models/price-rule.model");
+const Booking = require("../../models/booking.model");
+const Voucher = require("../../models/finance.model");
 
 const TIME_ZONE = "Asia/Ho_Chi_Minh";
 

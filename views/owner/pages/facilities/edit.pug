@@ -1,0 +1,110 @@
+extends ../../layouts/default.pug
+include ../../../mixins/alert.pug
+
+block head
+  +alert-success(5000)
+  +alert-error(5000)
+  link(rel="stylesheet" href="/admin/css/facilities.css")
+
+block main
+  .fv-modal-page
+    .fv-modal
+      .fv-modal-head
+        h1.fv-modal-title Sửa sân con
+        a.fv-modal-close(href=`${prefixAdmin}/facilities` aria-label="Đóng")
+          i.bi.bi-x-lg
+
+      form#form-edit-court(
+        action=`${prefixAdmin}/facilities/editCourts/${courts._id}`
+        method="POST"
+        enctype="multipart/form-data"
+      )
+        .fv-field
+          label.fv-label(for="courtTypeId")
+            | Loại sân
+            span.fv-req *
+          .fv-select-wrap
+            select#courtTypeId.fv-input.fv-select-field(name="court_type_id" required)
+              option(value="") -- Chọn loại sân --
+              if type
+                each t in type
+                  option(value=t._id selected=(String(t._id) === String(courts.court_type_id)))= t.name
+
+        .fv-field
+          label.fv-label(for="courtName")
+            | Tên sân con
+            span.fv-req *
+          input#courtName.fv-input(
+            type="text"
+            name="name"
+            value=courts.name
+            required
+          )
+
+        .fv-field-row
+          .fv-field
+            label.fv-label(for="courtSurface") Mặt sân
+            input#courtSurface.fv-input(
+              type="text"
+              name="surface"
+              value=courts.surface
+              placeholder="VD: Thảm, cỏ nhân tạo, gỗ..."
+            )
+          .fv-field
+            label.fv-label(for="courtCapacity") Sức chứa
+            input#courtCapacity.fv-input(
+              type="text"
+              name="capacity"
+              value=courts.capacity
+              placeholder="VD: 4 người / đội"
+            )
+
+        .fv-field
+          label.fv-label Ảnh sân con
+          .fv-image-upload(upload-images data-edit="1")
+            .fv-image-grid#courtImagePreview
+              if courts.image_urls && courts.image_urls.length
+                each url in courts.image_urls
+                  .fv-image-thumb(data-existing="1")
+                    img(src=url alt="")
+                    button.fv-image-remove(type="button" aria-label="Xóa ảnh") ×
+                    input(type="hidden" name="keep_image_urls" value=url)
+              .fv-image-drop(class=(courts.image_urls && courts.image_urls.length ? "is-hidden" : ""))
+                i.bi.bi-images
+                span Thêm nhiều ảnh sân
+                small JPG, PNG · tối đa 6 ảnh
+            .fv-image-actions
+              label.fv-btn-upload(for="courtImageInput")
+                i.bi.bi-upload
+                | Thêm ảnh
+              span.fv-image-hint Ảnh mới sẽ thêm vào cuối danh sách
+            input#courtImageInput.d-none(
+              type="file"
+              name="new_images"
+              accept="image/*"
+              multiple
+              upload-images-input
+            )
+
+        .fv-field
+          label.fv-label(for="courtNote") Ghi chú
+          textarea#courtNote.fv-input.fv-textarea(
+            name="note"
+            rows="3"
+            placeholder="Ghi chú nội bộ: ánh sáng, thiết bị, lưu ý khách..."
+          )= courts.note || ""
+
+        .fv-field
+          label.fv-label(for="courtStatus") Trạng thái
+          .fv-select-wrap
+            select#courtStatus.fv-input.fv-select-field(name="status")
+              option(value="active" selected=(courts.status === "active")) Đang hoạt động
+              option(value="inactive" selected=(courts.status === "inactive")) Ngưng hoạt động
+              option(value="maintenance" selected=(courts.status === "maintenance")) Đang bảo trì
+
+        .fv-modal-foot
+          a.fv-btn-cancel(href=`${prefixAdmin}/facilities`) Hủy
+          button.fv-btn-submit(type="submit") Lưu thay đổi
+
+block script
+  script(src="/admin/js/courts.js")

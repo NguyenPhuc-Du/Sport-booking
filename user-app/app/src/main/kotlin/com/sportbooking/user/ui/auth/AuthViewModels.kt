@@ -39,14 +39,6 @@ data class RegisterUiState(
     val submitting: Boolean = false,
     val error: String? = null,
 )
-
-data class OtpUiState(
-    val code: String = "",
-    val verifying: Boolean = false,
-    val error: String? = null,
-    val info: String? = null,
-)
-
 data class ForgotPasswordUiState(
     val sending: Boolean = false,
     val error: String? = null,
@@ -57,6 +49,14 @@ data class ResetPasswordUiState(
     val confirm: String = "",
     val submitting: Boolean = false,
     val error: String? = null,
+)
+
+data class OtpUiState(
+    val code: String = "",
+    val verifying: Boolean = false,
+    val resending: Boolean = false,
+    val error: String? = null,
+    val info: String? = null,
 )
 
 @HiltViewModel
@@ -73,12 +73,13 @@ class LoginViewModel @Inject constructor(
 
     fun submit() {
         val current = _state.value
+        if (current.submitting) return
         if (current.email.isBlank() || current.password.isBlank()) {
             _state.update { it.copy(error = "Nhập email và mật khẩu") }
             return
         }
+        _state.update { it.copy(submitting = true, error = null) }
         viewModelScope.launch {
-            _state.update { it.copy(submitting = true, error = null) }
             when (val result = loginUseCase(current.email, current.password)) {
                 is DomainResult.Success -> {
                     _state.update { it.copy(submitting = false) }
@@ -87,7 +88,7 @@ class LoginViewModel @Inject constructor(
                 is DomainResult.Failure -> _state.update { it.copy(submitting = false, error = result.message) }
             }
         }
-    }
+}
 }
 
 @HiltViewModel
@@ -106,15 +107,11 @@ class RegisterViewModel @Inject constructor(
 
     fun submit() {
         val current = _state.value
+        if (current.submitting) return
+        _state.update { it.copy(submitting = true, error = null) }
         viewModelScope.launch {
-            _state.update { it.copy(submitting = true, error = null) }
             when (
-                val result = registerUseCase(
-                    current.fullName,
-                    current.phone,
-                    current.email,
-                    current.password,
-                )
+                val result = registerUseCase(current.fullName, current.phone, current.email, current.password)
             ) {
                 is DomainResult.Success -> {
                     _state.update { it.copy(submitting = false) }
@@ -143,31 +140,30 @@ class OtpViewModel @Inject constructor(
     private val _resetCode = MutableSharedFlow<String>()
     val resetCode = _resetCode.asSharedFlow()
 
+    private var lastResetSubmit = 0L
+
     fun onCodeChange(value: String) =
         _state.update { it.copy(code = value.filter(Char::isDigit).take(6), error = null) }
 
     fun consumeInfo() = _state.update { it.copy(info = null) }
 
     fun submit() {
-        val code = _state.value.code
+        val current = _state.value
+        if (current.verifying) return
+        val code = current.code
         if (code.length != 6) {
             _state.update { it.copy(error = "Vui lòng nhập đủ 6 chữ số OTP") }
             return
         }
+        if (purpose == OTP_PURPOSE_RESET) {
+            val now = System.currentTimeMillis()
+            if (now - lastResetSubmit < 1000) return
+            lastResetSubmit = now
+            viewModelScope.launch { _resetCode.emit(code) }
+            return
+        }
+        _state.update { it.copy(verifying = true, error = null) }
         viewModelScope.launch {
-            _state.update { it.copy(verifying = true, error = null) }
-            if (purpose == OTP_PURPOSE_RESET) {
-                when (val result = verifyResetOtp(email, code)) {
-                    is DomainResult.Success -> {
-                        _state.update { it.copy(verifying = false) }
-                        _resetCode.emit(code)
-                    }
-                    is DomainResult.Failure -> {
-                        _state.update { it.copy(verifying = false, error = result.message) }
-                    }
-                }
-                return@launch
-            }
             when (val result = verifyRegister(email, code)) {
                 is DomainResult.Success -> {
                     _state.update { it.copy(verifying = false) }
@@ -177,13 +173,13 @@ class OtpViewModel @Inject constructor(
             }
         }
     }
-
     fun resend() {
+        if (_state.value.resending) return
+        _state.update { it.copy(code = "", error = null, resending = true) }
         viewModelScope.launch {
-            _state.update { it.copy(code = "", error = null) }
             when (val result = resendOtp(email, purpose)) {
-                is DomainResult.Success -> _state.update { it.copy(info = result.data) }
-                is DomainResult.Failure -> _state.update { it.copy(error = result.message) }
+                is DomainResult.Success -> _state.update { it.copy(resending = false, info = result.data) }
+                is DomainResult.Failure -> _state.update { it.copy(resending = false, error = result.message) }
             }
         }
     }
@@ -201,13 +197,14 @@ class ForgotPasswordViewModel @Inject constructor(
     fun clearError() = _state.update { it.copy(error = null) }
 
     fun submit(email: String) {
+        if (_state.value.sending) return
         val normalized = email.trim().lowercase()
         if (!normalized.contains("@")) {
             _state.update { it.copy(error = "Vui lòng nhập email đã đăng ký") }
             return
         }
+        _state.update { it.copy(sending = true, error = null) }
         viewModelScope.launch {
-            _state.update { it.copy(sending = true, error = null) }
             when (val result = forgotPassword(normalized)) {
                 is DomainResult.Success -> {
                     _state.update { it.copy(sending = false) }
@@ -237,6 +234,7 @@ class ResetPasswordViewModel @Inject constructor(
 
     fun submit() {
         val current = _state.value
+        if (current.submitting) return
         if (current.password.length < 6) {
             _state.update { it.copy(error = "Mật khẩu cần ít nhất 6 ký tự") }
             return
@@ -245,8 +243,8 @@ class ResetPasswordViewModel @Inject constructor(
             _state.update { it.copy(error = "Mật khẩu nhập lại không khớp") }
             return
         }
+        _state.update { it.copy(submitting = true, error = null) }
         viewModelScope.launch {
-            _state.update { it.copy(submitting = true, error = null) }
             when (val result = resetPassword(email, code, current.password)) {
                 is DomainResult.Success -> {
                     _state.update { it.copy(submitting = false) }

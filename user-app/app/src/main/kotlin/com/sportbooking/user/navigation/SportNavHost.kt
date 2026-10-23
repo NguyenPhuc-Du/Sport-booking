@@ -13,6 +13,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.Lifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -40,6 +41,7 @@ import com.sportbooking.user.ui.components.defaultBottomNavTabs
 import com.sportbooking.user.ui.facility.FacilityDetailScreen
 import com.sportbooking.user.ui.home.HomeScreen
 import com.sportbooking.user.ui.profile.ProfileScreen
+import com.sportbooking.user.ui.payment.PaymentResultScreen
 import com.sportbooking.user.ui.session.SessionUiState
 import com.sportbooking.user.ui.session.SessionViewModel
 import kotlinx.coroutines.launch
@@ -128,11 +130,11 @@ private fun MainNavHost(
     LaunchedEffect(paymentResult) {
         val result = paymentResult ?: return@LaunchedEffect
         PaymentResultBus.consume()
-        navController.goToBookings()
-        snackbarHostState.showSnackbar(
-            if (result.success) "Thanh toán thành công đơn ${result.code}"
-            else "Thanh toán thất bại đơn ${result.code}",
-        )
+        val flag = if (result.success) "success" else "failed"
+        navController.navigate("payment_result/$flag/${Uri.encode(result.code)}") {
+            popUpTo(navController.graph.findStartDestination().id) { inclusive = false }
+            launchSingleTop = true
+        }
     }
 
     Scaffold(
@@ -167,6 +169,25 @@ private fun MainNavHost(
             }
             composable("account") {
                 ProfileScreen(onUserUpdated = onUserUpdated, onLogout = onLogout)
+            }
+            composable(
+                route = "payment_result/{success}/{code}",
+                arguments = listOf(
+                    navArgument("success") { type = NavType.StringType },
+                    navArgument("code") { type = NavType.StringType },
+                ),
+            ) {
+                PaymentResultScreen(
+                    onGoHome = {
+                        navController.navigate("home") {
+                            popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    },
+                    onViewBookings = {
+                        navController.goToBookings()
+                    },
+                )
             }
             composable(
                 route = "facility/{facilityId}",
@@ -218,4 +239,15 @@ private fun NavHostController.goToBookings() {
         popUpTo(graph.findStartDestination().id) { saveState = true }
         launchSingleTop = true
     }
+}
+
+private fun NavHostController.isResumed(): Boolean =
+    currentBackStackEntry?.lifecycle?.currentState == Lifecycle.State.RESUMED
+
+private fun NavHostController.navigateOnce(route: String) {
+    if (isResumed()) navigate(route)
+}
+
+private fun NavHostController.popOnce() {
+    if (isResumed()) popBackStack()
 }

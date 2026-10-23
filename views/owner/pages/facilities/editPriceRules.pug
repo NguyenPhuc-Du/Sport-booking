@@ -14,7 +14,7 @@ block main
       if error
         .pr-error= error
 
-      form(method="POST" action=`${prefixOwner}/facilities/price-rules/edit/${priceRule._id}`)
+      form(method="POST" action=`${prefixOwner}/facilities/price-rules/edit/${priceRule._id}?_method=PATCH`)
         .pr-grid
           .pr-full
             label(for="name") Tên khung giá *
@@ -29,10 +29,10 @@ block main
 
           div
             label(for="court") Sân con (tương ứng) *
-            select#court(name="court")
-              option(value="") Tất cả sân của cơ sở
+            select#court(name="court" required)
               each c in courts
-                option(value=c._id data-venue=c.venueId selected=(String(priceRule.court) === String(c._id)))= c.name
+                if String(c.venue_id) === String(venueId)
+                  option(value=c._id selected=(String(priceRule.court) === String(c._id)))= c.name
 
           div
             label(for="dayType") Áp dụng ngày *
@@ -59,36 +59,31 @@ block main
           a.pr-btn.pr-btn-ghost(href=`${prefixOwner}/facilities/price-rules`) Hủy
           button.pr-btn.pr-btn-main(type="submit") Lưu khung giá
 
+  -
+    const courtOptions = courts.map((c) => ({
+      value: String(c._id),
+      venueId: String(c.venue_id),
+      name: c.name
+    }));
   script.
     const venue = document.getElementById('venue');
     const court = document.getElementById('court');
-    const allCourts = [...court.options].filter(o => o.value).map(o => ({
-      value: o.value,
-      venueId: o.dataset.venue,
-      name: o.textContent
-    }));
+    const allCourts = !{JSON.stringify(courtOptions).replace(/</g, '\\u003c')};
 
-    const filter = () => {
+    const filter = (preferred) => {
       const venueId = venue.value;
-      const current = court.value;
+      const current = preferred === undefined ? court.value : preferred;
+      const matched = allCourts.filter((item) => item.venueId === venueId);
       court.replaceChildren();
-      const blank = document.createElement('option');
-      blank.value = '';
-      blank.textContent = 'Tất cả sân của cơ sở';
-      court.appendChild(blank);
-      allCourts.forEach(item => {
-        if (item.venueId !== venueId) return;
+      matched.forEach((item) => {
         const option = document.createElement('option');
         option.value = item.value;
-        option.dataset.venue = item.venueId;
         option.textContent = item.name;
-        option.selected = item.value === current;
         court.appendChild(option);
       });
+      const stillThere = matched.some((item) => item.value === current);
+      court.value = stillThere ? current : (matched[0] ? matched[0].value : '');
     };
 
-    venue.addEventListener('change', () => {
-      court.value = '';
-      filter();
-    });
+    venue.addEventListener('change', () => filter(''));
     filter();

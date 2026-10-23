@@ -1,23 +1,27 @@
 extends ../../layouts/default.pug
+include ../../../mixins/alert.pug
+include ../../../mixins/pagination.pug
+
+block head
+  link(rel="stylesheet" href="/admin/css/facilities.css")
 
 block main
+  +alert-success(5000)
   .d-flex.justify-content-between.align-items-start.flex-wrap.gap-3.mb-4
     div
       h1.sz-title #{pageTitle}
       p.sz-subtitle Cấu hình sân con, bảng giá giờ vàng và lịch bảo trì cho cụm sân đang vận hành.
-    .d-flex.gap-2.flex-wrap
-      select.sz-select
-        option SportPro Complex - Cầu Giấy
-        option Arena Tây Hồ
-      button.sz-btn.sz-btn-dark(type="button")
-        i.bi.bi-plus-lg
-        | Thêm cơ sở
-
+    .fv-head-actions
+      .fv-filter
+        i.bi.bi-buildings.fv-filter-icon(aria-hidden="true")
+        select.fv-select#venueFilter(name="venue_filter" aria-label="Lọc theo cơ sở")
+          option(value="") Tất cả sân con 
+          each item in venues
+            option(value=item._id selected=(String(item._id) === String(VenueSelected)))= item.name
   .sz-tabs.mb-4#facilityTabs
-    button.sz-tab.active(type="button" data-tab="courts") Sân con (5)
-    button.sz-tab(type="button" data-tab="pricing") Bảng giá & Giờ vàng (5)
-    button.sz-tab(type="button" data-tab="locks") Khóa slot bảo trì (2)
-    a.sz-tab(href=`${prefixAdmin}/facilities/venues`) Danh sách cơ sở (5)
+    button.sz-tab.active(type="button" data-tab="courts") Sân con (#{countCourts})
+    a.sz-tab(href=`${prefixOwner}/facilities/price-rules`) Bảng giá
+    a.sz-tab(href=`${prefixAdmin}/facilities/venues`) Danh sách cơ sở (#{countVenues})
 
   .sz-card.sz-panel
     .d-flex.justify-content-between.align-items-center.flex-wrap.gap-2.mb-3
@@ -25,8 +29,9 @@ block main
         h2.sz-panel-title Danh sách sân thi đấu thuộc SportPro Complex
         p.sz-panel-sub Quản lý trạng thái hoạt động / bảo trì từng sân con
       button.sz-btn.sz-btn-green(type="button")
-        i.bi.bi-plus-lg
-        | Thêm sân con
+        a(href=`${prefixAdmin}/facilities/createCourts` style="color:white;text-decoration: none")
+          i.bi.bi-plus-lg
+          | Thêm sân con
 
     .row.g-3
       each court in courts
@@ -38,22 +43,38 @@ block main
                   img(src= court.court_type_id.icon_url)
                 strong.sz-court-name= court.name
               if court.status === "active"
-                span.sz-badge.sz-badge-ok HOẠT ĐỘNG
+                span(class="sz-badge sz-badge-ok" ) HOẠT ĐỘNG
               else
-                span.sz-badge.sz-badge-danger ĐANG BẢO TRÌ
+                span(class="sz-badge sz-badge-danger" ) ĐANG BẢO TRÌ
             ul.sz-court-meta
               li
-                span Mặt sân
+                span Mặt sân 
                 strong= court.surface
               li
                 span Loại hình
                 strong  #{court.court_type_id.name}
             .sz-court-actions
+              a.sz-btn.sz-btn-detail.sz-btn-sm(
+                href=`${prefixAdmin}/facilities/detailCourts/${court._id}`
+              )
+                i.bi.bi-eye
+                | Chi tiết
+              a.sz-btn.sz-btn-edit.sz-btn-sm(
+                href=`${prefixAdmin}/facilities/editCourts/${court._id}`
+              )
+                i.bi.bi-pencil-square
+                | Sửa
               if court.status === "active"
-                button.sz-btn.sz-btn-outline-danger.sz-btn-sm(type="button" data-action="maintain")
+                button.sz-btn.sz-btn-outline-danger.sz-btn-sm.btn-open-maintain.btn(type="button" data-status= court.status data-id=court._id)
                   i.bi.bi-exclamation-triangle
-                  | Đưa vào bảo trì
+                  | Bảo trì
               else
-                button.sz-btn.sz-btn-green.sz-btn-sm(type="button" data-action="activate")
+                button.sz-btn.sz-btn-green.sz-btn-sm.btn(type="button" data-status= court.status data-id=court._id)
                   i.bi.bi-check2-circle
-                  | Mở lại sân
+                  | Mở lạ 
+    nav.fv-pagination(aria-label="Phân trang sân")
+      +pagination(pagination)    
+    form(method='POST' action="" id="form-changeStatus" data-path=`${prefixAdmin}/facilities/changeStatus`)
+    script(src="/admin/js/courts.js")
+    script(src="/admin/js/script.js")
+

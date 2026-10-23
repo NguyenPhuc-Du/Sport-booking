@@ -37,7 +37,7 @@ import com.sportbooking.user.ui.theme.spacing
 fun PrimaryButton(
     text: String,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier.fillMaxWidth().height(52.dp),
     enabled: Boolean = true,
     loading: Boolean = false,
     leadingIcon: ImageVector? = null,
@@ -45,9 +45,7 @@ fun PrimaryButton(
     Button(
         onClick = onClick,
         enabled = enabled && !loading,
-        modifier = modifier
-            .fillMaxWidth()
-            .height(52.dp),
+        modifier = modifier,
         shape = MaterialTheme.shapes.medium,
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.primary,
@@ -105,7 +103,7 @@ fun PrimaryButton(
 fun SecondaryButton(
     text: String,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier.fillMaxWidth().height(52.dp),
     enabled: Boolean = true,
     loading: Boolean = false,
     leadingIcon: ImageVector? = null,
@@ -113,9 +111,7 @@ fun SecondaryButton(
     OutlinedButton(
         onClick = onClick,
         enabled = enabled && !loading,
-        modifier = modifier
-            .fillMaxWidth()
-            .height(52.dp),
+        modifier = modifier,
         shape = MaterialTheme.shapes.medium,
         border = BorderStroke(
             width = 1.dp,

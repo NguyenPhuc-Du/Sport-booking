@@ -17,7 +17,7 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:3000/api/v1/\"")
+        buildConfigField("String", "API_BASE_URL", "\"https://contort-bust-golf.ngrok-free.dev/api/v1/\"")
         buildConfigField("Boolean", "HTTP_LOGS", "true")
     }
 
@@ -69,4 +69,6 @@ dependencies {
 
     implementation("com.google.dagger:hilt-android:2.52")
     ksp("com.google.dagger:hilt-compiler:2.52")
+
+    implementation("androidx.browser:browser:1.8.0")
 }

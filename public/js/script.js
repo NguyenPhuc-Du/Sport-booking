@@ -38,3 +38,21 @@ if (uploadImage) {
   });
 }
 //end up load ảnh
+//pagination
+const buttonPage = document.querySelectorAll("[button-page]");
+if (buttonPage) {
+  console.log("hello");
+  let url = new URL(window.location.href);
+  buttonPage.forEach((button) => {
+    button.addEventListener("click", () => {
+      const buttonvalue = button.getAttribute("button-page");
+      if (buttonvalue) {
+        url.searchParams.set("page", buttonvalue);
+      } else {
+        url.searchParams.set("page", 1);
+      }
+      window.location.href = url.href;
+    });
+  });
+}
+//end pagination
