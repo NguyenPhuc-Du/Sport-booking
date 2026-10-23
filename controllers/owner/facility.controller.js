@@ -2,7 +2,7 @@ const facilities = require("../../services/owner/facility.service");
 const Courts = require("../../models/court.model");
 const CourtsType = require("../../models/court-types.model");
 const prefixAdmin = require("../../config/system");
-const paginationHelper = require("../../helper/pagination.helper");
+const paginationHelper = require("../../helpers/pagination");
 const Court = require("../../models/court.model");
 module.exports.index = async (req, res) => {
   const userId = res.locals.user.id;

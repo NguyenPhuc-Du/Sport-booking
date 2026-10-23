@@ -63,9 +63,21 @@ async function takenStarts(courtId, date) {
     date,
     status: { $in: ["pending_payment", "upcoming", "completed"] },
   })
-    .select("timeStart")
+    .select("timeStart timeEnd")
     .lean();
-  return new Set(bookings.map((b) => b.timeStart));
+  const taken = new Set();
+  for (const booking of bookings) {
+    const start = toMinutes(booking.timeStart || "00:00");
+    const end = toMinutes(booking.timeEnd || booking.timeStart || "00:00");
+    if (!(end > start)) {
+      taken.add(booking.timeStart);
+      continue;
+    }
+    for (let minute = start; minute < end; minute += 60) {
+      taken.add(fromMinutes(minute));
+    }
+  }
+  return taken;
 }
 
 async function buildSlots(venue, courtId, date) {
