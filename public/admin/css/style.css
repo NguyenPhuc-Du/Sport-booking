@@ -551,6 +551,7 @@ select:focus-visible {
 }
 
 .sz-range button,
+.sz-range a,
 .sz-seg-btn {
   border: 0;
   background: transparent;
@@ -558,12 +559,14 @@ select:focus-visible {
   border-radius: 9px;
   font-weight: 600;
   color: #475569;
+  text-decoration: none;
   transition:
     background 0.2s,
     box-shadow 0.2s;
 }
 
 .sz-range button.active,
+.sz-range a.active,
 .sz-seg-btn.active {
   background: #fff;
   color: var(--ink);
