@@ -1,20 +1,13 @@
 (() => {
-  const weekData = [
-    { day: "T2", value: 4.2 },
-    { day: "T3", value: 5.1 },
-    { day: "T4", value: 6.0 },
-    { day: "T5", value: 5.4 },
-    { day: "T6", value: 8.2 },
-    { day: "T7", value: 10.5 },
-    { day: "CN", value: 10.8 },
-  ];
-
-  const peakData = [
-    { label: "Giờ vàng Tối (17:00 - 22:00)", pct: 96, color: "#f59e0b" },
-    { label: "Sáng sớm (06:00 - 09:00)", pct: 74, color: "#10b981" },
-    { label: "Buổi chiều (14:00 - 17:00)", pct: 58, color: "#0ea5e9" },
-    { label: "Buổi trưa (11:00 - 14:00)", pct: 32, color: "#94a3b8" },
-  ];
+  const readJson = (el, key) => {
+    if (!el || !el.dataset[key]) return [];
+    try {
+      const parsed = JSON.parse(el.dataset[key]);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+      return [];
+    }
+  };
 
   const activateGroup = (root, itemSel) => {
     if (!root) return;
@@ -37,22 +30,26 @@
 
   const chart = document.getElementById("barChart");
   if (chart) {
-    const max = Math.max(...weekData.map((d) => d.value));
-    chart.innerHTML = weekData
-      .map(
-        (d) => `
-      <div class="sz-bar-col" title="${d.value.toFixed(1)} triệu đ">
+    const weekData = readJson(chart, "chart");
+    const max = Math.max(0.01, ...weekData.map((d) => Number(d.value) || 0));
+    chart.innerHTML = weekData.length
+      ? weekData
+          .map(
+            (d) => `
+      <div class="sz-bar-col" title="${Number(d.value || 0).toFixed(2)} triệu đ">
         <div class="sz-bar-track">
-          <div class="sz-bar" style="height:${(d.value / max) * 100}%"></div>
+          <div class="sz-bar" style="height:${((Number(d.value) || 0) / max) * 100}%"></div>
         </div>
         <span class="sz-bar-day">${d.day}</span>
       </div>`,
-      )
-      .join("");
+          )
+          .join("")
+      : `<p class="sz-panel-sub mb-0">Chưa có doanh thu trong kỳ này.</p>`;
   }
 
   const peakList = document.getElementById("peakList");
   if (peakList) {
+    const peakData = readJson(peakList, "peak");
     peakList.innerHTML = peakData
       .map(
         (p) => `
@@ -72,7 +69,6 @@
   }
 
   activateGroup(document.getElementById("roleSwitch"), ".sz-switch-btn");
-  activateGroup(document.getElementById("rangeTabs"), "button");
   activateGroup(document.getElementById("viewToggle"), ".sz-seg-btn");
   activateGroup(document.getElementById("facilityTabs"), ".sz-tab");
   activateGroup(document.getElementById("financeTabs"), ".sz-tab");
