@@ -123,6 +123,7 @@ data class BookingRequest(
     val courtId: String,
     val date: String,
     val time: String,
+    val hours: Int = 1,
     val voucherCode: String?,
     val paymentMethod: String?,
 )

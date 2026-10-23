@@ -8,7 +8,7 @@ import com.sportbooking.domain.model.BookingReceipt
 import com.sportbooking.domain.model.CheckoutOptions
 
 interface BookingRepository {
-    suspend fun checkoutOptions(): DomainResult<CheckoutOptions>
+    suspend fun checkoutOptions(facilityId: String): DomainResult<CheckoutOptions>
     suspend fun quote(draft: BookingDraft): DomainResult<BookingQuote>
     suspend fun create(draft: BookingDraft): DomainResult<BookingReceipt>
     suspend fun list(filter: String): DomainResult<BookingPage>

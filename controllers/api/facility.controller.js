@@ -65,15 +65,19 @@ module.exports.slots = async (req, res) => {
 
 module.exports.checkoutOptions = async (req, res) => {
   try {
+    const facilityId = req.query.facilityId;
+    if (!facilityId || !mongoose.Types.ObjectId.isValid(facilityId)) {
+      return res.status(400).json({ message: "Thiếu cơ sở" });
+    }
+
     const now = new Date();
     const vouchers = await Voucher.find({
       deleted: false,
       status: "active",
+      venue_id: facilityId,
       start_date: { $lte: now },
       end_date: { $gte: now },
-    })
-      .select("code name")
-      .lean();
+    }).select("code name").lean();
 
     res.json({
       vouchers: vouchers.map((v) => ({ code: v.code, description: v.name })),

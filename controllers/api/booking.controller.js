@@ -36,6 +36,12 @@ function toMin(hhmm) {
   return h * 60 + m;
 }
 
+function hourOf(body) {
+  const hours = Number(body.hours || 1);
+
+  return hours;
+}
+
 async function resolveSelection(body) {
   const pair = await facilityService.getVenueAndCourt(body.facilityId, body.courtId);
   if (!pair) {
@@ -49,26 +55,42 @@ async function resolveSelection(body) {
     throw err;
   }
 
-  const slot = await slotService.findSlot(pair.venue, pair.court._id, body.date, body.time);
-  if (!slot) {
-    const err = new Error("Khung giờ không tồn tại hoặc chưa có bảng giá");
-    err.status = 400;
-    throw err;
-  }
-  if (!slot.available) {
-    const err = new Error("Khung giờ đã được đặt hoặc đã qua");
-    err.status = 409;
-    throw err;
+  const hours = hourOf(body);
+  const startMin = toMin(body.time);
+  const slots = [];
+
+  for (let i = 0; i < hours; i++) {
+    const time = slotService.fromMinutes(startMin + i * 60);
+    const slot = await slotService.findSlot(pair.venue, pair.court._id, body.date, time);
+
+    if (!slot) {
+      const err = new Error("Khung giờ không tồn tại hoặc chưa có bảng giá");
+      err.status = 400;
+      throw err;
+    }
+    if (!slot.available) {
+      const err = new Error("Một trong các khung giờ đã được đặt hoặc đã qua");
+      err.status = 409;
+      throw err;
+    }
+    slots.push(slot);
   }
 
-  const quote = await slotService.quotePrice(slot, body.voucherCode, pair.venue._id);
-  return { venue: pair.venue, court: pair.court, slot, quote };
+  const courtPrice = slots.reduce((sum, slot) => sum + slot.price, 0);
+  const quote = await slotService.quotePrice(
+    {price: courtPrice},
+    body.voucherCode,
+    pair.venue._id,
+  );
+
+  return { venue: pair.venue, court: pair.court, slots, quote };
 }
 
 module.exports.quote = async (req, res) => {
   try {
-    const { venue, court, slot, quote } = await resolveSelection(req.body);
-    const end = slotService.fromMinutes(toMin(slot.time) + 60);
+    const { venue, court, slots, quote } = await resolveSelection(req.body);
+    const start = slots[0].time;
+    const end = slotService.fromMinutes(toMin(start) + slots.length * 60);
     return res.json({
       facilityId: String(venue._id),
       facilityName: venue.name,
@@ -89,8 +111,9 @@ module.exports.create = async (req, res) => {
       return fail(res, 400, "Chỉ hỗ trợ thanh toán VNPay");
     }
 
-    const { venue, court, slot, quote } = await resolveSelection(req.body);
-    const end = slotService.fromMinutes(toMin(slot.time) + 60);
+    const { venue, court, slots, quote } = await resolveSelection(req.body);
+    const start = slots[0].time;
+    const end = slotService.fromMinutes(toMin(start) + slots.length * 60);
     const code = `SPZ${Date.now()}`;
 
     await slotService.expireStablePending();

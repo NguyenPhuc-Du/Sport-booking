@@ -7,7 +7,7 @@ import javax.inject.Inject
 class GetCheckoutOptionsUseCase @Inject constructor(
     private val repository: BookingRepository,
 ) {
-    suspend operator fun invoke() = repository.checkoutOptions()
+    suspend operator fun invoke(facilityId: String) = repository.checkoutOptions()
 }
 
 class QuoteBookingUseCase @Inject constructor(

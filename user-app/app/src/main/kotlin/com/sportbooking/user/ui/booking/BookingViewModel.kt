@@ -23,7 +23,7 @@ data class BookingUiState(
     val courtId: String = "",
     val date: LocalDate = LocalDate.now(),
     val slots: List<TimeSlot> = emptyList(),
-    val selectedTime: String? = null,
+    val selectedTimes: List<String> = emptyList(),
     val slotsLoading: Boolean = false,
     val error: String? = null,
 ) {
@@ -61,17 +61,33 @@ class BookingViewModel @Inject constructor(
     }
 
     fun onCourtSelected(courtId: String) {
-        _state.update { it.copy(courtId = courtId, selectedTime = null, slots = emptyList(), error = null) }
+        _state.update { it.copy(courtId = courtId, selectedTimes = emptyList(), slots = emptyList(), error = null) }
         loadSlots()
     }
 
     fun onDateSelected(date: LocalDate) {
-        _state.update { it.copy(date = date, selectedTime = null, slots = emptyList(), error = null) }
+        _state.update { it.copy(date = date, selectedTimes = emptyList(), slots = emptyList(), error = null) }
         loadSlots()
     }
 
     fun onSlotSelected(time: String) {
-        _state.update { it.copy(selectedTime = time) }
+        val slots = _state.value.slots
+        val slot = slots.find { it.time == time } ?: return
+        if (!slot.available) return
+
+        val current = _state.value.selectedTimes
+        val merged = (if (time in current) current - time else current + time).sorted()
+        if (merged.isEmpty()) {
+            _state.update { it.copy(selectedTimes = emptyList(), error = null) }
+            return
+        }
+        val indexes = merged.map { value -> slots.indexOfFirst { it.time == value } }
+        val consecutive = indexes.zipWithNext().all { (a, b) -> b == a + 1 }
+        if (merged.size > 3 || !consecutive || indexes.any { slots[it].available.not() }) {
+            _state.update { it.copy(error = "Chỉ chọn 1 đến 3 khung giờ liền nhau") }
+            return
+        }
+        _state.update { it.copy(selectedTimes = merged, error = null) }
     }
 
     fun retry() {
@@ -86,7 +102,7 @@ class BookingViewModel @Inject constructor(
         val current = _state.value
         if (current.courtId.isBlank()) return
         viewModelScope.launch {
-            _state.update { it.copy(slotsLoading = true, error = null, slots = emptyList(), selectedTime = null) }
+            _state.update { it.copy(slotsLoading = true, error = null, slots = emptyList(), selectedTimes = emptyList()) }
             when (val result = getSlots(facilityId, current.courtId, current.date.toString())) {
                 is DomainResult.Success -> _state.update { it.copy(slotsLoading = false, slots = result.data.slots) }
                 is DomainResult.Failure -> _state.update { it.copy(slotsLoading = false, slots = emptyList(), error = result.message) }
