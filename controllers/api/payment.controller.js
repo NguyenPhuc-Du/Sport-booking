@@ -1,43 +1,5 @@
-const Booking = require("../../models/booking.model");
-const User = require("../../models/user.model");
-const Voucher = require("../../models/finance.model");
 const vnpay = require("../../services/app/vnpay.service");
-const mailService = require("../../services/app/mail.service");
-
-async function markPaidAndMail(txnRef, transactionNo) {
-  const booking = await Booking.findOneAndUpdate(
-    { code: txnRef, status: "pending_payment" },
-    { $set: { status: "upcoming", statusLabel: "SẮP DIỄN RA", vnpTransactionNo: transactionNo || null, paidAt: new Date(), expiresAt: null } },
-    { new: true },
-  );
-  
-  if (!booking) return { ok: (await Booking.exists({ code: txnRef })) != null };
-
-  if (booking.voucherCode) {
-    await Voucher.updateOne(
-      { code: booking.voucherCode },
-      { $inc: { used_count: 1 } }
-    );
-  }
-
-  const user = await User.findById(booking.userId);
-  if (user?.email) {
-    try {
-      await mailService.sendBookingMail(user.email, {
-        code: booking.code,
-        vnpTransactionNo: booking.vnpTransactionNo,
-        facilityName: booking.facilityName,
-        courtName: booking.courtName,
-        date: booking.date,
-        time: booking.time,
-        amount: booking.amount,
-      });
-    } catch (e) {
-      console.error(e);
-    }
-  }
-  return { ok: true };
-}
+const paymentService = require("../../services/app/payment.service");
 
 function backToApp(res, ok, code) {
   const link = `sportzone://payment/${ok ? "success" : "failed"}?code=${encodeURIComponent(code || "")}`;
@@ -59,15 +21,11 @@ module.exports.vnpayReturn = async (req, res) => {
   if (!result.valid) return backToApp(res, false, result.txnRef);
 
   if (result.responseCode === "00") {
-    await markPaidAndMail(result.txnRef, result.transactionNo);
-    const paid = await Booking.exists({ code: result.txnRef, status: "upcoming" });
-    return backToApp(res, Boolean(paid), result.txnRef);
+    await paymentService.markPaidAndMail(result.txnRef, result.transactionNo);
+    return backToApp(res, await paymentService.isPaid(result.txnRef), result.txnRef);
   }
 
-  await Booking.findOneAndUpdate(
-    { code: result.txnRef, status: "pending_payment" },
-    { status: "cancelled", statusLabel: "THANH TOÁN THẤT BẠI" },
-  );
+  await paymentService.markFailed(result.txnRef);
   return backToApp(res, false, result.txnRef);
 };
 
@@ -77,24 +35,11 @@ module.exports.vnpayIpn = async (req, res) => {
     return res.status(200).json({ RspCode: "97", Message: "Invalid signature" });
   }
 
-  const booking = await Booking.findOne({ code: result.txnRef });
-  if (!booking) {
-    return res.status(200).json({ RspCode: "01", Message: "Order not found" });
-  }
-  if (Number(booking.amount) !== Number(result.amount)) {
-    return res.status(200).json({ RspCode: "04", Message: "Invalid amount" });
-  }
-  if (booking.status !== "pending_payment") {
-    return res.status(200).json({ RspCode: "02", Message: "Order already confirmed" });
-  }
-
-  if (result.responseCode === "00") {
-    await markPaidAndMail(result.txnRef, result.transactionNo);
-    return res.status(200).json({ RspCode: "00", Message: "Success" });
-  }
-
-  booking.status = "cancelled";
-  booking.statusLabel = "THANH TOÁN THẤT BẠI";
-  await booking.save();
-  return res.status(200).json({ RspCode: "00", Message: "Confirmed" });
+  const response = await paymentService.handleIpn({
+    txnRef: result.txnRef,
+    amount: result.amount,
+    responseCode: result.responseCode,
+    transactionNo: result.transactionNo,
+  });
+  return res.status(200).json(response);
 };
