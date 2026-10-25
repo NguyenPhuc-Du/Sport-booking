@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 const User = require("../../models/user.model");
-const { roleCodesOf } = require("../../services/admin/auth.service");
+// const { roleCodesOf } = require("../../services/admin/auth.service");
 
 const COOKIE = "admin_access_token";
 const LOGIN = "/admin/auth/login";
@@ -22,7 +22,7 @@ module.exports = async (req, res, next) => {
       clear(res);
       return res.redirect(LOGIN);
     }
-    user.roleCodes = await roleCodesOf(user._id);
+    // user.roleCodes = await roleCodesOf(user._id);
     req.user = user;
     res.locals.user = user;
     return next();
