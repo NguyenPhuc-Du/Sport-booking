@@ -2,7 +2,9 @@ const mongoose = require("mongoose");
 
 const bookingSchema = new mongoose.Schema(
   {
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", index: true },
+    guestName: { type: String, default: "" },
+    guestPhone: { type: String, default: "" },
     code: { type: String, required: true, unique: true, index: true },
     status: {
       type: String,
@@ -23,7 +25,11 @@ const bookingSchema = new mongoose.Schema(
     discount: { type: Number, default: 0 },
     amount: { type: Number, required: true },
     voucherCode: { type: String, default: null },
-    paymentMethod: { type: String, default: "vnpay" },
+    paymentMethod: { 
+      type: String, 
+      enum: ["vnpay", "cash"],
+      default: "vnpay" 
+    },
     vnpTransactionNo: { type: String, default: null },
     paidAt: { type: Date, default: null },
     expiresAt: { type: Date, default: null }, 

@@ -1,9 +1,12 @@
 extends ../../layouts/default.pug
+include ../../../mixins/alert.pug
 
 block head
   link(rel="stylesheet" href="/admin/css/bookings.css")
 
 block main
+  +alert-success(5000)
+  +alert-error(5000)
   .d-flex.justify-content-between.align-items-start.flex-wrap.gap-3.mb-4
     div
       h1.sz-title Quản lý Đặt sân & Lịch thi đấu
@@ -31,13 +34,10 @@ block main
       .sz-status-legend
         span
           i.dot.is-paid
-          | Đã thanh toán
-        span
-          i.dot.is-pending
-          | Chờ duyệt / cọc
+          | Đã đặt lịch
         span
           i.dot.is-done
-          | Hoàn thành
+          | Đã thanh toán
 
     .sz-timeline-wrap
       .sz-timeline
@@ -75,7 +75,7 @@ block main
                     data-amount=slot.amount
                   )
                     span= slot.name
-                    small #{slot.id}
+                    small(title=slot.id)= slot.shortId
 
   #bookingModal.bk-modal(aria-hidden="true")
     .bk-modal-backdrop(data-close="true")
@@ -117,42 +117,48 @@ block main
     .bk-modal-card.bk-walkin-card(role="dialog" aria-modal="true" aria-labelledby="walkInTitle")
       button.bk-modal-close(type="button" data-close-walkin="true" aria-label="Đóng")
         i.bi.bi-x-lg
-      h3#walkInTitle.bk-walkin-title Đặt lịch tại quầy (Khách vãng lai)
-      form#walkInForm(onsubmit="return false")
+      h3#walkInTitle.bk-walkin-title Đặt lịch tại quầy
+      if !walkIn.allowed
+        p.bk-walkin-hint.is-warn= walkIn.reason
+      form#walkInForm(action=`${prefixOwner}/bookings/create` method="POST")
+        input(type="hidden" name="date" value=dateValue)
         .bk-walkin-field
           label.bk-walkin-label(for="walkInCourt") Chọn sân thi đấu
-          select#walkInCourt.bk-walkin-input(name="court")
+          select#walkInCourt.bk-walkin-input(name="court" required)
             option(value="" selected) Chọn sân
             each row in rows
               if row.status === "open"
-                option(value=row.name)= row.venue ? `${row.venue} — ${row.name}` : row.name
+                option(value=row.id)= row.venue ? `${row.venue} — ${row.name}` : row.name
         .bk-walkin-grid
           .bk-walkin-field
             label.bk-walkin-label(for="walkInName") Tên khách
-            input#walkInName.bk-walkin-input(type="text" name="customer" placeholder="Khách vãng lai")
+            input#walkInName.bk-walkin-input(type="text" name="customer" required placeholder="Nguyễn Trần Hoàng Phúc")
           .bk-walkin-field
             label.bk-walkin-label(for="walkInPhone") Số điện thoại
-            input#walkInPhone.bk-walkin-input(type="tel" name="phone" placeholder="0900 123 456")
+            input#walkInPhone.bk-walkin-input(type="tel" name="phone" required placeholder="0900 123 456")
         .bk-walkin-grid
           .bk-walkin-field
             label.bk-walkin-label(for="walkInStart") Từ giờ
-            input#walkInStart.bk-walkin-input(type="time" name="timeStart" min="06:00" max="21:00" step="3600")
+            input#walkInStart.bk-walkin-input(type="time" name="timeStart" required min=walkIn.startMin max="21:00" step="3600" disabled=!walkIn.allowed)
           .bk-walkin-field
             label.bk-walkin-label(for="walkInEnd") Đến giờ
-            input#walkInEnd.bk-walkin-input(type="time" name="timeEnd" min="06:00" max="22:00" step="3600")
+            input#walkInEnd.bk-walkin-input(type="time" name="timeEnd" required min=walkIn.endMin max="22:00" step="3600" data-min=walkIn.endMin disabled=!walkIn.allowed)
         .bk-walkin-grid
           .bk-walkin-field
             label.bk-walkin-label(for="walkInAmount") Tiền thu (VND)
-            input#walkInAmount.bk-walkin-input(type="number" name="amount" min="0" step="1000" placeholder="180000")
+            input#walkInAmount.bk-walkin-input(type="number" name="amount" required min="0" step="1" readonly placeholder="Chọn sân và giờ")
+            p#walkInPriceHint.bk-walkin-hint
           .bk-walkin-field
             label.bk-walkin-label(for="walkInPay") Hình thức
             select#walkInPay.bk-walkin-input(name="payment")
               option(value="cash") Tiền mặt tại quầy
+              option(value="vnpay") Chuyển khoản QR
         .bk-walkin-foot
           button.bk-walkin-cancel(type="button" data-close-walkin="true") Hủy
-          button.sz-btn.sz-btn-green.bk-walkin-submit(type="button") Xác nhận đặt sân
+          button.sz-btn.sz-btn-green.bk-walkin-submit(type="submit" disabled=!walkIn.allowed) Xác nhận đặt sân
 
 block script
+  script#walkInPriceRules(type="application/json")!= JSON.stringify(priceRules || [])
   script.
     (function () {
       var modal = document.getElementById("bookingModal");
@@ -214,6 +220,75 @@ block script
       var walkIn = document.getElementById("walkInModal");
       var walkInForm = document.getElementById("walkInForm");
       var openWalkInBtn = document.getElementById("openWalkIn");
+      var priceRules = [];
+      var priceNode = document.getElementById("walkInPriceRules");
+      if (priceNode) {
+        try { priceRules = JSON.parse(priceNode.textContent || "[]"); } catch (e) { priceRules = []; }
+      }
+
+      function toMin(value) {
+        var parts = String(value || "").slice(0, 5).split(":");
+        return Number(parts[0]) * 60 + Number(parts[1] || 0);
+      }
+
+      function formatMoney(amount) {
+        return Number(amount || 0).toLocaleString("vi-VN") + "đ";
+      }
+
+      function syncWalkInPrice() {
+        var court = document.getElementById("walkInCourt");
+        var startEl = document.getElementById("walkInStart");
+        var endEl = document.getElementById("walkInEnd");
+        var amountEl = document.getElementById("walkInAmount");
+        var hint = document.getElementById("walkInPriceHint");
+        if (!court || !amountEl || !hint) return;
+
+        var courtId = court.value;
+        var rules = priceRules.filter(function (rule) { return rule.courtId === courtId; });
+        if (!courtId) {
+          amountEl.value = "";
+          hint.textContent = "";
+          return;
+        }
+        if (!rules.length) {
+          amountEl.value = "";
+          hint.textContent = "Sân chưa có bảng giá cho ngày này";
+          return;
+        }
+
+        var start = startEl && startEl.value ? startEl.value.slice(0, 5) : "";
+        var end = endEl && endEl.value ? endEl.value.slice(0, 5) : "";
+        if (!start || !end || end <= start) {
+          amountEl.value = "";
+          hint.textContent = rules.slice().sort(function (a, b) {
+            return toMin(a.timeStart) - toMin(b.timeStart);
+          }).map(function (rule) {
+            return rule.timeStart + "–" + rule.timeEnd + ": " + formatMoney(rule.pricePerHour) + "/giờ";
+          }).join("\n");
+          return;
+        }
+
+        var total = 0;
+        var startMin = toMin(start);
+        var endMin = toMin(end);
+        for (var minute = startMin; minute < endMin; minute += 60) {
+          var matched = null;
+          for (var i = 0; i < rules.length; i++) {
+            if (minute >= toMin(rules[i].timeStart) && minute < toMin(rules[i].timeEnd)) {
+              matched = rules[i];
+              break;
+            }
+          }
+          if (!matched) {
+            amountEl.value = "";
+            hint.textContent = "Khung giờ chưa có bảng giá";
+            return;
+          }
+          total += Number(matched.pricePerHour) || 0;
+        }
+        amountEl.value = String(total);
+        hint.textContent = "Theo bảng giá: " + formatMoney(total);
+      }
 
       function openWalkIn() {
         if (!walkIn) return;
@@ -230,11 +305,33 @@ block script
         walkIn.classList.remove("is-open");
         walkIn.setAttribute("aria-hidden", "true");
         if (walkInForm) walkInForm.reset();
+        syncEndMin();
+        syncWalkInPrice();
         lockBody();
         if (openWalkInBtn) openWalkInBtn.focus();
       }
 
+      function syncEndMin() {
+        var startEl = document.getElementById("walkInStart");
+        var endEl = document.getElementById("walkInEnd");
+        if (!startEl || !endEl) return;
+        var floor = endEl.getAttribute("data-min") || "07:00";
+        var next = floor;
+        if (startEl.value) {
+          var bumped = String(Number(startEl.value.slice(0, 2)) + 1).padStart(2, "0") + ":00";
+          if (bumped > floor) next = bumped;
+        }
+        endEl.min = next;
+        if (endEl.value && endEl.value.slice(0, 5) < next) endEl.value = "";
+      }
+
       if (openWalkInBtn) openWalkInBtn.addEventListener("click", openWalkIn);
+      var startTime = document.getElementById("walkInStart");
+      if (startTime) startTime.addEventListener("change", syncEndMin);
+      ["walkInCourt", "walkInStart", "walkInEnd"].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) el.addEventListener("change", syncWalkInPrice);
+      });
       if (walkIn) {
         walkIn.querySelectorAll("[data-close-walkin]").forEach(function (el) {
           el.addEventListener("click", closeWalkIn);
