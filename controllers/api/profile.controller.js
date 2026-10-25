@@ -1,49 +1,26 @@
-const User = require("../../models/user.model");
+const profileService = require("../../services/app/profile.service");
 const { toUser } = require("./user.mapper");
 
-const EMAIL_PATTERN = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-const PHONE_PATTERN = /^0\d{9}$/;
+function fail(res, error, fallback) {
+  if (error.status) return res.status(error.status).json({ message: error.message });
+  console.error(error);
+  return res.status(500).json({ message: fallback });
+}
 
 module.exports.index = async (req, res) => {
-  const user = await User.findById(req.auth.userId);
-  if (!user) return res.status(401).json({ message: "Phiên đăng nhập không hợp lệ" });
-  return res.json({
-    user: toUser(user),
-    notifications: [],
-    reviews: [],
-  });
+  try {
+    const user = await profileService.getProfile(req.auth.userId);
+    return res.json({ user: toUser(user), notifications: [], reviews: [] });
+  } catch (error) {
+    return fail(res, error, "Không tải được hồ sơ");
+  }
 };
 
 module.exports.update = async (req, res) => {
   try {
-    const user = await User.findById(req.auth.userId);
-    if (!user) return res.status(401).json({ message: "Phiên đăng nhập không hợp lệ" });
-
-    const fullName = (req.body.fullName || "").trim();
-    const phone = (req.body.phone || "").trim();
-    const email = (req.body.email || "").trim().toLowerCase();
-
-    if (!fullName) return res.status(400).json({ message: "Họ tên không được để trống" });
-    if (!PHONE_PATTERN.test(phone)) {
-      return res.status(400).json({ message: "Số điện thoại phải gồm 10 số và bắt đầu bằng 0" });
-    }
-    if (!EMAIL_PATTERN.test(email)) return res.status(400).json({ message: "Email không đúng định dạng" });
-
-    const existed = await User.findOne({
-      _id: { $ne: user._id },
-      $or: [{ email }, { phone }],
-    });
-    if (existed) {
-      if (existed.email === email) return res.status(409).json({ message: "Email này đã được đăng ký" });
-      return res.status(409).json({ message: "Số điện thoại này đã được đăng ký" });
-    }
-
-    user.fullName = fullName;
-    user.phone = phone;
-    user.email = email;
-    await user.save();
+    const user = await profileService.updateProfile(req.auth.userId, req.body);
     return res.json({ user: toUser(user) });
   } catch (error) {
-    return res.status(500).json({ message: "Cập nhật hồ sơ thất bại" });
+    return fail(res, error, "Cập nhật hồ sơ thất bại");
   }
 };

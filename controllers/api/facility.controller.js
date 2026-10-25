@@ -1,6 +1,5 @@
 const facilityService = require("../../services/app/facility.service");
 const slotService = require("../../services/app/slot.service");
-const Voucher = require("../../models/finance.model");
 
 module.exports.home = async (req, res) => {
   try {
@@ -11,11 +10,7 @@ module.exports.home = async (req, res) => {
         q: req.query.q || "",
       }),
     ]);
-    res.json({
-      sports,
-      amenities: [],
-      facilities,
-    });
+    res.json({ sports, amenities: [], facilities });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Không tải được danh sách sân" });
@@ -65,28 +60,10 @@ module.exports.slots = async (req, res) => {
 
 module.exports.checkoutOptions = async (req, res) => {
   try {
-    const facilityId = req.query.facilityId;
-    if (!facilityId || !mongoose.Types.ObjectId.isValid(facilityId)) {
-      return res.status(400).json({ message: "Thiếu cơ sở" });
-    }
-
-    const now = new Date();
-    const vouchers = await Voucher.find({
-      deleted: false,
-      status: "active",
-      venue_id: facilityId,
-      start_date: { $lte: now },
-      end_date: { $gte: now },
-    }).select("code name").lean();
-
-    res.json({
-      vouchers: vouchers.map((v) => ({ code: v.code, description: v.name })),
-      payments: [
-        { id: "vnpay", title: "VNPay", description: "ATM / thẻ / QR ngân hàng" },
-      ],
-    });
+    return res.json(await facilityService.listCheckoutOptions(req.query.facilityId));
   } catch (error) {
+    if (error.status) return res.status(error.status).json({ message: error.message });
     console.error(error);
-    res.status(500).json({ message: "Không tải được tùy chọn thanh toán" });
+    return res.status(500).json({ message: "Không tải được tùy chọn thanh toán" });
   }
 };
