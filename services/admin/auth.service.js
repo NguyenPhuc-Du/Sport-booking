@@ -9,15 +9,6 @@ class ServiceError extends Error {
   }
 }
 
-async function roleCodesOf(userId) {
-  const links = await UserRole.find({
-    user_id: userId,
-  })
-    .populate("role_id", "code")
-    .lean();
-  return links.filter((row) => row.role_id).map((row) => row.role_id.code);
-}
-
 async function login({ email, password }) {
   const user = await User.findOne({ email });
   if (!user) throw new ServiceError("Email hoặc mật khẩu không đúng");
@@ -27,8 +18,7 @@ async function login({ email, password }) {
 
   if (user.status !== "active") throw new ServiceError("Tài khoản đã bị khóa");
 
-  const codes = await roleCodesOf(user._id);
-  if (!codes.includes("ADMIN")) {
+  if (user.role !== "ADMIN") {
     throw new ServiceError("Tài khoản không thuộc quản trị hệ thống");
   }
 
@@ -39,4 +29,5 @@ async function login({ email, password }) {
   );
   return { accessToken };
 }
-module.exports = { login, ServiceError, roleCodesOf };
+
+module.exports = { login, ServiceError };

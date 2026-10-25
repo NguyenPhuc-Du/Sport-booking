@@ -1,7 +1,7 @@
-const mongoose = require("mongoose");
+// const mongoose = require("mongoose");
 
 function assignRole(req, res, next) {
-  if (!mongoose.Types.ObjectId.isValid(req.body.roleId)) {
+  if (!["USER", "OWNER", "ADMIN"].includes(req.body.role)) {
     req.flash("error", "Chọn một vai trò hợp lệ");
     return res.redirect("/admin/users");
   }

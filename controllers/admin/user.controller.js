@@ -20,7 +20,7 @@ const index = asyncHandler(async (req, res) => {
 
 const assignRole = asyncHandler(async (req, res) => {
   try {
-    await userService.assignRole(req.user._id, req.params.id, req.body.roleId);
+    await userService.changeRole(req.user._id, req.params.id, req.body.role);
     req.flash("success", "Đã gán vai trò");
   } catch (error) {
     return fail(req, res, error);
@@ -28,19 +28,19 @@ const assignRole = asyncHandler(async (req, res) => {
   return res.redirect(req.get("Referrer") || "/admin/users");
 });
 
-const removeRole = asyncHandler(async (req, res) => {
-  try {
-    await userService.removeRole(
-      req.user._id,
-      req.params.id,
-      req.params.roleId,
-    );
-    req.flash("success", "Đã gỡ vai trò");
-  } catch (error) {
-    return fail(req, res, error);
-  }
-  return res.redirect(req.get("Referrer") || "/admin/users");
-});
+// const removeRole = asyncHandler(async (req, res) => {
+//   try {
+//     await userService.removeRole(
+//       req.user._id,
+//       req.params.id,
+//       req.params.roleId,
+//     );
+//     req.flash("success", "Đã gỡ vai trò");
+//   } catch (error) {
+//     return fail(req, res, error);
+//   }
+//   return res.redirect(req.get("Referrer") || "/admin/users");
+// });
 
 const changeStatus = asyncHandler(async (req, res) => {
   try {
@@ -56,4 +56,4 @@ const changeStatus = asyncHandler(async (req, res) => {
   return res.redirect(req.get("Referrer") || "/admin/users");
 });
 
-module.exports = { index, assignRole, removeRole, changeStatus };
+module.exports = { index, assignRole, changeStatus };

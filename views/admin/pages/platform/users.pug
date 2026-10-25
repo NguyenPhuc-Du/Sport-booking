@@ -44,11 +44,7 @@ block main
                   div= u.email
                   small.sz-muted= u.phone
                 td
-                  if u.roles.length
-                    each item in u.roles
-                      span.sz-role(class=`role-${item.code.toLowerCase()}`)= item.code
-                  else
-                    span.sz-muted Chưa gán
+                  span.sz-role(class=`role-${u.role.toLowerCase()}`)= u.role
                 td
                   if u.status === "active"
                     span.sz-badge.sz-badge-ok Hoạt động
@@ -59,12 +55,11 @@ block main
                   details.pf-menu
                     summary Thao tác
                     form(method="post" action=`/admin/users/${u._id}/roles`)
-                      select.sz-select(name="roleId" required)
-                        option(value="") Chọn role
-                        each item in allRoles
-                          option(value=item._id)= item.code
-                      button.sz-btn.sz-btn-dark.sz-btn-sm(type="submit") Gán
-                    each item in u.roles
+                    select.sz-select(name="role" required)
+                      option(value="USER" selected=u.role === "USER") USER
+                      option(value="OWNER" selected=u.role === "OWNER") OWNER
+                      option(value="ADMIN" selected=u.role === "ADMIN") ADMIN
+                    button.sz-btn.sz-btn-dark.sz-btn-sm(type="submit") Lưu 
                       form(method="post" action=`/admin/users/${u._id}/roles/${item.id}/remove` data-confirm=`Gỡ ${item.code} của ${u.fullName}?`)
                         button.sz-btn.sz-btn-outline-danger.sz-btn-sm(type="submit") Gỡ #{item.code}
                     - const nextStatus = u.status === "active" ? "inactive" : "active"
