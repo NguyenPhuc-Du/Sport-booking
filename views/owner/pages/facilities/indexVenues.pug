@@ -1,5 +1,6 @@
 extends ../../layouts/default.pug
 include ../../../mixins/alert.pug
+include ../../../mixins/pagination.pug
 block head
   +alert-success(5000)
   +alert-error(5000)
@@ -23,47 +24,52 @@ block main
         i.bi.bi-buildings
         | Danh sách cơ sở (#{countVenues})
     .fv-grid
-      each item, index in venues
-        article.fv-card
-          .fv-card-media
-            img(
-              src=item.image_url
-              alt=item.name
-            )
-            if item.status === "active"
-              span.fv-status.fv-status-ok Đang hoạt động
-            else
-              span.fv-status.fv-status-off Ngưng hoạt động
-            span.fv-rating
-              i.bi.bi-star-fill
-              | 4.9
-          .fv-card-body
-            h2.fv-card-name #{item.name}
-            p.fv-address
-              i.bi.bi-geo-alt
-              | #{item.address}
-            .fv-card-foot
-              span
-                | Giờ mở cửa:
-                |
-                strong #{item.open_time} - #{item.close_time}
-              span
-                | Giá:
-                |
-                strong 110.000đ - 240.000đ
-            .fv-card-actions
-              a.fv-btn-edit(
-                href=`${prefixAdmin}/facilities/venues/edit/${item.id}`
+      if venues && venues.length
+        each item, index in venues
+          article.fv-card
+            .fv-card-media
+              img(
+                src=item.image_url
+                alt=item.name
               )
-                i.bi.bi-pencil-square
-                | Sửa
-              button.fv-btn-del(
-                type="button"
-                button-delete
-                data-id=item.id
-              )
-                i.bi.bi-trash3
-                | Xóa
+              if item.status === "active"
+                span.fv-status.fv-status-ok Đang hoạt động
+              else
+                span.fv-status.fv-status-off Ngưng hoạt động
+              span.fv-rating
+                i.bi.bi-star-fill
+                | 4.9
+            .fv-card-body
+              h2.fv-card-name #{item.name}
+              p.fv-address
+                i.bi.bi-geo-alt
+                | #{item.address}
+              .fv-card-foot
+                span
+                  | Giờ mở cửa:
+                  |
+                  strong #{item.open_time} - #{item.close_time}
+                span
+                  | Giá:
+                  |
+                  strong 110.000đ - 240.000đ
+              .fv-card-actions
+                a.fv-btn-edit(
+                  href=`${prefixAdmin}/facilities/venues/edit/${item.id}`
+                )
+                  i.bi.bi-pencil-square
+                  | Sửa
+                button.fv-btn-del(
+                  type="button"
+                  button-delete
+                  data-id=item.id
+                )
+                  i.bi.bi-trash3
+                  | Xóa
+      else
+        .fv-empty Không có cơ sở
+    nav.fv-pagination(aria-label="Phân trang cơ sở")
+      +pagination(pagination)
     form(method='POST' action="" id="form-delete" data-path=`${prefixAdmin}/facilities/venues/delete`)
     script(src="/js/script.js")
     script(src="/admin/js/finance.js")

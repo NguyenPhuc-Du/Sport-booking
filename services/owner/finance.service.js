@@ -1,8 +1,13 @@
 const Voucher = require("../../models/finance.model");
 const prefixAdmin = require("../../config/system");
-module.exports.getVoucherByOwnerId = async (id) => {
-  console.log(id);
-  const voucher = await Voucher.find({ deleted: false, owner_id: id }).lean();
+module.exports.countVoucherByOwnerId = async (id) => {
+  return Voucher.countDocuments({ deleted: false, owner_id: id });
+};
+module.exports.getVoucherByOwnerId = async (id, pagination) => {
+  const voucher = await Voucher.find({ deleted: false, owner_id: id })
+    .skip(pagination.skipPage)
+    .limit(pagination.limitPage)
+    .lean();
   voucher.forEach((item) => {
     item.display_value = new Intl.NumberFormat("vi-VN", {
       style: "currency",

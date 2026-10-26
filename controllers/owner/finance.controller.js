@@ -1,14 +1,21 @@
 const Voucher = require("../../services/owner/finance.service");
 const prefixAdmin = require("../../config/system");
 const facilities = require("../../services/owner/facility.service");
+const paginationHelper = require("../../helpers/pagination");
 module.exports.index = async (req, res) => {
   const userId = res.locals.user.id;
-  console.log(userId);
-  const voucher = await Voucher.getVoucherByOwnerId(userId);
+  const countVoucher = await Voucher.countVoucherByOwnerId(userId);
+  const pagination = paginationHelper(
+    { currentPage: 1, limitPage: 4 },
+    req.query,
+    countVoucher,
+  );
+  const voucher = await Voucher.getVoucherByOwnerId(userId, pagination);
   res.render("owner/pages/finance/index", {
     pageTitle: "Trang Khuyến mãi",
     activeMenu: "finance",
     voucher: voucher,
+    pagination,
   });
 };
 module.exports.create = async (req, res) => {

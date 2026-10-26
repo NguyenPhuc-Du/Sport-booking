@@ -34,44 +34,48 @@ block main
           | Thêm sân con
 
     .row.g-3
-      each court in courts
-        .col-12.col-md-6.col-xl-4
-          .sz-court-card(class=(court.status === "maintenance" ? "is-maint" : ""))
-            .d-flex.justify-content-between.align-items-start.mb-2
-              .d-flex.align-items-center.gap-2
-                span.sz-court-icon
-                  img(src= court.court_type_id.icon_url)
-                strong.sz-court-name= court.name
-              if court.status === "active"
-                span(class="sz-badge sz-badge-ok" ) HOẠT ĐỘNG
-              else
-                span(class="sz-badge sz-badge-danger" ) ĐANG BẢO TRÌ
-            ul.sz-court-meta
-              li
-                span Mặt sân 
-                strong= court.surface
-              li
-                span Loại hình
-                strong  #{court.court_type_id.name}
-            .sz-court-actions
-              a.sz-btn.sz-btn-detail.sz-btn-sm(
-                href=`${prefixAdmin}/facilities/detailCourts/${court._id}`
-              )
-                i.bi.bi-eye
-                | Chi tiết
-              a.sz-btn.sz-btn-edit.sz-btn-sm(
-                href=`${prefixAdmin}/facilities/editCourts/${court._id}`
-              )
-                i.bi.bi-pencil-square
-                | Sửa
-              if court.status === "active"
-                button.sz-btn.sz-btn-outline-danger.sz-btn-sm.btn-open-maintain.btn(type="button" data-status= court.status data-id=court._id)
-                  i.bi.bi-exclamation-triangle
-                  | Bảo trì
-              else
-                button.sz-btn.sz-btn-green.sz-btn-sm.btn(type="button" data-status= court.status data-id=court._id)
-                  i.bi.bi-check2-circle
-                  | Mở lạ 
+      if courts && courts.length
+        each court in courts
+          .col-12.col-md-6.col-xl-4
+            .sz-court-card(class=(court.status === "maintenance" ? "is-maint" : ""))
+              .d-flex.justify-content-between.align-items-start.mb-2
+                .d-flex.align-items-center.gap-2
+                  span.sz-court-icon
+                    img(src= court.court_type_id.icon_url)
+                  strong.sz-court-name= court.name
+                if court.status === "active"
+                  span(class="sz-badge sz-badge-ok" ) HOẠT ĐỘNG
+                else
+                  span(class="sz-badge sz-badge-danger" ) ĐANG BẢO TRÌ
+              ul.sz-court-meta
+                li
+                  span Mặt sân 
+                  strong= court.surface
+                li
+                  span Loại hình
+                  strong  #{court.court_type_id.name}
+              .sz-court-actions
+                a.sz-btn.sz-btn-detail.sz-btn-sm(
+                  href=`${prefixAdmin}/facilities/detailCourts/${court._id}`
+                )
+                  i.bi.bi-eye
+                  | Chi tiết
+                a.sz-btn.sz-btn-edit.sz-btn-sm(
+                  href=`${prefixAdmin}/facilities/editCourts/${court._id}`
+                )
+                  i.bi.bi-pencil-square
+                  | Sửa
+                if court.status === "active"
+                  button.sz-btn.sz-btn-outline-danger.sz-btn-sm.btn-open-maintain.btn(type="button" data-status= court.status data-id=court._id)
+                    i.bi.bi-exclamation-triangle
+                    | Bảo trì
+                else
+                  button.sz-btn.sz-btn-green.sz-btn-sm.btn(type="button" data-status= court.status data-id=court._id)
+                    i.bi.bi-check2-circle
+                    | Mở lạ 
+      else
+        .col-12
+          .fv-empty Không có sân con
     nav.fv-pagination(aria-label="Phân trang sân")
       +pagination(pagination)    
     form(method='POST' action="" id="form-changeStatus" data-path=`${prefixAdmin}/facilities/changeStatus`)
