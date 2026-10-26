@@ -4,6 +4,7 @@ include ../../../mixins/alert.pug
 block head
   link(rel="stylesheet" href="/admin/css/refreshments.css")
   link(rel="stylesheet" href="/admin/css/refreshment-index.css")
+  link(rel="stylesheet" href="/admin/css/sale.css")
 
 block main
   +alert-success(2000)
@@ -22,9 +23,17 @@ block main
     div
       h1.sz-page-title Dịch vụ giải khát
       p.sz-page-sub Quản lý đồ uống, tồn kho và nhà cung cấp cho từng cơ sở.
-    a.sz-btn-primary(href=`${prefixAdmin}/refreshments/create`)
-      i.bi.bi-plus-lg
-      |  Thêm sản phẩm
+    .sl-actions
+      a.sz-btn-outline(href=`${prefixAdmin}/refreshments/create`)
+        i.bi.bi-plus-lg
+        |  Thêm sản phẩm
+      a.sz-btn-primary(href=`${prefixOwner}/refreshments/sales/create`)
+        i.bi.bi-receipt
+        |  Tạo phiếu bán
+
+  nav.sl-tabs(aria-label="Mục giải khát")
+    a.sl-tab.active(href=`${prefixOwner}/refreshments`) Sản phẩm
+    a.sl-tab(href=`${prefixOwner}/refreshments/sales`) Phiếu bán
 
   //- ===== THẺ THỐNG KÊ =====
   .row.g-3.mt-1

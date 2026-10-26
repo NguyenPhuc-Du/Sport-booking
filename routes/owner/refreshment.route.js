@@ -13,6 +13,14 @@ router.get("/create", controller.create);
 
 router.post("/create", upload.single("image"), uploadCloud.upload, controller.createPost);
 
+router.get("/sales", controller.sales);
+
+router.get("/sales/create", controller.createSale);
+
+router.post("/sales/create", controller.createSalePost);
+
+router.get("/sales/:id", controller.saleDetail);
+
 router.get("/edit/:id", controller.edit);
 
 router.patch("/edit/:id", upload.single("image"), uploadCloud.upload, controller.editPatch);

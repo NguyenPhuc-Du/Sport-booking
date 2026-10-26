@@ -1,0 +1,242 @@
+extends ../../layouts/default.pug
+include ../../../mixins/alert.pug
+
+block head
+  link(rel="stylesheet" href="/admin/css/refreshments.css")
+  link(rel="stylesheet" href="/admin/css/refreshment-index.css")
+  link(rel="stylesheet" href="/admin/css/sale.css")
+
+block main
+  +alert-success(3000)
+  +alert-error(5000)
+  - const venueList = typeof venues !== "undefined" ? venues : []
+  - const products = typeof catalog !== "undefined" ? catalog : []
+
+  .d-flex.justify-content-between.align-items-start.flex-wrap.gap-3.mb-3
+    div
+      h1.sz-page-title Tạo phiếu bán tại quầy
+      p.sz-page-sub Khách mua nước trực tiếp — không gắn vào đơn đặt sân.
+    a.sz-btn-outline(href=`${prefixOwner}/refreshments/sales`)
+      i.bi.bi-arrow-left
+      |  Quay lại phiếu bán
+
+  if !venueList.length
+    .sz-card
+      .sz-empty
+        i.bi.bi-buildings
+        h3 Chưa có cơ sở
+        p Hãy tạo cơ sở trước khi bán đồ uống tại quầy.
+        a.sz-btn-primary(href=`${prefixOwner}/facilities`) Quản lý cơ sở
+  else
+    form#saleForm(action=`${prefixOwner}/refreshments/sales/create` method="POST" novalidate)
+      input#saleItems(type="hidden" name="items" value="[]")
+      .row.g-4.sl-pos
+        .col-12.col-xl-7
+          .sz-card
+            .sz-card-head
+              h2.sz-card-title Chọn sản phẩm
+              p.sz-card-sub Lọc theo cơ sở rồi bấm vào món để thêm vào phiếu
+            .mb-3
+              label.sz-label(for="venueId") Cơ sở bán
+                span.sz-req  *
+              select#venueId.sz-input(name="venueId" required)
+                option(value="") -- Chọn cơ sở --
+                each v in venueList
+                  option(value=v._id)= v.name
+            #catalogEmpty.sz-empty(hidden)
+              i.bi.bi-cup-straw
+              h3 Chưa có món đang bán
+              p Thêm sản phẩm đang bán và còn tồn kho cho cơ sở này.
+              a.sz-btn-primary(href=`${prefixOwner}/refreshments/create`) Thêm sản phẩm
+            #catalogGrid.sl-catalog
+
+        .col-12.col-xl-5
+          .sz-card.sl-cart
+            .sz-card-head
+              h2.sz-card-title Phiếu hóa đơn
+              p.sz-card-sub Thông tin khách và các món đã chọn
+            .row.g-3.mb-3
+              .col-12
+                label.sz-label(for="guestName") Tên khách
+                  span.sz-req  *
+                input#guestName.sz-input(type="text" name="guestName" required maxlength="80" placeholder="Nguyễn Văn A")
+              .col-12
+                label.sz-label(for="guestPhone") Số điện thoại
+                input#guestPhone.sz-input(type="tel" name="guestPhone" placeholder="0900 123 456" maxlength="14")
+                .sz-hint Không bắt buộc. Nếu nhập phải đủ 10 số, bắt đầu bằng 0
+              .col-12
+                label.sz-label(for="paymentMethod") Hình thức thanh toán
+                select#paymentMethod.sz-input(name="paymentMethod")
+                  option(value="cash") Tiền mặt tại quầy
+                  option(value="vnpay") Chuyển khoản QR
+              .col-12
+                label.sz-label(for="note") Ghi chú
+                input#note.sz-input(type="text" name="note" maxlength="200" placeholder="Ví dụ: khách ngồi khán đài")
+
+            h3.sz-card-title.mb-2 Giỏ hàng
+            #cartList.sl-cart-list
+              p#cartEmpty.sl-cart-empty Chưa có món nào. Chọn sản phẩm bên trái.
+            .sl-total
+              span Tổng thu
+              strong#saleTotal 0đ
+            .sz-form-actions.mt-3.mb-0
+              a.sz-btn-outline(href=`${prefixOwner}/refreshments/sales`) Hủy
+              button.sz-btn-primary(type="submit")
+                i.bi.bi-receipt
+                |  Xuất phiếu
+
+block script
+  script#saleCatalog(type="application/json")!= JSON.stringify(products)
+  script.
+    (function () {
+      var $ = function (id) { return document.getElementById(id); };
+      var fmt = function (n) { return Number(n || 0).toLocaleString("vi-VN") + "đ"; };
+      var catalog = [];
+      try { catalog = JSON.parse($("saleCatalog").textContent || "[]"); } catch (e) { catalog = []; }
+      var cart = [];
+      var venueEl = $("venueId");
+      var grid = $("catalogGrid");
+      var empty = $("catalogEmpty");
+      var cartList = $("cartList");
+      var cartEmpty = $("cartEmpty");
+      var itemsInput = $("saleItems");
+      var totalEl = $("saleTotal");
+
+      function productsOfVenue() {
+        var venueId = venueEl.value;
+        return catalog.filter(function (item) {
+          return item.venueId === venueId && item.status === "active";
+        });
+      }
+
+      function renderCatalog() {
+        var list = productsOfVenue();
+        grid.innerHTML = "";
+        if (!venueEl.value) {
+          empty.hidden = true;
+          return;
+        }
+        if (!list.length) {
+          empty.hidden = false;
+          return;
+        }
+        empty.hidden = true;
+        list.forEach(function (item) {
+          var soldOut = item.stock < 1;
+          var btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "sl-product";
+          btn.disabled = soldOut;
+          var img = document.createElement("img");
+          img.className = "sl-product-img";
+          img.alt = "";
+          img.src = item.image || "";
+          img.addEventListener("error", function () { img.style.visibility = "hidden"; });
+          var body = document.createElement("div");
+          body.className = "sl-product-body";
+          var name = document.createElement("div");
+          name.className = "sl-product-name";
+          name.textContent = item.name;
+          var price = document.createElement("div");
+          price.className = "sl-product-price";
+          price.textContent = fmt(item.price);
+          var stock = document.createElement("div");
+          stock.className = "sl-product-stock";
+          stock.textContent = soldOut ? "Hết hàng" : ("Còn " + item.stock);
+          body.appendChild(name);
+          body.appendChild(price);
+          body.appendChild(stock);
+          btn.appendChild(img);
+          btn.appendChild(body);
+          btn.addEventListener("click", function () { addItem(item.id); });
+          grid.appendChild(btn);
+        });
+      }
+
+      function findProduct(id) {
+        for (var i = 0; i < catalog.length; i += 1) {
+          if (catalog[i].id === id) return catalog[i];
+        }
+        return null;
+      }
+
+      function addItem(id) {
+        var product = findProduct(id);
+        if (!product || product.stock < 1) return;
+        var line = cart.filter(function (row) { return row.id === id; })[0];
+        if (line) {
+          if (line.qty >= product.stock) return;
+          line.qty += 1;
+        } else {
+          cart.push({ id: id, qty: 1 });
+        }
+        renderCart();
+      }
+
+      function changeQty(id, delta) {
+        cart = cart.map(function (row) {
+          if (row.id !== id) return row;
+          return { id: row.id, qty: row.qty + delta };
+        }).filter(function (row) { return row.qty > 0; });
+        var product = findProduct(id);
+        cart = cart.map(function (row) {
+          if (row.id !== id || !product) return row;
+          return { id: row.id, qty: Math.min(row.qty, product.stock) };
+        });
+        renderCart();
+      }
+
+      function renderCart() {
+        cartList.querySelectorAll(".sl-line").forEach(function (el) { el.remove(); });
+        var amount = 0;
+        cart.forEach(function (row) {
+          var product = findProduct(row.id);
+          if (!product) return;
+          var lineTotal = product.price * row.qty;
+          amount += lineTotal;
+          var line = document.createElement("div");
+          line.className = "sl-line";
+          line.innerHTML =
+            '<div><div class="sl-line-name"></div><div class="sl-line-meta">' + fmt(product.price) + ' × ' + row.qty + '</div></div>' +
+            '<div><div class="sl-line-total">' + fmt(lineTotal) + '</div>' +
+            '<div class="sl-qty">' +
+              '<button type="button" data-delta="-1">−</button>' +
+              '<span>' + row.qty + '</span>' +
+              '<button type="button" data-delta="1">+</button>' +
+            '</div></div>';
+          line.querySelector(".sl-line-name").textContent = product.name;
+          line.querySelectorAll("button").forEach(function (btn) {
+            btn.addEventListener("click", function () {
+              changeQty(row.id, Number(btn.getAttribute("data-delta")));
+            });
+          });
+          cartList.appendChild(line);
+        });
+        cartEmpty.hidden = cart.length > 0;
+        totalEl.textContent = fmt(amount);
+        itemsInput.value = JSON.stringify(cart.map(function (row) {
+          return { refreshmentId: row.id, qty: row.qty };
+        }));
+      }
+
+      venueEl.addEventListener("change", function () {
+        cart = [];
+        renderCatalog();
+        renderCart();
+      });
+
+      $("saleForm").addEventListener("submit", function (e) {
+        var bad = false;
+        if (!venueEl.value) { venueEl.classList.add("is-invalid"); bad = true; } else { venueEl.classList.remove("is-invalid"); }
+        var nameEl = $("guestName");
+        if (!nameEl.value.trim()) { nameEl.classList.add("is-invalid"); bad = true; } else { nameEl.classList.remove("is-invalid"); }
+        var phone = $("guestPhone").value.replace(/\D/g, "");
+        if (phone && !/^0\d{9}$/.test(phone)) { $("guestPhone").classList.add("is-invalid"); bad = true; }
+        else { $("guestPhone").classList.remove("is-invalid"); }
+        if (!cart.length) { bad = true; alert("Chưa chọn sản phẩm nào"); }
+        if (bad) e.preventDefault();
+      });
+
+      renderCatalog();
+      renderCart();
+    })();
