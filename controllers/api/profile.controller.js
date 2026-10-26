@@ -24,3 +24,12 @@ module.exports.update = async (req, res) => {
     return fail(res, error, "Cập nhật hồ sơ thất bại");
   }
 };
+
+module.exports.avatar = async (req, res) => {
+  try {
+    const user = await profileService.updateAvatar(req.auth.userId, req.body.avatar);
+    return res.json({ user: toUser(user) });
+  } catch (error) {
+    return fail(res, error, "Cập nhật ảnh đại diện thất bại");
+  }
+};

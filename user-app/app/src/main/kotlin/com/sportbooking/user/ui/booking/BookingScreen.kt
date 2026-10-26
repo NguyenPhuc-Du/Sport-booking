@@ -511,8 +511,6 @@ private fun LegendItem(
 // Previews
 // -------------------------------------------------------------
 
-@PreviewLightDark
-@PreviewFontScale
 @Composable
 private fun plusOneHour(time: String): String {
     val parts = time.split(":")
@@ -521,6 +519,9 @@ private fun plusOneHour(time: String): String {
     return "%02d:%s".format(hour, minute)
 }
 
+@PreviewLightDark
+@PreviewFontScale
+@Composable
 private fun BookingContentSuccessPreview() {
     SportBookingTheme {
         Surface {

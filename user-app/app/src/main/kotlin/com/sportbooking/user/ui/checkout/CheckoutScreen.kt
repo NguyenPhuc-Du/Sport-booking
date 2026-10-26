@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -21,11 +22,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.ConfirmationNumber
+import androidx.compose.material.icons.rounded.LocalDrink
 import androidx.compose.material.icons.rounded.Payments
 import androidx.compose.material.icons.rounded.QrCode
 import androidx.compose.material.icons.rounded.RadioButtonUnchecked
+import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -48,8 +52,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewFontScale
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
@@ -58,6 +65,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.net.Uri
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.ui.platform.LocalContext
+import coil.compose.AsyncImage
+import com.sportbooking.domain.model.Drink
 import com.sportbooking.domain.model.PaymentMethod
 import com.sportbooking.domain.model.Voucher
 import com.sportbooking.user.R
@@ -76,6 +85,7 @@ sealed interface CheckoutUiEvent {
     data class SelectPayment(val methodId: String) : CheckoutUiEvent
     data class ChangeVoucher(val code: String) : CheckoutUiEvent
     data class ApplyVoucher(val code: String?) : CheckoutUiEvent
+    data class ChangeDrinkQty(val id: String, val qty: Int) : CheckoutUiEvent
     data object Confirm : CheckoutUiEvent
 }
 
@@ -107,6 +117,7 @@ fun CheckoutScreen(
                 is CheckoutUiEvent.SelectPayment -> viewModel.onPaymentSelected(event.methodId)
                 is CheckoutUiEvent.ChangeVoucher -> viewModel.onVoucherChange(event.code)
                 is CheckoutUiEvent.ApplyVoucher -> viewModel.applyVoucher(event.code)
+                is CheckoutUiEvent.ChangeDrinkQty -> viewModel.onDrinkQty(event.id, event.qty)
                 CheckoutUiEvent.Confirm -> viewModel.confirm()
             }
         },
@@ -216,6 +227,51 @@ fun CheckoutContent(
                         }
                     }
 
+                    if (state.drinks.isNotEmpty()) {
+                        item(key = "checkout_drinks") {
+                            Card(
+                                shape = MaterialTheme.shapes.large,
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = MaterialTheme.spacing.normal),
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(MaterialTheme.spacing.normal),
+                                    verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
+                                ) {
+                                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                        Text(
+                                            text = stringResource(R.string.checkout_drinks_section),
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                        )
+                                        Text(
+                                            text = stringResource(R.string.checkout_drinks_hint),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                    state.drinks.forEachIndexed { index, drink ->
+                                        if (index > 0) {
+                                            HorizontalDivider(
+                                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f),
+                                            )
+                                        }
+                                        DrinkRow(
+                                            drink = drink,
+                                            qty = state.drinkQty[drink.id] ?: 0,
+                                            onQtyChange = { qty ->
+                                                onEvent(CheckoutUiEvent.ChangeDrinkQty(drink.id, qty))
+                                            },
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     // Vouchers Section
                     item(key = "checkout_vouchers") {
                         Column(
@@ -309,6 +365,123 @@ fun CheckoutContent(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun DrinkRow(
+    drink: Drink,
+    qty: Int,
+    onQtyChange: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
+    ) {
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .clip(MaterialTheme.shapes.small)
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (drink.image.isNotBlank()) {
+                AsyncImage(
+                    model = drink.image,
+                    contentDescription = drink.name,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Rounded.LocalDrink,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
+
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Text(
+                text = drink.name,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = stringResource(R.string.checkout_drink_stock, drink.stock),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
+        Column(
+            horizontalAlignment = Alignment.End,
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Text(
+                text = drink.price.toVnd(),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                shape = PillShape,
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    QtyButton(
+                        icon = Icons.Rounded.Remove,
+                        enabled = qty > 0,
+                        onClick = { onQtyChange(qty - 1) },
+                    )
+                    Text(
+                        text = qty.toString(),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.width(28.dp),
+                    )
+                    QtyButton(
+                        icon = Icons.Rounded.Add,
+                        enabled = qty < drink.stock,
+                        onClick = { onQtyChange(qty + 1) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun QtyButton(
+    icon: ImageVector,
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .size(32.dp)
+            .clip(CircleShape)
+            .clickable(enabled = enabled, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = if (enabled) {
+                MaterialTheme.colorScheme.onSurface
+            } else {
+                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f)
+            },
+            modifier = Modifier.size(16.dp),
+        )
     }
 }
 
@@ -452,6 +625,8 @@ private fun CheckoutContentSuccessPreview() {
                     quote = PreviewData.bookingQuote,
                     payments = PreviewData.paymentMethods,
                     vouchers = PreviewData.vouchers,
+                    drinks = PreviewData.drinks,
+                    drinkQty = mapOf("d1" to 2),
                     paymentMethod = "vnpay",
                     appliedVoucher = "SPORT30K",
                 ),

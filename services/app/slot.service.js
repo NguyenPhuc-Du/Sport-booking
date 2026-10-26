@@ -1,6 +1,7 @@
 const PriceRule = require("../../models/price-rule.model");
 const Booking = require("../../models/booking.model");
 const Voucher = require("../../models/finance.model");
+const refreshmentService = require("./refreshment.service");
 
 const TIME_ZONE = "Asia/Ho_Chi_Minh";
 
@@ -38,10 +39,19 @@ function dayTypeOf(dateStr) {
 }
 
 async function expireStablePending() {
+  const expired = await Booking.find({
+    status: "pending_payment",
+    expiresAt: { $lte: new Date() },
+  }).select("_id");
+  if (!expired.length) return;
+
   await Booking.updateMany(
-    { status: "pending_payment", expiresAt: { $lte: new Date() } },
-    { $set: { status: "cancelled", statusLabel: "HẾT HẠN THANH TOÁN" } }
+    { _id: { $in: expired.map((item) => item._id) }, status: "pending_payment" },
+    { $set: { status: "cancelled", statusLabel: "HẾT HẠN THANH TOÁN" } },
   );
+  for (const item of expired) {
+    await refreshmentService.releaseDrinks(item._id);
+  }
 }
 
 async function completePastBookings(filter = {}) {

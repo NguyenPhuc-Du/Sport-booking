@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.sportbooking.domain.common.DomainResult
 import com.sportbooking.domain.model.BookingDraft
 import com.sportbooking.domain.model.BookingQuote
+import com.sportbooking.domain.model.Drink
+import com.sportbooking.domain.model.DrinkSelection
 import com.sportbooking.domain.model.PaymentMethod
 import com.sportbooking.domain.model.Voucher
 import com.sportbooking.domain.usecase.CreateBookingUseCase
@@ -25,6 +27,8 @@ data class CheckoutUiState(
     val quote: BookingQuote? = null,
     val payments: List<PaymentMethod> = emptyList(),
     val vouchers: List<Voucher> = emptyList(),
+    val drinks: List<Drink> = emptyList(),
+    val drinkQty: Map<String, Int> = emptyMap(),
     val paymentMethod: String = "vnpay",
     val voucherInput: String = "",
     val appliedVoucher: String? = null,
@@ -56,7 +60,12 @@ class CheckoutViewModel @Inject constructor(
                 is DomainResult.Success -> {
                     val method = options.data.payments.firstOrNull()?.id ?: "vnpay"
                     _state.update {
-                        it.copy(payments = options.data.payments, vouchers = options.data.vouchers, paymentMethod = method)
+                        it.copy(
+                            payments = options.data.payments,
+                            vouchers = options.data.vouchers,
+                            drinks = options.data.drinks,
+                            paymentMethod = method,
+                        )
                     }
                     refreshQuote()
                 }
@@ -67,6 +76,17 @@ class CheckoutViewModel @Inject constructor(
 
     fun onPaymentSelected(id: String) = _state.update { it.copy(paymentMethod = id, error = null) }
     fun onVoucherChange(value: String) = _state.update { it.copy(voucherInput = value.uppercase(), error = null) }
+
+    fun onDrinkQty(id: String, qty: Int) {
+        val drink = _state.value.drinks.find { it.id == id } ?: return
+        val next = qty.coerceIn(0, drink.stock.coerceAtMost(20))
+        _state.update { current ->
+            val map = current.drinkQty.toMutableMap()
+            if (next == 0) map.remove(id) else map[id] = next
+            current.copy(drinkQty = map, error = null)
+        }
+        refreshQuote()
+    }
 
     fun applyTypedVoucher() = applyVoucher(_state.value.voucherInput)
 
@@ -122,5 +142,8 @@ class CheckoutViewModel @Inject constructor(
         hours = hours,
         voucherCode = voucher,
         paymentMethod = paymentMethod,
+        drinks = _state.value.drinkQty
+            .filter { it.value > 0 }
+            .map { DrinkSelection(refreshmentId = it.key, qty = it.value) },
     )
 }

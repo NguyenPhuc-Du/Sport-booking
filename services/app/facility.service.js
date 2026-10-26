@@ -3,6 +3,7 @@ const Venue = require("../../models/facilities.model");
 const Court = require("../../models/court.model");
 const CourtType = require("../../models/court-types.model");
 const Voucher = require("../../models/finance.model");
+const refreshmentService = require("./refreshment.service");
 
 const OBJECT_ID = /^[0-9a-fA-F]{24}$/;
 
@@ -153,6 +154,7 @@ async function listCheckoutOptions(facilityId) {
     payments: [
       { id: "vnpay", title: "VNPay", description: "ATM / thẻ / QR ngân hàng" },
     ],
+    drinks: await refreshmentService.listForVenue(facilityId),
   };
 }
 

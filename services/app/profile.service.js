@@ -43,4 +43,12 @@ async function updateProfile(userId, body) {
   return user;
 }
 
-module.exports = { getProfile, updateProfile };
+async function updateAvatar(userId, avatarUrl) {
+  const user = await getProfile(userId);
+  if (!avatarUrl) throw httpError(400, "Chưa chọn ảnh");
+  user.avatar_url = avatarUrl;
+  await user.save();
+  return user;
+}
+
+module.exports = { getProfile, updateProfile, updateAvatar };

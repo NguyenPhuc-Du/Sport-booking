@@ -378,6 +378,15 @@ private fun ReceiptCard(
                     label = "Cổng thanh toán",
                     value = "Cổng VNPay",
                 )
+                if (!booking?.drinks.isNullOrEmpty()) {
+                    booking?.drinks?.forEach { drink ->
+                        ReceiptRow(
+                            icon = Icons.AutoMirrored.Rounded.ReceiptLong,
+                            label = "${drink.name} x${drink.qty}",
+                            value = (drink.price * drink.qty).toVnd(),
+                        )
+                    }
+                }
             }
 
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))

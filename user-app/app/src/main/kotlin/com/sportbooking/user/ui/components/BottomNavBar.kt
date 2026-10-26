@@ -1,6 +1,7 @@
 package com.sportbooking.user.ui.components
 
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Home
@@ -40,7 +41,9 @@ fun AppBottomNavBar(
     tabs: List<BottomNavTab> = defaultBottomNavTabs,
 ) {
     NavigationBar(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .height(60.dp),
         containerColor = MaterialTheme.colorScheme.surface,
         tonalElevation = 6.dp,
     ) {

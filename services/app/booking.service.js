@@ -1,5 +1,6 @@
 const Booking = require("../../models/booking.model");
 const facilityService = require("./facility.service");
+const refreshmentService = require("./refreshment.service");
 const slotService = require("./slot.service");
 const vnpay = require("./vnpay.service");
 
@@ -31,6 +32,13 @@ function publicBooking(doc) {
     time: b.time,
     courtPrice: b.courtPrice,
     discount: b.discount,
+    drinks: (b.drinks || []).map((item) => ({
+      refreshmentId: String(item.refreshmentId),
+      name: item.name,
+      price: item.price,
+      qty: item.qty,
+    })),
+    drinkTotal: b.drinkTotal || 0,
     amount: b.amount,
     voucherCode: b.voucherCode,
     paymentMethod: b.paymentMethod,
@@ -70,9 +78,25 @@ async function resolveSelection(body) {
     body.voucherCode,
     pair.venue._id,
   );
+  const { drinks, drinkTotal } = await refreshmentService.snapshotDrinks(
+    pair.venue._id,
+    body.drinks,
+  );
   const start = slots[0].time;
   const end = slotService.fromMinutes(startMin + hours * 60);
-  return { venue: pair.venue, court: pair.court, slots, quote, start, end };
+  return {
+    venue: pair.venue,
+    court: pair.court,
+    slots,
+    quote: {
+      ...quote,
+      drinks,
+      drinkTotal,
+      amount: quote.amount + drinkTotal,
+    },
+    start,
+    end,
+  };
 }
 
 async function quote(body) {
@@ -93,9 +117,11 @@ async function create({ userId, body, ipAddr }) {
     throw httpError(400, "Chỉ hỗ trợ thanh toán VNPay");
   }
 
+  await slotService.expireStablePending();
   const { venue, court, quote, start, end } = await resolveSelection(body);
   const code = `SPZ${Date.now()}`;
-  await slotService.expireStablePending();
+
+  await refreshmentService.decrementStock(quote.drinks);
 
   let booking;
   try {
@@ -114,6 +140,8 @@ async function create({ userId, body, ipAddr }) {
       time: `${start} - ${end}`,
       courtPrice: quote.courtPrice,
       discount: quote.discount,
+      drinks: quote.drinks,
+      drinkTotal: quote.drinkTotal,
       amount: quote.amount,
       voucherCode: quote.voucherCode,
       paymentMethod: "vnpay",
@@ -121,6 +149,7 @@ async function create({ userId, body, ipAddr }) {
       bookedAt: new Intl.DateTimeFormat("vi-VN").format(new Date()),
     });
   } catch (error) {
+    await refreshmentService.restoreStock(quote.drinks);
     if (error.code === 11000) throw httpError(409, "Khung giờ vừa được người khác đặt");
     throw error;
   }
@@ -159,6 +188,7 @@ async function cancel(userId, code) {
     { returnDocument: "after" },
   );
   if (!booking) throw httpError(400, "Không thể hủy đơn này");
+  await refreshmentService.releaseDrinks(booking._id);
   return { booking: publicBooking(booking) };
 }
 
