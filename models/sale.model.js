@@ -2,9 +2,9 @@ const mongoose = require("mongoose");
 
 const saleItemSchema = new mongoose.Schema(
   {
-    refreshmentId: {
+    drinkId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Refreshment",
+      ref: "Drink",
       required: true,
     },
     name: { type: String, required: true },

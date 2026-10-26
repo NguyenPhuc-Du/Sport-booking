@@ -1,0 +1,104 @@
+extends ../../layouts/default.pug
+include ../../../mixins/alert.pug
+
+block head
+  link(rel="stylesheet" href="/admin/css/drinks.css")
+  link(rel="stylesheet" href="/admin/css/drink-index.css")
+  link(rel="stylesheet" href="/admin/css/sale.css")
+
+block main
+  +alert-success(3000)
+  +alert-error(5000)
+  - const f = typeof filter !== "undefined" ? filter : {}
+  - const list = typeof receipts !== "undefined" ? receipts : []
+  - const pg = typeof pagination !== "undefined" ? pagination : { currentPage: 1, totalPage: 1 }
+  - const fmt = (n) => Number(n || 0).toLocaleString("vi-VN") + "đ"
+  - const tab = "receipts"
+  - const qs = (o) => { const p = Object.assign({}, f, o); return Object.keys(p).filter(k => p[k]).map(k => k + "=" + encodeURIComponent(p[k])).join("&"); }
+  - const when = (d) => d ? new Date(d).toLocaleString("vi-VN") : "—"
+
+  .d-flex.justify-content-between.align-items-start.flex-wrap.gap-3
+    div
+      h1.sz-page-title Phiếu nhập kho
+      p.sz-page-sub Hàng vào từ nhà cung cấp. Tồn kho chỉ tăng khi xác nhận phiếu này.
+    .sl-actions
+      a.sz-btn-outline(href=`${prefixOwner}/drinks/suppliers`)
+        i.bi.bi-truck
+        |  Nhà cung cấp
+      a.sz-btn-primary(href=`${prefixOwner}/drinks/receipts/create`)
+        i.bi.bi-plus-lg
+        |  Tạo phiếu nhập
+
+  include _tabs.pug
+
+  .sz-card.sz-list-card.mt-3
+    .d-flex.justify-content-between.align-items-end.flex-wrap.gap-3.mb-3
+      div
+        h2.sz-card-title Danh sách phiếu
+        p.sz-card-sub Mỗi phiếu cộng tồn ngay khi nhập. Hủy phiếu chỉ được khi còn đủ tồn.
+      form.sz-filter(method="GET" action=`${prefixOwner}/drinks/receipts`)
+        select.sz-input.sz-filter-select(name="venueId" onchange="this.form.submit()")
+          option(value="") Tất cả cơ sở
+          each v in (typeof venues !== "undefined" ? venues : [])
+            option(value=v._id selected=(String(f.venueId) === String(v._id)))= v.name
+        select.sz-input.sz-filter-select(name="status" onchange="this.form.submit()")
+          option(value="") Tất cả trạng thái
+          option(value="received" selected=(f.status === "received")) Đã nhập
+          option(value="cancelled" selected=(f.status === "cancelled")) Đã hủy
+        .sz-search
+          i.bi.bi-search
+          input.sz-input(type="search" name="keyword" placeholder="Mã phiếu, nhà cung cấp..." value=f.keyword)
+        button.sz-btn-outline(type="submit") Lọc
+        a.sz-btn-outline(href=`${prefixOwner}/drinks/receipts`) Xóa lọc
+
+    if list.length
+      .sz-table-wrap
+        table.sz-table
+          thead
+            tr
+              th MÃ PHIẾU
+              th NHÀ CUNG CẤP
+              th CƠ SỞ
+              th MÓN
+              th TỔNG NHẬP
+              th TRẠNG THÁI
+              th THỜI GIAN
+              th.text-end
+          tbody
+            each bill in list
+              tr
+                td
+                  strong.sl-code= bill.code
+                td= bill.supplierName
+                td.sz-muted= bill.venueName || "—"
+                td= bill.items.length + " món"
+                td
+                  strong.sz-price= fmt(bill.amount)
+                td
+                  if bill.status === "cancelled"
+                    span.sz-tag.off Đã hủy
+                  else
+                    span.sz-tag Đã nhập
+                td.sz-muted= when(bill.receivedAt || bill.createdAt)
+                td.text-end
+                  a.sz-icon-btn(href=`${prefixOwner}/drinks/receipts/${bill._id}` title="Xem phiếu")
+                    i.bi.bi-box-arrow-in-down
+
+      if pg.totalPage > 1
+        nav.sz-pagination(aria-label="Phân trang")
+          if pg.currentPage > 1
+            a.sz-page(href=`?${qs({ page: pg.currentPage - 1 })}`)
+              i.bi.bi-chevron-left
+          - for (let i = 1; i <= pg.totalPage; i++)
+            a.sz-page(href=`?${qs({ page: i })}` class=(i === pg.currentPage ? "active" : undefined))= i
+          if pg.currentPage < pg.totalPage
+            a.sz-page(href=`?${qs({ page: pg.currentPage + 1 })}`)
+              i.bi.bi-chevron-right
+    else
+      .sz-empty
+        i.bi.bi-box-arrow-in-down
+        h3 Chưa có phiếu nhập
+        p Khi hàng về, lập phiếu nhập để cộng tồn từ nhà cung cấp.
+        a.sz-btn-primary(href=`${prefixOwner}/drinks/receipts/create`)
+          i.bi.bi-plus-lg
+          |  Tạo phiếu nhập

@@ -63,6 +63,6 @@ class BookingRepositoryImpl @Inject constructor(
         hours = hours,
         voucherCode = voucherCode,
         paymentMethod = paymentMethod,
-        drinks = drinks.map { DrinkOrderDto(it.refreshmentId, it.qty) },
+        drinks = drinks.map { DrinkOrderDto(it.drinkId, it.qty) },
     )
 }

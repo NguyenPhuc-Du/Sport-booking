@@ -2,8 +2,8 @@ extends ../../layouts/default
 include ../../../mixins/alert.pug
 
 block head
-  link(rel="stylesheet" href="/admin/css/refreshments.css")
-  link(rel="stylesheet" href="/admin/css/refreshment-index.css")
+  link(rel="stylesheet" href="/admin/css/drinks.css")
+  link(rel="stylesheet" href="/admin/css/drink-index.css")
   link(rel="stylesheet" href="/admin/css/sale.css")
 
 block main
@@ -11,7 +11,7 @@ block main
   +alert-error(5000)
   - const f = typeof filter !== "undefined" ? filter : {}
   - const pg = typeof pagination !== "undefined" ? pagination : { currentPage: 1, totalPages: 1 }
-  - const list = typeof refreshments !== "undefined" ? refreshments : []
+  - const list = typeof drinks !== "undefined" ? drinks : []
   - const LOW = 10
   - const computed = { total: list.length, active: list.filter((item) => item.status === "active").length, inactive: list.filter((item) => item.status === "inactive").length, lowStock: list.filter((item) => Number(item.stock) <= LOW).length, stockValue: list.reduce((sum, item) => sum + (Number(item.price) || 0) * (Number(item.stock) || 0), 0) }
   - const st = typeof stats !== "undefined" ? stats : computed
@@ -22,18 +22,20 @@ block main
   .d-flex.justify-content-between.align-items-start.flex-wrap.gap-3
     div
       h1.sz-page-title Dịch vụ giải khát
-      p.sz-page-sub Quản lý đồ uống, tồn kho và nhà cung cấp cho từng cơ sở.
+      p.sz-page-sub Quản lý đồ uống. Tồn kho tăng bằng phiếu nhập, không sửa số tồn trên form.
     .sl-actions
-      a.sz-btn-outline(href=`${prefixAdmin}/refreshments/create`)
+      a.sz-btn-outline(href=`${prefixAdmin}/drinks/create`)
         i.bi.bi-plus-lg
         |  Thêm sản phẩm
-      a.sz-btn-primary(href=`${prefixOwner}/refreshments/sales/create`)
+      a.sz-btn-primary(href=`${prefixOwner}/drinks/receipts/create`)
+        i.bi.bi-box-arrow-in-down
+        |  Tạo phiếu nhập
+      a.sz-btn-outline(href=`${prefixOwner}/drinks/sales/create`)
         i.bi.bi-receipt
         |  Tạo phiếu bán
 
-  nav.sl-tabs(aria-label="Mục giải khát")
-    a.sl-tab.active(href=`${prefixOwner}/refreshments`) Sản phẩm
-    a.sl-tab(href=`${prefixOwner}/refreshments/sales`) Phiếu bán
+  - const tab = "products"
+  include _tabs.pug
 
   //- ===== THẺ THỐNG KÊ =====
   .row.g-3.mt-1
@@ -70,9 +72,9 @@ block main
     .d-flex.justify-content-between.align-items-end.flex-wrap.gap-3.mb-3
       div
         h2.sz-card-title Danh sách sản phẩm
-        p.sz-card-sub Chỉnh sửa, đổi trạng thái bán hoặc xoá từng sản phẩm
+        p.sz-card-sub Sửa thông tin món, hoặc bấm nhập kho khi có hàng về
 
-      form.sz-filter(method="GET" action=`${prefixAdmin}/refreshments`)
+      form.sz-filter(method="GET" action=`${prefixAdmin}/drinks`)
         if f.status
           input(type="hidden" name="status" value=f.status)
         select.sz-input.sz-filter-select(name="venueId" onchange="this.form.submit()")
@@ -83,7 +85,7 @@ block main
           i.bi.bi-search
           input.sz-input(type="search" name="keyword" placeholder="Tìm tên sản phẩm..." value=f.keyword)
         button.sz-btn-outline(type="submit") Lọc
-        a.sz-btn-outline(href=`${prefixAdmin}/refreshments`) Xóa lọc
+        a.sz-btn-outline(href=`${prefixAdmin}/drinks`) Xóa lọc
 
     if list.length
       .sz-table-wrap
@@ -99,14 +101,14 @@ block main
               th TRẠNG THÁI
               th.text-end THAO TÁC
           tbody
-            each item in refreshments
+            each item in drinks
               tr(class=(item.status === "inactive" ? "is-off" : undefined))
                 td
                   .sz-product
                     img.sz-product-img(src=item.image alt=item.name loading="lazy" onerror="this.style.visibility='hidden'")
                     .sz-product-name= item.name
                 td.sz-muted= item.venueId ? item.venueId.name : "—"
-                td.sz-muted= item.supplier
+                td.sz-muted= item.supplier || "—"
                 td
                   strong.sz-price= fmt(Math.floor(Number(item.price || 0) * 130 / 100))
                 td.sz-muted= fmt(item.price)
@@ -124,9 +126,11 @@ block main
                     span.sz-tag.off ngừng bán
                 td
                   .sz-actions
-                    a.sz-icon-btn(href=`${prefixOwner}/refreshments/edit/${item._id}` title="Chỉnh sửa")
+                    a.sz-icon-btn(href=`${prefixOwner}/drinks/receipts/create?drinkId=${item._id}` title="Nhập kho")
+                      i.bi.bi-box-arrow-in-down
+                    a.sz-icon-btn(href=`${prefixOwner}/drinks/edit/${item._id}` title="Chỉnh sửa")
                       i.bi.bi-pencil-square
-                    form(method="POST" action=`${prefixOwner}/refreshments/change-status/${item._id}?_method=PATCH`)
+                    form(method="POST" action=`${prefixOwner}/drinks/change-status/${item._id}?_method=PATCH`)
                       input(type="hidden" name="status" value=(item.status === "active" ? "inactive" : "active"))
                       if item.status === "active"
                         button.sz-icon-btn.warn(type="submit" title="Ngừng bán")
@@ -150,7 +154,7 @@ block main
         i.bi.bi-cup-straw
         h3 Chưa có sản phẩm nào
         p Hãy thêm đồ uống đầu tiên để khách có thể đặt kèm khi đặt sân.
-        a.sz-btn-primary(href=`${prefixAdmin}/refreshments/create`)
+        a.sz-btn-primary(href=`${prefixAdmin}/drinks/create`)
           i.bi.bi-plus-lg
           |  Thêm sản phẩm
 

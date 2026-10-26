@@ -1,54 +1,54 @@
 const venueService = require("../../services/owner/facility.service");
-const refreshmentService = require("../../services/owner/refreshment.service");
+const drinkService = require("../../services/owner/drink.service");
 const saleService = require("../../services/owner/sale.service");
 const paginationHelper = require("../../helpers/pagination");
 const systemConfig = require("../../config/system");
 
 function salesPath(suffix = "") {
-  return `${systemConfig.prefixOwner}/refreshments/sales${suffix}`;
+  return `${systemConfig.prefixOwner}/drinks/sales${suffix}`;
 }
 
-//[GET] /owner/refreshments
+//[GET] /owner/drinks
 module.exports.index = async (req, res) => {
     const ownerId = res.locals.user.id;
     const venues = await venueService.getAllVenueByOwnerId(ownerId);
     const venueIds = venues.map(item => item._id);
   
-    const find = refreshmentService.buildRefreshmentFilterQuery(req.query, venueIds);
+    const find = drinkService.buildDrinkFilterQuery(req.query, venueIds);
 
-    const refreshments = await refreshmentService.getRefreshments(find);
+    const drinks = await drinkService.getDrinks(find);
 
-    const stats = refreshmentService.calculateRefreshmentStats(refreshments);
+    const stats = drinkService.calculateDrinkStats(drinks);
 
-    res.render("owner/pages/refreshments/index",{
+    res.render("owner/pages/drinks/index",{
         pageTitle: "Giải khát",
-        activeMenu: "refreshments",
-        refreshments,
+        activeMenu: "drinks",
+        drinks,
         venues,
         filter: req.query,
         stats
     });
 }
 
-//[GET] /owner/refreshments/create
+//[GET] /owner/drinks/create
 module.exports.create = async (req, res) => {
     const ownerId = res.locals.user.id;
 
     const venues = await venueService.getAllVenueByOwnerId(ownerId);
 
-    res.render("owner/pages/refreshments/create", {
+    res.render("owner/pages/drinks/create", {
         pageTitle: "Giải khát",
-        activeMenu: "refreshments",
+        activeMenu: "drinks",
         venues
     });
 }
 
-//[POST] /owner/refreshments/create
+//[POST] /owner/drinks/create
 module.exports.createPost = async (req, res) => {
     try {
-        await refreshmentService.createAnRefreshment(req.body);
+        await drinkService.createDrink(req.body);
 
-        req.flash("success", "Thêm mới nước uống thành công");
+        req.flash("success", "Đã thêm sản phẩm. Tồn đang là 0 — hãy lập phiếu nhập kho khi có hàng.");
         res.redirect(req.get("Referrer"));
 
     } catch (error) {
@@ -57,28 +57,28 @@ module.exports.createPost = async (req, res) => {
     }
 }
 
-//[GET] /owner/refreshments/edit/:id
+//[GET] /owner/drinks/edit/:id
 module.exports.edit = async(req, res) => {
-    const refreshId = req.params.id;
+    const drinkId = req.params.id;
     const ownerId = res.locals.user.id;
 
-    const refreshment = await refreshmentService.getRefreshmentWithVenueById(refreshId);
+    const drink = await drinkService.getDrinkWithVenueById(drinkId);
     const venues = await venueService.getAllVenueByOwnerId(ownerId);
 
-    res.render("owner/pages/refreshments/edit", {
+    res.render("owner/pages/drinks/edit", {
         pageTitle: "Giải khát",
-        activeMenu: "refreshments",
-        refreshment,
+        activeMenu: "drinks",
+        drink,
         venues
     });
 }
 
-//[PATCH] /owner/refreshments/edit/:id
+//[PATCH] /owner/drinks/edit/:id
 module.exports.editPatch = async (req, res) => {
     try {
-        const refreshId = req.params.id;
+        const drinkId = req.params.id;
         
-        await refreshmentService.updateRefreshment(refreshId, req.body);
+        await drinkService.updateDrink(drinkId, req.body);
 
         req.flash("success", "Cập nhật nước uống thành công");
         res.redirect(req.get("Referrer"));
@@ -90,10 +90,10 @@ module.exports.editPatch = async (req, res) => {
 
 module.exports.changeStatus = async (req, res) => {
     try {
-        const refreshId = req.params.id;
+        const drinkId = req.params.id;
         const status = req.body.status;
 
-        await refreshmentService.updateRefreshmentStatus(refreshId, status);
+        await drinkService.updateDrinkStatus(drinkId, status);
 
         req.flash("success", "Cập nhật trạng thái nước uống thành công");
         res.redirect(req.get("Referrer"));
@@ -103,7 +103,7 @@ module.exports.changeStatus = async (req, res) => {
     }
 }
 
-//[GET] /owner/refreshments/sales
+//[GET] /owner/drinks/sales
 module.exports.sales = async (req, res) => {
     const ownerId = res.locals.user.id;
     const venues = await venueService.getAllVenueByOwnerId(ownerId);
@@ -114,9 +114,9 @@ module.exports.sales = async (req, res) => {
     const pagination = paginationHelper({ limitPage: 10 }, req.query, count);
     const sales = await saleService.listSales(find, pagination);
 
-    res.render("owner/pages/refreshments/sales", {
+    res.render("owner/pages/drinks/sales", {
         pageTitle: "Phiếu bán giải khát",
-        activeMenu: "refreshments",
+        activeMenu: "drinks",
         sales,
         venues,
         filter: req.query,
@@ -124,19 +124,19 @@ module.exports.sales = async (req, res) => {
     });
 };
 
-//[GET] /owner/refreshments/sales/create
+//[GET] /owner/drinks/sales/create
 module.exports.createSale = async (req, res) => {
     const { venues, catalog } = await saleService.getSaleCatalog(res.locals.user.id);
 
-    res.render("owner/pages/refreshments/create-sale", {
+    res.render("owner/pages/drinks/create-sale", {
         pageTitle: "Tạo phiếu bán",
-        activeMenu: "refreshments",
+        activeMenu: "drinks",
         venues,
         catalog,
     });
 };
 
-//[POST] /owner/refreshments/sales/create
+//[POST] /owner/drinks/sales/create
 module.exports.createSalePost = async (req, res) => {
     try {
         const sale = await saleService.createWalkInSale(res.locals.user.id, req.body);
@@ -148,7 +148,7 @@ module.exports.createSalePost = async (req, res) => {
     }
 };
 
-//[GET] /owner/refreshments/sales/:id
+//[GET] /owner/drinks/sales/:id
 module.exports.saleDetail = async (req, res) => {
     const sale = await saleService.getSaleForOwner(res.locals.user.id, req.params.id);
     if (!sale) {
@@ -156,9 +156,9 @@ module.exports.saleDetail = async (req, res) => {
         return res.redirect(salesPath());
     }
 
-    res.render("owner/pages/refreshments/sale-detail", {
+    res.render("owner/pages/drinks/sale-detail", {
         pageTitle: `Phiếu ${sale.code}`,
-        activeMenu: "refreshments",
+        activeMenu: "drinks",
         sale,
     });
 };

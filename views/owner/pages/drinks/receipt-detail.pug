@@ -1,0 +1,83 @@
+extends ../../layouts/default.pug
+include ../../../mixins/alert.pug
+
+block head
+  link(rel="stylesheet" href="/admin/css/drinks.css")
+  link(rel="stylesheet" href="/admin/css/drink-index.css")
+  link(rel="stylesheet" href="/admin/css/sale.css")
+
+block main
+  +alert-success(4000)
+  +alert-error(5000)
+  - const bill = typeof receipt !== "undefined" ? receipt : {}
+  - const lines = bill.items || []
+  - const fmt = (n) => Number(n || 0).toLocaleString("vi-VN") + "đ"
+  - const when = (d) => d ? new Date(d).toLocaleString("vi-VN") : "—"
+
+  .d-flex.justify-content-between.align-items-start.flex-wrap.gap-3.mb-3
+    div
+      h1.sz-page-title Chi tiết phiếu nhập
+      p.sz-page-sub Hàng nhập từ nhà cung cấp đã cộng vào tồn kho.
+    .sl-actions
+      a.sz-btn-outline(href=`${prefixOwner}/drinks/receipts`)
+        i.bi.bi-arrow-left
+        |  Danh sách phiếu
+      a.sz-btn-primary(href=`${prefixOwner}/drinks/receipts/create`)
+        i.bi.bi-plus-lg
+        |  Tạo phiếu mới
+
+  .sz-card.sl-receipt
+    .sl-receipt-head
+      div
+        h2.sz-card-title Phiếu nhập kho
+        p.sz-card-sub= bill.venueName || "Cơ sở"
+      div.text-end
+        .sl-code= bill.code
+        .sz-muted= when(bill.receivedAt || bill.createdAt)
+
+    .sl-meta-row
+      span Nhà cung cấp
+      strong= bill.supplierName || "—"
+    .sl-meta-row
+      span Trạng thái
+      strong= bill.status === "cancelled" ? "Đã hủy" : "Đã nhập"
+    if bill.status === "cancelled"
+      .sl-meta-row
+        span Hủy lúc
+        strong= when(bill.cancelledAt)
+    if bill.note
+      .sl-meta-row
+        span Ghi chú
+        strong= bill.note
+
+    .sz-table-wrap.mt-4
+      table.sz-table
+        thead
+          tr
+            th SẢN PHẨM
+            th GIÁ NHẬP
+            th SỐ LƯỢNG
+            th.text-end THÀNH TIỀN
+        tbody
+          each line in lines
+            tr
+              td= line.name
+              td= fmt(line.costPrice)
+              td= line.qty
+              td.text-end
+                strong.sz-price= fmt(line.lineTotal)
+    .sl-total
+      span Tổng nhập
+      strong= fmt(bill.amount)
+
+    if bill.status === "received"
+      form.sz-form-actions(method="POST" action=`${prefixOwner}/drinks/receipts/${bill._id}/cancel` data-confirm="Hủy phiếu sẽ trừ lại số lượng đã nhập. Chỉ hủy được khi từng món còn đủ tồn. Tiếp tục?")
+        button.sz-btn-outline(type="submit") Hủy phiếu nhập
+
+block script
+  script.
+    document.querySelectorAll("form[data-confirm]").forEach(function (form) {
+      form.addEventListener("submit", function (e) {
+        if (!confirm(form.getAttribute("data-confirm"))) e.preventDefault();
+      });
+    });

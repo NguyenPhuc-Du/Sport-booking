@@ -63,7 +63,7 @@ fun PaymentMethodDto.toDomain() = PaymentMethod(id, title, description)
 
 fun DrinkDto.toDomain() = Drink(id, name, image.orEmpty(), price, stock)
 
-fun DrinkLineDto.toDomain() = DrinkLine(refreshmentId, name, price, qty)
+fun DrinkLineDto.toDomain() = DrinkLine(drinkId, name, price, qty)
 
 fun CheckoutOptionsDto.toDomain() = CheckoutOptions(
     vouchers = vouchers.map { Voucher(it.code, it.description) },

@@ -91,14 +91,14 @@ data class Drink(
 )
 
 data class DrinkLine(
-    val refreshmentId: String,
+    val drinkId: String,
     val name: String,
     val price: Long,
     val qty: Int,
 )
 
 data class DrinkSelection(
-    val refreshmentId: String,
+    val drinkId: String,
     val qty: Int,
 )
 

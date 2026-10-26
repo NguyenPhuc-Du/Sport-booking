@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const Refreshment = require("../../models/refreshment.model");
+const Drink = require("../../models/drink.model");
 const Booking = require("../../models/booking.model");
 
 const OBJECT_ID = /^[0-9a-fA-F]{24}$/;
@@ -33,7 +33,7 @@ function publicDrink(item) {
 
 async function listForVenue(venueId) {
   if (!OBJECT_ID.test(String(venueId || ""))) return [];
-  const items = await Refreshment.find({
+  const items = await Drink.find({
     venueId,
     status: "active",
     stock: { $gt: 0 },
@@ -57,7 +57,7 @@ async function snapshotDrinks(venueId, rawItems) {
       throw httpError(400, `Mỗi món tối đa ${MAX_QTY} sản phẩm`);
     }
 
-    const id = item.refreshmentId || item.id;
+    const id = item.drinkId || item.id;
     if (!OBJECT_ID.test(String(id || ""))) {
       throw httpError(400, "Món nước không hợp lệ");
     }
@@ -66,7 +66,7 @@ async function snapshotDrinks(venueId, rawItems) {
     }
     seen.add(String(id));
 
-    const drink = await Refreshment.findOne({
+    const drink = await Drink.findOne({
       _id: id,
       venueId,
       status: "active",
@@ -77,7 +77,7 @@ async function snapshotDrinks(venueId, rawItems) {
     }
 
     lines.push({
-      refreshmentId: drink._id,
+      drinkId: drink._id,
       name: drink.name,
       price: sellPrice(drink),
       qty,
@@ -91,8 +91,8 @@ async function snapshotDrinks(venueId, rawItems) {
 async function decrementStock(drinks) {
   const taken = [];
   for (const line of drinks || []) {
-    const updated = await Refreshment.findOneAndUpdate(
-      { _id: line.refreshmentId, stock: { $gte: line.qty } },
+    const updated = await Drink.findOneAndUpdate(
+      { _id: line.drinkId, stock: { $gte: line.qty } },
       { $inc: { stock: -line.qty } },
       { returnDocument: "after" },
     );
@@ -106,9 +106,9 @@ async function decrementStock(drinks) {
 
 async function restoreStock(drinks) {
   for (const line of drinks || []) {
-    if (!line.refreshmentId || !line.qty) continue;
-    await Refreshment.updateOne(
-      { _id: line.refreshmentId },
+    if (!line.drinkId || !line.qty) continue;
+    await Drink.updateOne(
+      { _id: line.drinkId },
       { $inc: { stock: line.qty } },
     );
   }

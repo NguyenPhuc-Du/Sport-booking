@@ -2,8 +2,8 @@ extends ../../layouts/default.pug
 include ../../../mixins/alert.pug
 
 block head
-  link(rel="stylesheet" href="/admin/css/refreshments.css")
-  link(rel="stylesheet" href="/admin/css/refreshment-index.css")
+  link(rel="stylesheet" href="/admin/css/drinks.css")
+  link(rel="stylesheet" href="/admin/css/drink-index.css")
   link(rel="stylesheet" href="/admin/css/sale.css")
 
 block main
@@ -16,7 +16,7 @@ block main
     div
       h1.sz-page-title Tạo phiếu bán tại quầy
       p.sz-page-sub Khách mua nước trực tiếp — không gắn vào đơn đặt sân.
-    a.sz-btn-outline(href=`${prefixOwner}/refreshments/sales`)
+    a.sz-btn-outline(href=`${prefixOwner}/drinks/sales`)
       i.bi.bi-arrow-left
       |  Quay lại phiếu bán
 
@@ -28,7 +28,7 @@ block main
         p Hãy tạo cơ sở trước khi bán đồ uống tại quầy.
         a.sz-btn-primary(href=`${prefixOwner}/facilities`) Quản lý cơ sở
   else
-    form#saleForm(action=`${prefixOwner}/refreshments/sales/create` method="POST" novalidate)
+    form#saleForm(action=`${prefixOwner}/drinks/sales/create` method="POST" novalidate)
       input#saleItems(type="hidden" name="items" value="[]")
       .row.g-4.sl-pos
         .col-12.col-xl-7
@@ -47,7 +47,7 @@ block main
               i.bi.bi-cup-straw
               h3 Chưa có món đang bán
               p Thêm sản phẩm đang bán và còn tồn kho cho cơ sở này.
-              a.sz-btn-primary(href=`${prefixOwner}/refreshments/create`) Thêm sản phẩm
+              a.sz-btn-primary(href=`${prefixOwner}/drinks/create`) Thêm sản phẩm
             #catalogGrid.sl-catalog
 
         .col-12.col-xl-5
@@ -80,7 +80,7 @@ block main
               span Tổng thu
               strong#saleTotal 0đ
             .sz-form-actions.mt-3.mb-0
-              a.sz-btn-outline(href=`${prefixOwner}/refreshments/sales`) Hủy
+              a.sz-btn-outline(href=`${prefixOwner}/drinks/sales`) Hủy
               button.sz-btn-primary(type="submit")
                 i.bi.bi-receipt
                 |  Xuất phiếu
@@ -215,7 +215,7 @@ block script
         cartEmpty.hidden = cart.length > 0;
         totalEl.textContent = fmt(amount);
         itemsInput.value = JSON.stringify(cart.map(function (row) {
-          return { refreshmentId: row.id, qty: row.qty };
+          return { drinkId: row.id, qty: row.qty };
         }));
       }
 

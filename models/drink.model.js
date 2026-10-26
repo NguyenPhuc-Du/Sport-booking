@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const refreshmentSchema = new mongoose.Schema({
+const drinkSchema = new mongoose.Schema({
     name: {
         type: String,
         trim: true,
@@ -32,7 +32,7 @@ const refreshmentSchema = new mongoose.Schema({
     },
     supplier: {
         type: String,
-        required: true
+        default: ""
     },
     status: {
         type: String,
@@ -44,6 +44,6 @@ const refreshmentSchema = new mongoose.Schema({
     timestamps: true
 });
 
-const Refreshment = mongoose.model("Refreshment", refreshmentSchema, "refreshments");
+const Drink = mongoose.model("Drink", drinkSchema, "drinks");
 
-module.exports = Refreshment;   
+module.exports = Drink;   

@@ -1,0 +1,288 @@
+extends ../../layouts/default.pug
+include ../../../mixins/alert.pug
+
+block head
+  link(rel="stylesheet" href="/admin/css/drinks.css")
+  link(rel="stylesheet" href="/admin/css/drink-index.css")
+  link(rel="stylesheet" href="/admin/css/sale.css")
+
+block main
+  +alert-success(3000)
+  +alert-error(5000)
+  - const venueList = typeof venues !== "undefined" ? venues : []
+  - const supplierList = typeof suppliers !== "undefined" ? suppliers : []
+  - const products = typeof catalog !== "undefined" ? catalog : []
+  - const picked = typeof prefillId !== "undefined" ? prefillId : ""
+
+  .d-flex.justify-content-between.align-items-start.flex-wrap.gap-3.mb-3
+    div
+      h1.sz-page-title Tạo phiếu nhập kho
+      p.sz-page-sub Chọn nhà cung cấp và số lượng. Tồn kho tăng ngay khi lưu phiếu.
+    a.sz-btn-outline(href=`${prefixOwner}/drinks/receipts`)
+      i.bi.bi-arrow-left
+      |  Quay lại phiếu nhập
+
+  if !venueList.length
+    .sz-card
+      .sz-empty
+        i.bi.bi-buildings
+        h3 Chưa có cơ sở
+        p Hãy tạo cơ sở trước khi nhập hàng.
+        a.sz-btn-primary(href=`${prefixOwner}/facilities`) Quản lý cơ sở
+  else if !supplierList.length
+    .sz-card
+      .sz-empty
+        i.bi.bi-truck
+        h3 Chưa có nhà cung cấp đang dùng
+        p Phiếu nhập bắt buộc gắn với một nhà cung cấp.
+        a.sz-btn-primary(href=`${prefixOwner}/drinks/suppliers/create`) Thêm nhà cung cấp
+  else
+    form#receiptForm(action=`${prefixOwner}/drinks/receipts/create` method="POST" novalidate)
+      input#receiptItems(type="hidden" name="items" value="[]")
+      .row.g-4.sl-pos
+        .col-12.col-xl-7
+          .sz-card
+            .sz-card-head
+              h2.sz-card-title Chọn sản phẩm
+              p.sz-card-sub Lọc theo cơ sở rồi bấm vào món để thêm vào phiếu
+            .mb-3
+              label.sz-label(for="venueId") Cơ sở nhập
+                span.sz-req  *
+              select#venueId.sz-input(name="venueId" required)
+                option(value="") -- Chọn cơ sở --
+                each v in venueList
+                  option(value=v._id)= v.name
+            #catalogEmpty.sz-empty(hidden)
+              i.bi.bi-cup-straw
+              h3 Chưa có sản phẩm
+              p Thêm sản phẩm cho cơ sở này trước khi nhập kho.
+              a.sz-btn-primary(href=`${prefixOwner}/drinks/create`) Thêm sản phẩm
+            #catalogGrid.sl-catalog
+
+        .col-12.col-xl-5
+          .sz-card.sl-cart
+            .sz-card-head
+              h2.sz-card-title Phiếu nhập
+              p.sz-card-sub Nhà cung cấp và các món sắp cộng vào tồn
+            .row.g-3.mb-3
+              .col-12
+                label.sz-label(for="supplierId") Nhà cung cấp
+                  span.sz-req  *
+                select#supplierId.sz-input(name="supplierId" required)
+                  option(value="") -- Chọn nhà cung cấp --
+                  each s in supplierList
+                    option(value=s._id)= s.name
+              .col-12
+                label.sz-label(for="note") Ghi chú
+                input#note.sz-input(type="text" name="note" maxlength="200" placeholder="Số hóa đơn, người giao...")
+
+            h3.sz-card-title.mb-2 Hàng nhập
+            #cartList.sl-cart-list
+              p#cartEmpty.sl-cart-empty Chưa có món nào. Chọn sản phẩm bên trái.
+            .sl-total
+              span Tổng nhập
+              strong#receiptTotal 0đ
+            .sz-form-actions.mt-3.mb-0
+              a.sz-btn-outline(href=`${prefixOwner}/drinks/receipts`) Hủy
+              button.sz-btn-primary(type="submit")
+                i.bi.bi-box-arrow-in-down
+                |  Nhập kho
+
+block script
+  script#receiptCatalog(type="application/json")!= JSON.stringify(products)
+  script#receiptPrefill(type="application/json")!= JSON.stringify(picked)
+  script.
+    (function () {
+      var $ = function (id) { return document.getElementById(id); };
+      if (!$("receiptForm")) return;
+      var fmt = function (n) { return Number(n || 0).toLocaleString("vi-VN") + "đ"; };
+      var catalog = [];
+      var prefillId = "";
+      try { catalog = JSON.parse($("receiptCatalog").textContent || "[]"); } catch (e) { catalog = []; }
+      try { prefillId = JSON.parse($("receiptPrefill").textContent || "\"\""); } catch (e) { prefillId = ""; }
+      var cart = [];
+      var venueEl = $("venueId");
+      var supplierEl = $("supplierId");
+      var grid = $("catalogGrid");
+      var empty = $("catalogEmpty");
+      var cartList = $("cartList");
+      var cartEmpty = $("cartEmpty");
+      var itemsInput = $("receiptItems");
+      var totalEl = $("receiptTotal");
+
+      function defaultCost(product) {
+        return product.costPrice > 0 ? product.costPrice : product.price;
+      }
+
+      function productsOfVenue() {
+        var venueId = venueEl.value;
+        return catalog.filter(function (item) { return item.venueId === venueId; });
+      }
+
+      function findProduct(id) {
+        for (var i = 0; i < catalog.length; i += 1) {
+          if (catalog[i].id === id) return catalog[i];
+        }
+        return null;
+      }
+
+      function renderCatalog() {
+        var list = productsOfVenue();
+        grid.innerHTML = "";
+        if (!venueEl.value) {
+          empty.hidden = true;
+          return;
+        }
+        if (!list.length) {
+          empty.hidden = false;
+          return;
+        }
+        empty.hidden = true;
+        list.forEach(function (item) {
+          var btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "sl-product";
+          var img = document.createElement("img");
+          img.className = "sl-product-img";
+          img.alt = "";
+          img.src = item.image || "";
+          img.addEventListener("error", function () { img.style.visibility = "hidden"; });
+          var body = document.createElement("div");
+          body.className = "sl-product-body";
+          var name = document.createElement("div");
+          name.className = "sl-product-name";
+          name.textContent = item.name;
+          var price = document.createElement("div");
+          price.className = "sl-product-price";
+          price.textContent = "Giá nhập " + fmt(defaultCost(item));
+          var stock = document.createElement("div");
+          stock.className = "sl-product-stock";
+          stock.textContent = "Tồn " + item.stock + (item.status === "inactive" ? " · Ngừng bán" : "");
+          body.appendChild(name);
+          body.appendChild(price);
+          body.appendChild(stock);
+          btn.appendChild(img);
+          btn.appendChild(body);
+          btn.addEventListener("click", function () { addItem(item.id); });
+          grid.appendChild(btn);
+        });
+      }
+
+      function syncItems() {
+        var amount = 0;
+        cart.forEach(function (row) {
+          var product = findProduct(row.id);
+          if (!product) return;
+          amount += row.costPrice * row.qty;
+        });
+        totalEl.textContent = fmt(amount);
+        itemsInput.value = JSON.stringify(cart.map(function (row) {
+          return { drinkId: row.id, qty: row.qty, costPrice: row.costPrice };
+        }));
+        cartEmpty.hidden = cart.length > 0;
+      }
+
+      function renderCart() {
+        cartList.querySelectorAll(".sl-line").forEach(function (el) { el.remove(); });
+        cart.forEach(function (row) {
+          var product = findProduct(row.id);
+          if (!product) return;
+          var line = document.createElement("div");
+          line.className = "sl-line";
+          var info = document.createElement("div");
+          var name = document.createElement("div");
+          name.className = "sl-line-name";
+          name.textContent = product.name;
+          var costLabel = document.createElement("label");
+          costLabel.className = "sl-cost-label";
+          costLabel.textContent = "Giá nhập";
+          var cost = document.createElement("input");
+          cost.className = "sz-input sl-cost";
+          cost.type = "number";
+          cost.min = "0";
+          cost.step = "500";
+          cost.value = String(row.costPrice);
+          cost.addEventListener("input", function () {
+            var next = Math.round(Number(cost.value));
+            row.costPrice = Number.isFinite(next) && next > 0 ? next : 0;
+            var total = line.querySelector(".sl-line-total");
+            total.textContent = fmt(row.costPrice * row.qty);
+            syncItems();
+          });
+          info.appendChild(name);
+          info.appendChild(costLabel);
+          info.appendChild(cost);
+
+          var side = document.createElement("div");
+          var lineTotal = document.createElement("div");
+          lineTotal.className = "sl-line-total";
+          lineTotal.textContent = fmt(row.costPrice * row.qty);
+          var qty = document.createElement("div");
+          qty.className = "sl-qty";
+          var minus = document.createElement("button");
+          minus.type = "button";
+          minus.textContent = "−";
+          minus.addEventListener("click", function () { changeQty(row.id, -1); });
+          var count = document.createElement("span");
+          count.textContent = String(row.qty);
+          var plus = document.createElement("button");
+          plus.type = "button";
+          plus.textContent = "+";
+          plus.addEventListener("click", function () { changeQty(row.id, 1); });
+          qty.appendChild(minus);
+          qty.appendChild(count);
+          qty.appendChild(plus);
+          side.appendChild(lineTotal);
+          side.appendChild(qty);
+          line.appendChild(info);
+          line.appendChild(side);
+          cartList.appendChild(line);
+        });
+        syncItems();
+      }
+
+      function addItem(id) {
+        var product = findProduct(id);
+        if (!product) return;
+        var line = cart.filter(function (row) { return row.id === id; })[0];
+        if (line) line.qty += 1;
+        else cart.push({ id: id, qty: 1, costPrice: defaultCost(product) });
+        renderCart();
+      }
+
+      function changeQty(id, delta) {
+        cart = cart.map(function (row) {
+          if (row.id !== id) return row;
+          return { id: row.id, qty: row.qty + delta, costPrice: row.costPrice };
+        }).filter(function (row) { return row.qty > 0; });
+        renderCart();
+      }
+
+      venueEl.addEventListener("change", function () {
+        cart = [];
+        renderCatalog();
+        renderCart();
+      });
+
+      $("receiptForm").addEventListener("submit", function (e) {
+        var bad = false;
+        if (!venueEl.value) { venueEl.classList.add("is-invalid"); bad = true; }
+        else venueEl.classList.remove("is-invalid");
+        if (!supplierEl.value) { supplierEl.classList.add("is-invalid"); bad = true; }
+        else supplierEl.classList.remove("is-invalid");
+        cart.forEach(function (row) {
+          if (!Number.isFinite(row.costPrice) || row.costPrice < 0 || !Number.isInteger(row.qty) || row.qty < 1) bad = true;
+        });
+        if (!cart.length) { bad = true; alert("Chưa chọn sản phẩm nào"); }
+        if (bad) e.preventDefault();
+        else syncItems();
+      });
+
+      var preset = findProduct(prefillId);
+      if (preset) {
+        venueEl.value = preset.venueId;
+        cart.push({ id: preset.id, qty: 1, costPrice: defaultCost(preset) });
+      }
+      renderCatalog();
+      renderCart();
+    })();

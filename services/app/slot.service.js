@@ -1,7 +1,7 @@
 const PriceRule = require("../../models/price-rule.model");
 const Booking = require("../../models/booking.model");
 const Voucher = require("../../models/finance.model");
-const refreshmentService = require("./refreshment.service");
+const drinkService = require("./drink.service");
 
 const TIME_ZONE = "Asia/Ho_Chi_Minh";
 
@@ -50,7 +50,7 @@ async function expireStablePending() {
     { $set: { status: "cancelled", statusLabel: "HẾT HẠN THANH TOÁN" } },
   );
   for (const item of expired) {
-    await refreshmentService.releaseDrinks(item._id);
+    await drinkService.releaseDrinks(item._id);
   }
 }
 
