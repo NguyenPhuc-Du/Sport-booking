@@ -1,0 +1,77 @@
+extends ../../layouts/default.pug
+include ../../../mixins/alert.pug
+
+block head
+  link(rel="stylesheet" href="/admin/css/refreshments.css")
+  link(rel="stylesheet" href="/admin/css/refreshment-index.css")
+  link(rel="stylesheet" href="/admin/css/sale.css")
+
+block main
+  +alert-success(4000)
+  +alert-error(5000)
+  - const bill = typeof sale !== "undefined" ? sale : {}
+  - const lines = bill.items || []
+  - const fmt = (n) => Number(n || 0).toLocaleString("vi-VN") + "đ"
+  - const payLabel = { cash: "Tiền mặt tại quầy", vnpay: "Chuyển khoản QR" }
+  - const when = (d) => d ? new Date(d).toLocaleString("vi-VN") : "—"
+
+  .d-flex.justify-content-between.align-items-start.flex-wrap.gap-3.mb-3.d-print-none
+    div
+      h1.sz-page-title Chi tiết phiếu bán
+      p.sz-page-sub Hóa đơn mua nước trực tiếp tại quầy.
+    .sl-actions
+      a.sz-btn-outline(href=`${prefixOwner}/refreshments/sales`)
+        i.bi.bi-arrow-left
+        |  Danh sách phiếu
+      a.sz-btn-outline(href=`${prefixOwner}/refreshments/sales/create`)
+        i.bi.bi-plus-lg
+        |  Tạo phiếu mới
+      button.sz-btn-primary(type="button" onclick="window.print()")
+        i.bi.bi-printer
+        |  In phiếu
+
+  .sz-card.sl-receipt
+    .sl-receipt-head
+      div
+        h2.sz-card-title SportZone
+        p.sz-card-sub= bill.venueName || "Cơ sở"
+      div.text-end
+        .sl-code= bill.code
+        .sz-muted= when(bill.paidAt || bill.createdAt)
+
+    .sl-meta-row
+      span Khách hàng
+      strong= bill.guestName || "—"
+    .sl-meta-row
+      span Số điện thoại
+      strong= bill.guestPhone || "—"
+    .sl-meta-row
+      span Thanh toán
+      strong= payLabel[bill.paymentMethod] || bill.paymentMethod
+    .sl-meta-row
+      span Trạng thái
+      strong= bill.status === "paid" ? "Đã thu" : bill.status
+    if bill.note
+      .sl-meta-row
+        span Ghi chú
+        strong= bill.note
+
+    .sz-table-wrap.mt-4
+      table.sz-table
+        thead
+          tr
+            th SẢN PHẨM
+            th ĐƠN GIÁ
+            th SỐ LƯỢNG
+            th.text-end THÀNH TIỀN
+        tbody
+          each line in lines
+            tr
+              td= line.name
+              td= fmt(line.price)
+              td= line.qty
+              td.text-end
+                strong.sz-price= fmt(line.lineTotal)
+    .sl-total
+      span Tổng thu
+      strong= fmt(bill.amount)
