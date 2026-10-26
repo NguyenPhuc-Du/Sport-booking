@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -59,6 +60,7 @@ import com.sportbooking.user.ui.theme.extraColors
 import com.sportbooking.user.ui.theme.spacing
 import com.sportbooking.user.ui.util.PreviewData
 import com.sportbooking.user.ui.util.dayLabel
+import androidx.compose.foundation.layout.WindowInsets
 import com.sportbooking.user.ui.util.toVnd
 import java.time.LocalDate
 
@@ -109,8 +111,10 @@ fun BookingContent(
     val totalPrice = selectedSlots.sumOf { it.price }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
+                windowInsets = WindowInsets(0, 0, 0, 0),
                 title = {
                     Column {
                         Text(
@@ -141,6 +145,7 @@ fun BookingContent(
                     containerColor = MaterialTheme.colorScheme.surface,
                 ),
             )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
         },
         bottomBar = {
             if (state.courts.isNotEmpty()) {
@@ -152,7 +157,9 @@ fun BookingContent(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(MaterialTheme.spacing.normal),
+                            .navigationBarsPadding()
+                            .padding(horizontal = MaterialTheme.spacing.normal)
+                            .padding(top = MaterialTheme.spacing.small, bottom = MaterialTheme.spacing.medium),
                         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
                     ) {
                         if (selectedSlots.isNotEmpty()) {

@@ -59,6 +59,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBars
 import androidx.lifecycle.viewModelScope
 import com.sportbooking.domain.common.DomainResult
 import com.sportbooking.domain.model.Booking
@@ -116,8 +118,10 @@ fun PaymentResultScreen(
     BackHandler(onBack = onGoHome)
 
     Scaffold(
+        contentWindowInsets = WindowInsets.navigationBars,
         topBar = {
             TopAppBar(
+                windowInsets = WindowInsets(0, 0, 0, 0),
                 title = {
                     Text(
                         text = "Kết quả thanh toán",
@@ -137,6 +141,7 @@ fun PaymentResultScreen(
                     containerColor = MaterialTheme.colorScheme.surface,
                 ),
             )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
         },
         modifier = modifier,
     ) { padding ->

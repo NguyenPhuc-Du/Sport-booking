@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -64,6 +65,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.net.Uri
 import androidx.browser.customtabs.CustomTabsIntent
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.ui.platform.LocalContext
 import coil.compose.AsyncImage
 import com.sportbooking.domain.model.Drink
@@ -136,8 +138,10 @@ fun CheckoutContent(
     val quote = state.quote
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
+                windowInsets = WindowInsets(0, 0, 0, 0),
                 title = {
                     Text(
                         text = stringResource(R.string.checkout_title),
@@ -157,6 +161,7 @@ fun CheckoutContent(
                     containerColor = MaterialTheme.colorScheme.surface,
                 ),
             )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
         },
         bottomBar = {
             Surface(
@@ -167,7 +172,9 @@ fun CheckoutContent(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(MaterialTheme.spacing.normal),
+                        .navigationBarsPadding()
+                        .padding(horizontal = MaterialTheme.spacing.normal)
+                        .padding(top = MaterialTheme.spacing.small, bottom = MaterialTheme.spacing.medium),
                     verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
                 ) {
                     if (quote != null) {
