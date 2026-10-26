@@ -63,7 +63,7 @@ module.exports.getActiveVenuesByOwnerId = async (ownerId) => {
 module.exports.getCourtsByVenueIds = async (venueIds) => {
   return await Courts.find({
     venue_id: { $in: venueIds },
-    deleted: false,
+    deleted: { $ne: true },
   }).lean();
 };
 module.exports.countCourtsByOwner = async (userId) => {
