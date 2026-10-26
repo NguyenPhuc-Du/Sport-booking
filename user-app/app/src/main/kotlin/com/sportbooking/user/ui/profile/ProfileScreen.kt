@@ -3,8 +3,11 @@ package com.sportbooking.user.ui.profile
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,6 +26,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Logout
+import androidx.compose.material.icons.rounded.CameraAlt
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Email
 import androidx.compose.material.icons.rounded.Notifications
@@ -31,6 +35,7 @@ import androidx.compose.material.icons.rounded.Phone
 import androidx.compose.material.icons.rounded.RateReview
 import androidx.compose.material.icons.rounded.Save
 import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -47,6 +52,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -55,6 +61,7 @@ import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
 import com.sportbooking.domain.model.AppNotification
 import com.sportbooking.domain.model.Review
 import com.sportbooking.domain.model.User
@@ -75,6 +82,7 @@ sealed interface ProfileUiEvent {
     data class ChangePhone(val value: String) : ProfileUiEvent
     data class ChangeEmail(val value: String) : ProfileUiEvent
     data object Save : ProfileUiEvent
+    data object PickAvatar : ProfileUiEvent
     data object Logout : ProfileUiEvent
 }
 
@@ -86,6 +94,9 @@ fun ProfileScreen(
     viewModel: ProfileViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val pickAvatar = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) viewModel.uploadAvatar(uri)
+    }
 
     LaunchedEffect(viewModel) {
         viewModel.updated.collect(onUserUpdated)
@@ -99,6 +110,7 @@ fun ProfileScreen(
                 is ProfileUiEvent.ChangePhone -> viewModel.onPhoneChange(event.value)
                 is ProfileUiEvent.ChangeEmail -> viewModel.onEmailChange(event.value)
                 ProfileUiEvent.Save -> viewModel.save()
+                ProfileUiEvent.PickAvatar -> pickAvatar.launch("image/*")
                 ProfileUiEvent.Logout -> onLogout()
             }
         },
@@ -140,24 +152,63 @@ fun ProfileContent(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(64.dp)
-                            .clip(CircleShape)
-                            .background(
-                                Brush.linearGradient(
-                                    listOf(
-                                        MaterialTheme.colorScheme.primary,
-                                        MaterialTheme.colorScheme.secondary,
+                            .size(72.dp)
+                            .clickable(enabled = !state.uploadingAvatar) {
+                                onEvent(ProfileUiEvent.PickAvatar)
+                            },
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CircleShape)
+                                .background(
+                                    Brush.linearGradient(
+                                        listOf(
+                                            MaterialTheme.colorScheme.primary,
+                                            MaterialTheme.colorScheme.secondary,
+                                        ),
                                     ),
                                 ),
-                            ),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = state.fullName.take(1).uppercase().ifBlank { "U" },
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimary,
-                        )
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            if (state.uploadingAvatar) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(28.dp),
+                                    strokeWidth = 2.dp,
+                                    color = MaterialTheme.colorScheme.onPrimary,
+                                )
+                            } else if (!state.avatarUrl.isNullOrBlank()) {
+                                AsyncImage(
+                                    model = state.avatarUrl,
+                                    contentDescription = stringResource(R.string.profile_avatar),
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize(),
+                                )
+                            } else {
+                                Text(
+                                    text = state.fullName.take(1).uppercase().ifBlank { "U" },
+                                    style = MaterialTheme.typography.headlineMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onPrimary,
+                                )
+                            }
+                        }
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .size(22.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.surface)
+                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.CameraAlt,
+                                contentDescription = stringResource(R.string.profile_change_avatar),
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(12.dp),
+                            )
+                        }
                     }
 
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {

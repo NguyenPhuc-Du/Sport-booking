@@ -1,5 +1,7 @@
 package com.sportbooking.user.ui.profile
 
+import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sportbooking.domain.common.DomainResult
@@ -8,7 +10,9 @@ import com.sportbooking.domain.model.Review
 import com.sportbooking.domain.model.User
 import com.sportbooking.domain.usecase.GetProfileUseCase
 import com.sportbooking.domain.usecase.UpdateProfileUseCase
+import com.sportbooking.domain.usecase.UploadAvatarUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,17 +26,21 @@ data class ProfileUiState(
     val fullName: String = "",
     val phone: String = "",
     val email: String = "",
+    val avatarUrl: String? = null,
     val notifications: List<AppNotification> = emptyList(),
     val reviews: List<Review> = emptyList(),
     val saving: Boolean = false,
+    val uploadingAvatar: Boolean = false,
     val message: String? = null,
     val error: String? = null,
 )
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val getProfile: GetProfileUseCase,
     private val updateProfile: UpdateProfileUseCase,
+    private val uploadAvatarUseCase: UploadAvatarUseCase,
 ) : ViewModel() {
     private val _state = MutableStateFlow(ProfileUiState())
     val state = _state.asStateFlow()
@@ -60,6 +68,7 @@ class ProfileViewModel @Inject constructor(
                             fullName = result.data.fullName,
                             phone = result.data.phone,
                             email = result.data.email,
+                            avatarUrl = result.data.avatarUrl,
                             message = "Đã lưu hồ sơ",
                         )
                     }
@@ -79,11 +88,43 @@ class ProfileViewModel @Inject constructor(
                         fullName = result.data.user.fullName,
                         phone = result.data.user.phone,
                         email = result.data.user.email,
+                        avatarUrl = result.data.user.avatarUrl,
                         notifications = result.data.notifications,
                         reviews = result.data.reviews,
                     )
                 }
                 is DomainResult.Failure -> _state.update { it.copy(loading = false, error = result.message) }
+            }
+        }
+    }
+
+    fun uploadAvatar(uri: Uri) {
+        val current = _state.value
+        if (current.uploadingAvatar) return
+        _state.update { it.copy(uploadingAvatar = true, error = null, message = null) }
+        viewModelScope.launch {
+            val mime = context.contentResolver.getType(uri) ?: "image/jpeg"
+            val bytes = runCatching {
+                context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+            }.getOrNull()
+            if (bytes == null || bytes.isEmpty()) {
+                _state.update { it.copy(uploadingAvatar = false, error = "Không đọc được ảnh") }
+                return@launch
+            }
+            when (val result = uploadAvatarUseCase(bytes, mime)) {
+                is DomainResult.Success -> {
+                    _state.update {
+                        it.copy(
+                            uploadingAvatar = false,
+                            avatarUrl = result.data.avatarUrl,
+                            message = "Đã cập nhật ảnh đại diện",
+                        )
+                    }
+                    _updated.emit(result.data)
+                }
+                is DomainResult.Failure -> _state.update {
+                    it.copy(uploadingAvatar = false, error = result.message)
+                }
             }
         }
     }

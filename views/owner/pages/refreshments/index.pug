@@ -94,6 +94,7 @@ block main
               th CƠ SỞ
               th NHÀ CUNG CẤP
               th GIÁ BÁN
+              th GIÁ NHẬP
               th TỒN KHO
               th TRẠNG THÁI
               th.text-end THAO TÁC
@@ -107,7 +108,8 @@ block main
                 td.sz-muted= item.venueId ? item.venueId.name : "—"
                 td.sz-muted= item.supplier
                 td
-                  strong.sz-price= fmt(item.price)
+                  strong.sz-price= fmt(Math.floor(Number(item.price || 0) * 130 / 100))
+                td.sz-muted= fmt(item.price)
                 td
                   if item.stock === 0
                     span.sz-stock.out Hết hàng

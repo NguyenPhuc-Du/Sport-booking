@@ -23,6 +23,19 @@ const bookingSchema = new mongoose.Schema(
     time: { type: String, required: true },
     courtPrice: { type: Number, required: true },
     discount: { type: Number, default: 0 },
+    drinks: {
+      type: [
+        {
+          refreshmentId: { type: mongoose.Schema.Types.ObjectId, ref: "Refreshment" },
+          name: { type: String, required: true },
+          price: { type: Number, required: true, min: 0 },
+          qty: { type: Number, required: true, min: 1 },
+        },
+      ],
+      default: [],
+    },
+    drinkTotal: { type: Number, default: 0, min: 0 },
+    stockReleased: { type: Boolean, default: false },
     amount: { type: Number, required: true },
     voucherCode: { type: String, default: null },
     paymentMethod: { 

@@ -64,6 +64,9 @@
     <string name="checkout_btn_pay">Pay %1$s</string>
     <string name="checkout_btn_paying">Processing payment…</string>
     <string name="checkout_success_message">Booking successful!</string>
+    <string name="checkout_drinks_section">Add drinks</string>
+    <string name="checkout_drinks_hint">Drink fees are added to the same payment.</string>
+    <string name="checkout_drink_stock">%1$d left</string>
 
     <!-- Bookings Screen -->
     <string name="bookings_title">My Bookings</string>
@@ -89,6 +92,8 @@
     <string name="profile_notifications">Notifications</string>
     <string name="profile_reviews">My Reviews</string>
     <string name="profile_logout_btn">Log Out</string>
+    <string name="profile_avatar">Profile photo</string>
+    <string name="profile_change_avatar">Change profile photo</string>
 
     <!-- OTP Verification Screen -->
     <string name="otp_title">OTP Verification</string>

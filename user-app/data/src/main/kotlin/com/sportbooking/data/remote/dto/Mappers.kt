@@ -8,6 +8,8 @@ import com.sportbooking.domain.model.BookingQuote
 import com.sportbooking.domain.model.BookingReceipt
 import com.sportbooking.domain.model.CheckoutOptions
 import com.sportbooking.domain.model.Court
+import com.sportbooking.domain.model.Drink
+import com.sportbooking.domain.model.DrinkLine
 import com.sportbooking.domain.model.FacilityDetail
 import com.sportbooking.domain.model.FacilitySummary
 import com.sportbooking.domain.model.HomeContent
@@ -59,18 +61,27 @@ fun SlotScheduleDto.toDomain() = SlotSchedule(
 
 fun PaymentMethodDto.toDomain() = PaymentMethod(id, title, description)
 
+fun DrinkDto.toDomain() = Drink(id, name, image.orEmpty(), price, stock)
+
+fun DrinkLineDto.toDomain() = DrinkLine(refreshmentId, name, price, qty)
+
 fun CheckoutOptionsDto.toDomain() = CheckoutOptions(
     vouchers = vouchers.map { Voucher(it.code, it.description) },
     payments = payments.map { it.toDomain() },
+    drinks = drinks.orEmpty().map { it.toDomain() },
 )
 
 fun BookingQuoteDto.toDomain() = BookingQuote(
     facilityId, facilityName, courtId, courtName, date, time, courtPrice, discount, amount, voucherCode,
+    drinks = drinks.orEmpty().map { it.toDomain() },
+    drinkTotal = drinkTotal ?: 0,
 )
 
 fun BookingDto.toDomain() = Booking(
     code, status, statusLabel, facilityId, facilityName, courtId, courtName,
     date, time, courtPrice, discount, amount, voucherCode, paymentMethod, bookedAt,
+    drinks = drinks.orEmpty().map { it.toDomain() },
+    drinkTotal = drinkTotal ?: 0,
 )
 
 fun BookingPageDto.toDomain() = BookingPage(

@@ -3,6 +3,7 @@ package com.sportbooking.data.repository
 import com.sportbooking.data.remote.ApiCaller
 import com.sportbooking.data.remote.SportApi
 import com.sportbooking.data.remote.dto.BookingRequest
+import com.sportbooking.data.remote.dto.DrinkOrderDto
 import com.sportbooking.data.remote.dto.toDomain
 import com.sportbooking.domain.common.DomainResult
 import com.sportbooking.domain.model.BookingDraft
@@ -62,5 +63,6 @@ class BookingRepositoryImpl @Inject constructor(
         hours = hours,
         voucherCode = voucherCode,
         paymentMethod = paymentMethod,
+        drinks = drinks.map { DrinkOrderDto(it.refreshmentId, it.qty) },
     )
 }

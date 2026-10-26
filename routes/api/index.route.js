@@ -5,6 +5,7 @@ const facility = require("../../controllers/api/facility.controller");
 const booking = require("../../controllers/api/booking.controller");
 const payment = require("../../controllers/api/payment.controller");
 const requireAuth = require("../../middlewares/api/auth.middleware");
+const upload = require("../../middlewares/api/upload.middleware");
 
 const router = express.Router();
 
@@ -32,5 +33,6 @@ router.get("/payments/vnpay/ipn", payment.vnpayIpn);
 
 router.get("/profile", requireAuth, profile.index);
 router.put("/profile", requireAuth, profile.update);
+router.post("/profile/avatar", requireAuth, upload.avatar, upload.toCloud, profile.avatar);
 
 module.exports = router;
