@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -53,6 +54,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.PreviewFontScale
 import androidx.compose.ui.tooling.preview.PreviewLightDark
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -99,8 +101,10 @@ fun FacilityDetailContent(
     val context = LocalContext.current
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
+                windowInsets = WindowInsets(0, 0, 0, 0),
                 title = {
                     Text(
                         text = facility?.name ?: stringResource(R.string.facility_detail_title),
@@ -137,6 +141,7 @@ fun FacilityDetailContent(
                     titleContentColor = MaterialTheme.colorScheme.onSurface,
                 ),
             )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
         },
         bottomBar = {
             if (facility != null) {
@@ -149,7 +154,9 @@ fun FacilityDetailContent(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(MaterialTheme.spacing.normal),
+                            .navigationBarsPadding()
+                            .padding(horizontal = MaterialTheme.spacing.normal)
+                            .padding(top = MaterialTheme.spacing.small, bottom = MaterialTheme.spacing.medium),
                     ) {
                         PrimaryButton(
                             text = if (hasCourts) {

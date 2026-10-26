@@ -99,7 +99,7 @@ fun HomeContent(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = MaterialTheme.spacing.normal)
+                        .padding(horizontal = MaterialTheme.spacing.extraSmall)
                         .padding(top = MaterialTheme.spacing.normal),
                 ) {
                     Text(
