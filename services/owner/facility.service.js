@@ -5,6 +5,11 @@ module.exports.getAllVenueByOwnerId = async (id) => {
   const venues = await Venues.find({ deleted: false, owner_id: id });
   return venues;
 };
+module.exports.findVenuesByOwnerId = async (id, pagination) => {
+  return Venues.find({ deleted: false, owner_id: id })
+    .skip(pagination.skipPage)
+    .limit(pagination.limitPage);
+};
 module.exports.createOwner = async (body) => {
   const venues = new Venues(body);
   await venues.save();

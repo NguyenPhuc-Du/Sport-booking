@@ -101,15 +101,21 @@ module.exports.editPost = async (req, res) => {
 };
 module.exports.indexVenues = async (req, res) => {
   const userId = res.locals.user.id;
-  const venues = await facilities.getAllVenueByOwnerId(userId);
   const countVenues = await facilities.countVenuesByOwner(userId);
   const countCourts = await facilities.countCourtsByOwner(userId);
+  const pagination = paginationHelper(
+    { currentPage: 1, limitPage: 4 },
+    req.query,
+    countVenues,
+  );
+  const venues = await facilities.findVenuesByOwnerId(userId, pagination);
   res.render("owner/pages/facilities/indexVenues", {
     pageTitle: "Cơ sở",
     activeMenu: "facilities",
     venues: venues,
     countVenues,
     countCourts,
+    pagination,
   });
 };
 module.exports.createVenues = async (req, res) => {

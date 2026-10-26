@@ -1197,6 +1197,20 @@
   }
 }
 
+.fv-empty {
+  grid-column: 1 / -1;
+  width: 100%;
+  margin: 8px 0 4px;
+  padding: 36px 16px;
+  border: 1px dashed #a7f3d0;
+  border-radius: 16px;
+  background: #f0fdf4;
+  color: #047857;
+  font-size: 15px;
+  font-weight: 700;
+  text-align: center;
+}
+
 .fv-pagination {
   display: flex;
   justify-content: center;
