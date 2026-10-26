@@ -204,22 +204,23 @@ private fun MainNavHost(
             ) { entry ->
                 BookingScreen(
                     onBack = { navController.popBackStack() },
-                    onCheckout = { courtId, date, time ->
+                    onCheckout = { courtId, date, time, hours ->
                         val encodedTime = Uri.encode(time)
                         val facilityId = entry.arguments?.getString("facilityId").orEmpty()
                         navController.navigate(
-                            "checkout?facilityId=$facilityId&courtId=$courtId&date=$date&time=$encodedTime",
+                            "checkout?facilityId=$facilityId&courtId=$courtId&date=$date&time=$encodedTime&hours=$hours",
                         )
                     },
                 )
             }
             composable(
-                route = "checkout?facilityId={facilityId}&courtId={courtId}&date={date}&time={time}",
+                route = "checkout?facilityId={facilityId}&courtId={courtId}&date={date}&time={time}&hours={hours}",
                 arguments = listOf(
                     navArgument("facilityId") { type = NavType.StringType },
                     navArgument("courtId") { type = NavType.StringType },
                     navArgument("date") { type = NavType.StringType },
                     navArgument("time") { type = NavType.StringType },
+                    navArgument("hours") { type = NavType.IntType },
                 ),
             ) {
                 CheckoutScreen(

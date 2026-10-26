@@ -113,9 +113,30 @@ data class VoucherDto(
     val description: String,
 )
 
+data class DrinkDto(
+    val id: String,
+    val name: String,
+    val image: String?,
+    val price: Long,
+    val stock: Int,
+)
+
+data class DrinkLineDto(
+    val refreshmentId: String,
+    val name: String,
+    val price: Long,
+    val qty: Int,
+)
+
+data class DrinkOrderDto(
+    val refreshmentId: String,
+    val qty: Int,
+)
+
 data class CheckoutOptionsDto(
     val vouchers: List<VoucherDto>,
     val payments: List<PaymentMethodDto>,
+    val drinks: List<DrinkDto>? = null,
 )
 
 data class BookingRequest(
@@ -123,8 +144,10 @@ data class BookingRequest(
     val courtId: String,
     val date: String,
     val time: String,
+    val hours: Int = 1,
     val voucherCode: String?,
     val paymentMethod: String?,
+    val drinks: List<DrinkOrderDto> = emptyList(),
 )
 
 data class BookingQuoteDto(
@@ -138,6 +161,8 @@ data class BookingQuoteDto(
     val discount: Long,
     val amount: Long,
     val voucherCode: String?,
+    val drinks: List<DrinkLineDto>? = null,
+    val drinkTotal: Long? = null,
 )
 
 data class BookingDto(
@@ -156,6 +181,8 @@ data class BookingDto(
     val voucherCode: String?,
     val paymentMethod: String,
     val bookedAt: String,
+    val drinks: List<DrinkLineDto>? = null,
+    val drinkTotal: Long? = null,
 )
 
 data class BookingCountsDto(

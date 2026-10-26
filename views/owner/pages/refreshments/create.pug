@@ -44,12 +44,12 @@ block main
                                 .sz-error= errs.venueId
 
                         .col-12.col-md-6
-                            label.sz-label(for="price") Giá bán (VNĐ)
+                            label.sz-label(for="price") Giá nhập (VNĐ)
                                 span.sz-req  *
                             .sz-input-group
                                 input#price.sz-input(type="number" name="price" min="0" step="500" placeholder="15000" value=old.price required class=(errs.price ? "is-invalid" : undefined))
                                 span.sz-input-suffix đ
-                            .sz-hint#pricePreview Nhập giá để xem định dạng
+                            .sz-hint#pricePreview Giá bán = giá nhập + 30%, lấy phần nguyên
                             if errs.price
                                 .sz-error= errs.price
 
@@ -140,6 +140,7 @@ block script
         (function () {
             var $ = function (id) { return document.getElementById(id); };
             var fmt = function (n) { return Number(n || 0).toLocaleString("vi-VN") + "đ"; };
+            var sell = function (n) { return Math.floor(Number(n || 0) * 130 / 100); };
 
             var nameEl = $("name"), priceEl = $("price"), stockEl = $("stock");
             var imageEl = $("image"), preview = $("imagePreview"), empty = $("dropzoneEmpty");
@@ -147,8 +148,10 @@ block script
 
             function sync() {
                 $("previewName").textContent = nameEl.value.trim() || "Tên sản phẩm";
-                $("previewPrice").textContent = fmt(priceEl.value);
-                $("pricePreview").textContent = priceEl.value ? "= " + fmt(priceEl.value) : "Nhập giá để xem định dạng";
+                $("previewPrice").textContent = fmt(sell(priceEl.value));
+                $("pricePreview").textContent = priceEl.value
+                    ? "Giá bán " + fmt(sell(priceEl.value)) + " (nhập + 30%)"
+                    : "Giá bán = giá nhập + 30%, lấy phần nguyên";
                 $("previewStock").textContent = "Tồn: " + (stockEl.value || 0);
                 var st = document.querySelector('input[name="status"]:checked').value;
                 var tag = $("previewStatus");

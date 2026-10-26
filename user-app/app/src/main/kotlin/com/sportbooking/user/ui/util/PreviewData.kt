@@ -5,6 +5,8 @@ import com.sportbooking.domain.model.Booking
 import com.sportbooking.domain.model.BookingCounts
 import com.sportbooking.domain.model.BookingQuote
 import com.sportbooking.domain.model.Court
+import com.sportbooking.domain.model.Drink
+import com.sportbooking.domain.model.DrinkLine
 import com.sportbooking.domain.model.FacilityDetail
 import com.sportbooking.domain.model.FacilitySummary
 import com.sportbooking.domain.model.PaymentMethod
@@ -100,6 +102,15 @@ object PreviewData {
         TimeSlot(time = "21:00 - 22:00", price = 140_000, peak = false, available = true),
     )
 
+    val drinks = listOf(
+        Drink(id = "d1", name = "Aquafina 500ml", image = "", price = 10_000, stock = 24),
+        Drink(id = "d2", name = "Sting dâu", image = "", price = 15_000, stock = 12),
+    )
+
+    val drinkLines = listOf(
+        DrinkLine(refreshmentId = "d1", name = "Aquafina 500ml", price = 10_000, qty = 2),
+    )
+
     val bookingQuote = BookingQuote(
         facilityId = "fac_1",
         facilityName = "CLB Thể Thao Kỳ Hòa",
@@ -109,8 +120,10 @@ object PreviewData {
         time = "18:00 - 19:00",
         courtPrice = 200_000,
         discount = 30_000,
-        amount = 170_000,
+        amount = 190_000,
         voucherCode = "SPORT30K",
+        drinks = drinkLines,
+        drinkTotal = 20_000,
     )
 
     val vouchers = listOf(

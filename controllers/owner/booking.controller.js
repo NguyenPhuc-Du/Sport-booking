@@ -17,7 +17,11 @@ module.exports.index = async (req, res) => {
   }
 
   const [year, month, day] = date.split("-");
-  const rows = await bookingService.getTimelineRows(res.locals.user.id, date);
+  const ownerId = res.locals.user.id;
+  const [rows, priceRules] = await Promise.all([
+    bookingService.getTimelineRows(ownerId, date),
+    bookingService.listCourtPrices(ownerId, date),
+  ]);
 
   res.render("owner/pages/bookings/index", {
     pageTitle: "Lịch đặt & Timeline",
@@ -28,7 +32,20 @@ module.exports.index = async (req, res) => {
     dateMin,
     dateMax,
     rows,
+    priceRules,
+    walkIn: bookingService.walkInLimits(date),
   });
+};
+
+module.exports.create = async (req, res) => {
+  const date = postedDate(req.body);
+  try {
+    await bookingService.createWalkIn(res.locals.user.id, req.body);
+    req.flash("success", "Đặt sân tại quầy thành công");
+  } catch (error) {
+    req.flash("error", error.message || "Đặt sân thất bại");
+  }
+  return res.redirect(timelinePath(date));
 };
 
 module.exports.checkIn = async (req, res) => {

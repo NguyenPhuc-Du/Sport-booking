@@ -3,6 +3,7 @@ package com.sportbooking.data.repository
 import com.sportbooking.data.remote.ApiCaller
 import com.sportbooking.data.remote.SportApi
 import com.sportbooking.data.remote.dto.BookingRequest
+import com.sportbooking.data.remote.dto.DrinkOrderDto
 import com.sportbooking.data.remote.dto.toDomain
 import com.sportbooking.domain.common.DomainResult
 import com.sportbooking.domain.model.BookingDraft
@@ -19,8 +20,8 @@ class BookingRepositoryImpl @Inject constructor(
     private val api: SportApi,
     private val caller: ApiCaller,
 ) : BookingRepository {
-    override suspend fun checkoutOptions(): DomainResult<CheckoutOptions> {
-        return when (val result = caller.call { api.checkoutOptions() }) {
+    override suspend fun checkoutOptions(facilityId: String): DomainResult<CheckoutOptions> {
+        return when (val result = caller.call { api.checkoutOptions(facilityId) }) {
             is DomainResult.Success -> DomainResult.Success(result.data.toDomain())
             is DomainResult.Failure -> result
         }
@@ -59,7 +60,9 @@ class BookingRepositoryImpl @Inject constructor(
         courtId = courtId,
         date = date,
         time = time,
+        hours = hours,
         voucherCode = voucherCode,
         paymentMethod = paymentMethod,
+        drinks = drinks.map { DrinkOrderDto(it.refreshmentId, it.qty) },
     )
 }

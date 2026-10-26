@@ -1,6 +1,9 @@
+const mongoose = require("mongoose");
 const Venue = require("../../models/facilities.model");
 const Court = require("../../models/court.model");
 const CourtType = require("../../models/court-types.model");
+const Voucher = require("../../models/finance.model");
+const refreshmentService = require("./refreshment.service");
 
 const OBJECT_ID = /^[0-9a-fA-F]{24}$/;
 
@@ -130,4 +133,37 @@ async function getVenueAndCourt(facilityId, courtId) {
   return { venue, court };
 }
 
-module.exports = { listSports, listForHome, getDetail, getVenue, getCourt, getVenueAndCourt };
+async function listCheckoutOptions(facilityId) {
+  if (!facilityId || !mongoose.Types.ObjectId.isValid(facilityId)) {
+    const err = new Error("Thiếu cơ sở");
+    err.status = 400;
+    throw err;
+  }
+
+  const now = new Date();
+  const vouchers = await Voucher.find({
+    deleted: false,
+    status: "active",
+    venue_id: facilityId,
+    start_date: { $lte: now },
+    end_date: { $gte: now },
+  }).select("code name").lean();
+
+  return {
+    vouchers: vouchers.map((v) => ({ code: v.code, description: v.name })),
+    payments: [
+      { id: "vnpay", title: "VNPay", description: "ATM / thẻ / QR ngân hàng" },
+    ],
+    drinks: await refreshmentService.listForVenue(facilityId),
+  };
+}
+
+module.exports = {
+  listSports,
+  listForHome,
+  getDetail,
+  getVenue,
+  getCourt,
+  getVenueAndCourt,
+  listCheckoutOptions,
+};

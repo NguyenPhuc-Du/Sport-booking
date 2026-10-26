@@ -64,6 +64,9 @@
     <string name="checkout_btn_pay">Thanh toán %1$s</string>
     <string name="checkout_btn_paying">Đang xử lý đặt sân…</string>
     <string name="checkout_success_message">Đặt sân thành công!</string>
+    <string name="checkout_drinks_section">Đặt thêm đồ uống</string>
+    <string name="checkout_drinks_hint">Tiền nước được cộng vào cùng đơn thanh toán.</string>
+    <string name="checkout_drink_stock">Còn %1$d</string>
 
     <!-- Bookings Screen -->
     <string name="bookings_title">Lịch đặt</string>
@@ -89,6 +92,8 @@
     <string name="profile_notifications">Thông báo</string>
     <string name="profile_reviews">Đánh giá của tôi</string>
     <string name="profile_logout_btn">Đăng xuất</string>
+    <string name="profile_avatar">Ảnh đại diện</string>
+    <string name="profile_change_avatar">Đổi ảnh đại diện</string>
 
     <!-- OTP Verification Screen -->
     <string name="otp_title">Xác thực mã OTP</string>

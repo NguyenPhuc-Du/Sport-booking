@@ -19,10 +19,13 @@ import com.sportbooking.data.remote.dto.SlotScheduleDto
 import com.sportbooking.data.remote.dto.UpdateProfileRequest
 import com.sportbooking.data.remote.dto.UserEnvelope
 import com.sportbooking.data.remote.dto.VerifyOtpRequest
+import okhttp3.MultipartBody
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.PUT
+import retrofit2.http.Part
 import retrofit2.http.Path
 import retrofit2.http.Query
 
@@ -65,7 +68,7 @@ interface SportApi {
     ): SlotScheduleDto
 
     @GET("checkout/options")
-    suspend fun checkoutOptions(): CheckoutOptionsDto
+    suspend fun checkoutOptions(@Query("facilityId") facilityId: String): CheckoutOptionsDto
 
     @POST("bookings/quote")
     suspend fun quote(@Body body: BookingRequest): BookingQuoteDto
@@ -84,4 +87,8 @@ interface SportApi {
 
     @PUT("profile")
     suspend fun updateProfile(@Body body: UpdateProfileRequest): UserEnvelope
+
+    @Multipart
+    @POST("profile/avatar")
+    suspend fun uploadAvatar(@Part avatar: MultipartBody.Part): UserEnvelope
 }

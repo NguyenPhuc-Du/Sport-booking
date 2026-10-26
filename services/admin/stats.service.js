@@ -14,19 +14,21 @@ async function bookingsInfo() {
 }
 
 async function getOverview() {
-  const ownerRole = await Role.findOne({ code: "OWNER" }).lean();
-  const ownerIds = ownerRole
-    ? await UserRole.distinct("user_id", { role_id: ownerRole._id })
-    : [];
   const bookings = await bookingsInfo();
 
-  return {
-    users: await User.countDocuments(),
-    owners: ownerIds.length,
-    venues: await Venue.countDocuments({
+  const [users, owners, venues] = await Promise.all([
+    User.countDocuments(),
+    User.countDocuments({ role: "OWNER" }),
+    Venue.countDocuments({
       status: "active",
       deleted: { $ne: true },
     }),
+  ]);
+
+  return {
+    users,
+    owners,
+    venues,
     bookings: bookings.count,
     bookingsExists: bookings.exists,
   };

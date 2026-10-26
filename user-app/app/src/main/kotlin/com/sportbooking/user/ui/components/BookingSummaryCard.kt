@@ -79,6 +79,12 @@ fun BookingSummaryCard(
 
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 PriceRow(label = "Giá sân", value = quote.courtPrice.toVnd())
+                quote.drinks.forEach { drink ->
+                    PriceRow(
+                        label = "${drink.name} x${drink.qty}",
+                        value = (drink.price * drink.qty).toVnd(),
+                    )
+                }
                 if (quote.discount > 0) {
                     PriceRow(
                         label = "Mã ưu đãi (${quote.voucherCode.orEmpty()})",
