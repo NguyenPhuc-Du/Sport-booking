@@ -6,7 +6,7 @@ const facilityRoutes = require("./facility.route");
 const bookingRoutes = require("./booking.route");
 const financeRoutes = require("./finance.route");
 const ownerProfileRoutes = require("./owner-profile.route");
-const refreshmentRoutes = require("./refreshment.route");
+const drinkRoutes = require("./drink.route");
 
 const authMiddleware = require("../../middlewares/auth.middleware");
 const authRoutes = require("../owner/auth.route");
@@ -33,7 +33,11 @@ module.exports = (app) => {
   app.use(PATH + "/bookings", bookingRoutes);
   app.use(PATH + "/finance", financeRoutes);
   app.use(PATH + "/profile", ownerProfileRoutes);
-  app.use(PATH + "/refreshments", refreshmentRoutes);
+  app.use(PATH + "/drinks", drinkRoutes);
+  app.use(PATH + "/refreshments", (req, res) => {
+    const tail = req.url === "/" ? "" : req.url;
+    res.redirect(PATH + "/drinks" + tail);
+  });
   app.use("/auth", authRoutes);
 
   // Giữ tương thích link cũ của chủ sân (không đụng /admin/dashboard của platform)

@@ -26,7 +26,7 @@ const bookingSchema = new mongoose.Schema(
     drinks: {
       type: [
         {
-          refreshmentId: { type: mongoose.Schema.Types.ObjectId, ref: "Refreshment" },
+          drinkId: { type: mongoose.Schema.Types.ObjectId, ref: "Drink" },
           name: { type: String, required: true },
           price: { type: Number, required: true, min: 0 },
           qty: { type: Number, required: true, min: 1 },

@@ -108,7 +108,7 @@ object PreviewData {
     )
 
     val drinkLines = listOf(
-        DrinkLine(refreshmentId = "d1", name = "Aquafina 500ml", price = 10_000, qty = 2),
+        DrinkLine(drinkId = "d1", name = "Aquafina 500ml", price = 10_000, qty = 2),
     )
 
     val bookingQuote = BookingQuote(

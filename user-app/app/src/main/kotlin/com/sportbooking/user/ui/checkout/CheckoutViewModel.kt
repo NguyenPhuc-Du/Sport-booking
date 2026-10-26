@@ -144,6 +144,6 @@ class CheckoutViewModel @Inject constructor(
         paymentMethod = paymentMethod,
         drinks = _state.value.drinkQty
             .filter { it.value > 0 }
-            .map { DrinkSelection(refreshmentId = it.key, qty = it.value) },
+            .map { DrinkSelection(drinkId = it.key, qty = it.value) },
     )
 }

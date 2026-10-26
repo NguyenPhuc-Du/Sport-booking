@@ -1,6 +1,6 @@
 const Booking = require("../../models/booking.model");
 const facilityService = require("./facility.service");
-const refreshmentService = require("./refreshment.service");
+const drinkService = require("./drink.service");
 const slotService = require("./slot.service");
 const vnpay = require("./vnpay.service");
 
@@ -33,7 +33,7 @@ function publicBooking(doc) {
     courtPrice: b.courtPrice,
     discount: b.discount,
     drinks: (b.drinks || []).map((item) => ({
-      refreshmentId: String(item.refreshmentId),
+      drinkId: String(item.drinkId),
       name: item.name,
       price: item.price,
       qty: item.qty,
@@ -78,7 +78,7 @@ async function resolveSelection(body) {
     body.voucherCode,
     pair.venue._id,
   );
-  const { drinks, drinkTotal } = await refreshmentService.snapshotDrinks(
+  const { drinks, drinkTotal } = await drinkService.snapshotDrinks(
     pair.venue._id,
     body.drinks,
   );
@@ -121,7 +121,7 @@ async function create({ userId, body, ipAddr }) {
   const { venue, court, quote, start, end } = await resolveSelection(body);
   const code = `SPZ${Date.now()}`;
 
-  await refreshmentService.decrementStock(quote.drinks);
+  await drinkService.decrementStock(quote.drinks);
 
   let booking;
   try {
@@ -149,7 +149,7 @@ async function create({ userId, body, ipAddr }) {
       bookedAt: new Intl.DateTimeFormat("vi-VN").format(new Date()),
     });
   } catch (error) {
-    await refreshmentService.restoreStock(quote.drinks);
+    await drinkService.restoreStock(quote.drinks);
     if (error.code === 11000) throw httpError(409, "Khung giờ vừa được người khác đặt");
     throw error;
   }
@@ -188,7 +188,7 @@ async function cancel(userId, code) {
     { returnDocument: "after" },
   );
   if (!booking) throw httpError(400, "Không thể hủy đơn này");
-  await refreshmentService.releaseDrinks(booking._id);
+  await drinkService.releaseDrinks(booking._id);
   return { booking: publicBooking(booking) };
 }
 

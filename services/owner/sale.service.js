@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const Sale = require("../../models/sale.model");
-const Refreshment = require("../../models/refreshment.model");
+const Drink = require("../../models/drink.model");
 const facilityService = require("./facility.service");
 
 function fail(message) {
@@ -29,13 +29,13 @@ async function ownerVenues(ownerId) {
 async function getSaleCatalog(ownerId) {
   const venues = await ownerVenues(ownerId);
   const venueIds = venues.map((venue) => venue._id);
-  const refreshments = venueIds.length
-    ? await Refreshment.find({ venueId: { $in: venueIds } })
+  const drinks = venueIds.length
+    ? await Drink.find({ venueId: { $in: venueIds } })
         .select("name price stock image venueId status")
         .lean()
     : [];
 
-  const catalog = refreshments.map((item) => ({
+  const catalog = drinks.map((item) => ({
     id: String(item._id),
     name: item.name,
     price: Number(item.price) || 0,
@@ -67,7 +67,7 @@ async function createWalkInSale(ownerId, body) {
 
   const qtyById = new Map();
   for (const row of posted) {
-    const id = String(row.refreshmentId || row.id || "").trim();
+    const id = String(row.drinkId || row.id || "").trim();
     const qty = Number(row.qty);
     if (!mongoose.Types.ObjectId.isValid(id)) throw fail("Sản phẩm không hợp lệ");
     if (!Number.isInteger(qty) || qty < 1) {
@@ -77,7 +77,7 @@ async function createWalkInSale(ownerId, body) {
   }
 
   const ids = [...qtyById.keys()];
-  const products = await Refreshment.find({
+  const products = await Drink.find({
     _id: { $in: ids },
     venueId: venue._id,
     status: "active",
@@ -101,7 +101,7 @@ async function createWalkInSale(ownerId, body) {
     const lineTotal = price * qty;
     amount += lineTotal;
     items.push({
-      refreshmentId: product._id,
+      drinkId: product._id,
       name: product.name,
       price,
       qty,
@@ -112,8 +112,8 @@ async function createWalkInSale(ownerId, body) {
   const decremented = [];
   try {
     for (const item of items) {
-      const updated = await Refreshment.findOneAndUpdate(
-        { _id: item.refreshmentId, stock: { $gte: item.qty } },
+      const updated = await Drink.findOneAndUpdate(
+        { _id: item.drinkId, stock: { $gte: item.qty } },
         { $inc: { stock: -item.qty } },
         { new: true },
       );
@@ -138,8 +138,8 @@ async function createWalkInSale(ownerId, body) {
   } catch (error) {
     await Promise.all(
       decremented.map((item) =>
-        Refreshment.updateOne(
-          { _id: item.refreshmentId },
+        Drink.updateOne(
+          { _id: item.drinkId },
           { $inc: { stock: item.qty } },
         ),
       ),

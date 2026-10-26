@@ -1,0 +1,5 @@
+nav.sl-tabs(aria-label="Mục giải khát")
+  a.sl-tab(href=`${prefixOwner}/drinks` class=(tab === "products" ? "active" : undefined)) Sản phẩm
+  a.sl-tab(href=`${prefixOwner}/drinks/receipts` class=(tab === "receipts" ? "active" : undefined)) Phiếu nhập
+  a.sl-tab(href=`${prefixOwner}/drinks/sales` class=(tab === "sales" ? "active" : undefined)) Phiếu bán
+  a.sl-tab(href=`${prefixOwner}/drinks/suppliers` class=(tab === "suppliers" ? "active" : undefined)) Nhà cung cấp

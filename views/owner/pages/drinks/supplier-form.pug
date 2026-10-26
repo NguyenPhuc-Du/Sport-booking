@@ -1,0 +1,66 @@
+extends ../../layouts/default.pug
+include ../../../mixins/alert.pug
+
+block head
+  link(rel="stylesheet" href="/admin/css/drinks.css")
+  link(rel="stylesheet" href="/admin/css/sale.css")
+
+block main
+  +alert-success(3000)
+  +alert-error(5000)
+  - const item = typeof supplier !== "undefined" && supplier ? supplier : {}
+  - const editing = mode === "edit"
+  - const action = editing ? `${prefixOwner}/drinks/suppliers/edit/${item._id}?_method=PATCH` : `${prefixOwner}/drinks/suppliers/create`
+
+  .d-flex.justify-content-between.align-items-start.flex-wrap.gap-3.mb-3
+    div
+      h1.sz-page-title= editing ? "Sửa nhà cung cấp" : "Thêm nhà cung cấp"
+      p.sz-page-sub Nhà cung cấp được chọn khi lập phiếu nhập kho.
+    a.sz-btn-outline(href=`${prefixOwner}/drinks/suppliers`)
+      i.bi.bi-arrow-left
+      |  Quay lại danh sách
+
+  form#supplierForm(action=action method="POST" novalidate)
+    .sz-card
+      .row.g-3
+        .col-12
+          label.sz-label(for="name") Tên nhà cung cấp
+            span.sz-req  *
+          input#name.sz-input(type="text" name="name" required maxlength="120" placeholder="VD: Công ty TNHH Suntory PepsiCo" value=item.name)
+        .col-12.col-md-6
+          label.sz-label(for="phone") Số điện thoại
+          input#phone.sz-input(type="tel" name="phone" maxlength="14" placeholder="0900 123 456" value=item.phone)
+          .sz-hint Không bắt buộc. Nếu nhập phải đủ 10 số, bắt đầu bằng 0
+        .col-12.col-md-6
+          label.sz-label(for="status") Trạng thái
+          select#status.sz-input(name="status")
+            option(value="active" selected=(item.status !== "inactive")) Đang dùng
+            option(value="inactive" selected=(item.status === "inactive")) Ngừng dùng
+        .col-12
+          label.sz-label(for="address") Địa chỉ
+          input#address.sz-input(type="text" name="address" maxlength="200" placeholder="Số nhà, đường, quận..." value=item.address)
+        .col-12
+          label.sz-label(for="note") Ghi chú
+          input#note.sz-input(type="text" name="note" maxlength="200" placeholder="Người liên hệ, công nợ..." value=item.note)
+    .sz-form-actions
+      a.sz-btn-outline(href=`${prefixOwner}/drinks/suppliers`) Hủy
+      button.sz-btn-primary(type="submit")
+        i.bi.bi-check2-circle
+        |  Lưu nhà cung cấp
+
+block script
+  script.
+    (function () {
+      var form = document.getElementById("supplierForm");
+      var nameEl = document.getElementById("name");
+      var phoneEl = document.getElementById("phone");
+      form.addEventListener("submit", function (e) {
+        var bad = false;
+        if (!nameEl.value.trim()) { nameEl.classList.add("is-invalid"); bad = true; }
+        else nameEl.classList.remove("is-invalid");
+        var phone = phoneEl.value.replace(/\D/g, "");
+        if (phone && !/^0\d{9}$/.test(phone)) { phoneEl.classList.add("is-invalid"); bad = true; }
+        else phoneEl.classList.remove("is-invalid");
+        if (bad) e.preventDefault();
+      });
+    })();

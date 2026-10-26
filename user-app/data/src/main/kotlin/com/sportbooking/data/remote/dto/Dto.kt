@@ -122,14 +122,14 @@ data class DrinkDto(
 )
 
 data class DrinkLineDto(
-    val refreshmentId: String,
+    val drinkId: String,
     val name: String,
     val price: Long,
     val qty: Int,
 )
 
 data class DrinkOrderDto(
-    val refreshmentId: String,
+    val drinkId: String,
     val qty: Int,
 )
 

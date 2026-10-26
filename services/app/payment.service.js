@@ -2,7 +2,7 @@ const Booking = require("../../models/booking.model");
 const User = require("../../models/user.model");
 const Voucher = require("../../models/finance.model");
 const mailService = require("./mail.service");
-const refreshmentService = require("./refreshment.service");
+const drinkService = require("./drink.service");
 
 async function markPaidAndMail(txnRef, transactionNo) {
   const booking = await Booking.findOneAndUpdate(
@@ -54,7 +54,7 @@ async function markFailed(txnRef) {
     { status: "cancelled", statusLabel: "THANH TOÁN THẤT BẠI" },
     { returnDocument: "after" },
   );
-  if (booking) await refreshmentService.releaseDrinks(booking._id);
+  if (booking) await drinkService.releaseDrinks(booking._id);
 }
 
 async function isPaid(txnRef) {
