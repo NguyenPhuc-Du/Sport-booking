@@ -3,6 +3,7 @@ const PriceRule = require("../../models/price-rule.model");
 const Court = require("../../models/court.model");
 const searchHelper = require("../../helpers/search");
 const facilityService = require("./facility.service");
+const cache = require("../../helpers/memory-cache");
 
 module.exports.createPriceRule = async (body) => {
   const { venueId, court, dayType } = body;
@@ -40,6 +41,7 @@ module.exports.createPriceRule = async (body) => {
       court,
     });
   }
+  cache.clearCatalog();
 };
 
 module.exports.getPriceRuleById = async (priceRuleId) => {
@@ -76,6 +78,7 @@ module.exports.updatePriceRule = async (priceRuleId, body) => {
     throw new Error("Bảng giá không tồn tại");
   }
 
+  cache.clearCatalog();
   return updated;
 };
 
@@ -163,5 +166,6 @@ module.exports.changeStatusPriceRule = async (priceRuleId, status) => {
   if (!updated.matchedCount) {
     throw new Error("Bảng giá không tồn tại");
   }
+  cache.clearCatalog();
   return updated;
 };

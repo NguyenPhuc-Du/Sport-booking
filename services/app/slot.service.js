@@ -2,8 +2,10 @@ const PriceRule = require("../../models/price-rule.model");
 const Booking = require("../../models/booking.model");
 const Voucher = require("../../models/finance.model");
 const drinkService = require("./drink.service");
+const cache = require("../../helpers/memory-cache");
 
 const TIME_ZONE = "Asia/Ho_Chi_Minh";
+const PRICE_TTL = 60 * 1000;
 
 function toMinutes(hhmm) {
   const [h, m] = hhmm.split(":").map(Number);
@@ -95,11 +97,14 @@ async function buildSlots(venue, courtId, date) {
   const now = nowInVietnam();
   const nowMinutes = toMinutes(now.time);
 
-  const rules = await PriceRule.find({
-    court: courtId,
-    status: "active",
-    dayType: { $in: [dayTypeOf(date), "all"] },
-  }).lean();
+  const dayType = dayTypeOf(date);
+  const rules = await cache.remember(`price:${courtId}:${dayType}`, PRICE_TTL, () => {
+    return PriceRule.find({
+      court: courtId,
+      status: "active",
+      dayType: { $in: [dayType, "all"] },
+    }).lean();
+  });
   const taken = await takenStarts(courtId, date);
 
   const slots = [];

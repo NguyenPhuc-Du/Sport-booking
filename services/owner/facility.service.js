@@ -1,9 +1,14 @@
 const Venues = require("../../models/facilities.model");
 const Courts = require("../../models/court.model");
 const CourtsType = require("../../models/court-types.model");
+const cache = require("../../helpers/memory-cache");
+
+const TTL = 60 * 1000;
+
 module.exports.getAllVenueByOwnerId = async (id) => {
-  const venues = await Venues.find({ deleted: false, owner_id: id });
-  return venues;
+  return cache.remember(`owner:venues:${id}`, TTL, () => {
+    return Venues.find({ deleted: false, owner_id: id }).lean();
+  });
 };
 module.exports.findVenuesByOwnerId = async (id, pagination) => {
   return Venues.find({ deleted: false, owner_id: id })
@@ -13,17 +18,19 @@ module.exports.findVenuesByOwnerId = async (id, pagination) => {
 module.exports.createOwner = async (body) => {
   const venues = new Venues(body);
   await venues.save();
+  cache.clearCatalog();
 };
-module.exports.getAllCourtTypes = async (body) => {
-  const courtsType = await CourtsType.find({});
-  return courtsType;
+module.exports.getAllCourtTypes = async () => {
+  return cache.remember("catalog:court-types", TTL, () => CourtsType.find({}).lean());
 };
 module.exports.createCourts = async (body) => {
   const courts = new Courts(body);
   await courts.save();
+  cache.clearCatalog();
 };
 module.exports.deleteVenues = async (id) => {
   await Venues.updateOne({ _id: id }, { deleted: true });
+  cache.clearCatalog();
 };
 module.exports.findVenuesById = async (id) => {
   const venues = await Venues.findById(id);
@@ -31,6 +38,7 @@ module.exports.findVenuesById = async (id) => {
 };
 module.exports.updateOneVenues = async (id, body) => {
   await Venues.updateOne({ _id: id }, body);
+  cache.clearCatalog();
 };
 async function venueIdsOf(userId) {
   const venues = await Venues.find({
@@ -59,17 +67,22 @@ module.exports.findCourtsByOwnerId = async (userId, pagination) => {
 };
 
 module.exports.getActiveVenuesByOwnerId = async (ownerId) => {
-  return await Venues.find({
-    owner_id: ownerId,
-    status: "active",
-    deleted: false,
-  }).lean();
+  return cache.remember(`owner:venues:active:${ownerId}`, TTL, () => {
+    return Venues.find({
+      owner_id: ownerId,
+      status: "active",
+      deleted: false,
+    }).lean();
+  });
 };
 module.exports.getCourtsByVenueIds = async (venueIds) => {
-  return await Courts.find({
-    venue_id: { $in: venueIds },
-    deleted: { $ne: true },
-  }).lean();
+  const key = [...venueIds].map(String).sort().join(",");
+  return cache.remember(`owner:courts:${key}`, TTL, () => {
+    return Courts.find({
+      venue_id: { $in: venueIds },
+      deleted: { $ne: true },
+    }).lean();
+  });
 };
 module.exports.countCourtsByOwner = async (userId) => {
   const venueIds = await venueIdsOf(userId);
@@ -105,6 +118,7 @@ module.exports.updateStatusCourts = async (id, status) => {
     status = status == "active" ? "maintenance" : "active";
   }
   await Courts.updateOne({ _id: id }, { status: status });
+  cache.clearCatalog();
 };
 module.exports.getOneCourtsById = async (id) => {
   const courts = await Courts.findById({ _id: id });
@@ -121,4 +135,5 @@ module.exports.getCourtDetailById = async (id) => {
 };
 module.exports.updateOneCourts = async (id, body) => {
   await Courts.updateOne({ _id: id }, body);
+  cache.clearCatalog();
 };
