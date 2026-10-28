@@ -5,6 +5,9 @@ const PriceRule = require("../../models/price-rule.model");
 const User = require("../../models/user.model");
 const facilityService = require("./facility.service");
 const { nowInVietnam } = require("../app/slot.service");
+const cache = require("../../helpers/memory-cache");
+
+const PRICE_TTL = 60 * 1000;
 
 const HOURS = ["06", "07", "08", "09", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21"];
 const DATE_MIN = "2026-10-20";
@@ -193,25 +196,31 @@ function quoteRange(rules, timeStart, timeEnd) {
 }
 
 async function rulesForCourt(courtId, date) {
-  return PriceRule.find({
-    court: courtId,
-    status: "active",
-    dayType: { $in: [dayTypeOf(date), "all"] },
-  })
-    .select("timeStart timeEnd pricePerHour")
-    .lean();
+  const dayType = dayTypeOf(date);
+  return cache.remember(`price:${courtId}:${dayType}`, PRICE_TTL, () => {
+    return PriceRule.find({
+      court: courtId,
+      status: "active",
+      dayType: { $in: [dayType, "all"] },
+    })
+      .select("timeStart timeEnd pricePerHour")
+      .lean();
+  });
 }
 
 async function listCourtPrices(ownerId, date) {
   const courts = await timelineCourts(await ownerVenues(ownerId));
   const courtIds = courts.filter((court) => court.status === "active").map((court) => court._id);
-  const rules = await PriceRule.find({
-    court: { $in: courtIds },
-    status: "active",
-    dayType: { $in: [dayTypeOf(date), "all"] },
-  })
-    .select("court timeStart timeEnd pricePerHour")
-    .lean();
+  const dayType = dayTypeOf(date);
+  const rules = await cache.remember(`price:owner:${ownerId}:${date}`, PRICE_TTL, () => {
+    return PriceRule.find({
+      court: { $in: courtIds },
+      status: "active",
+      dayType: { $in: [dayType, "all"] },
+    })
+      .select("court timeStart timeEnd pricePerHour")
+      .lean();
+  });
 
   return rules.map((rule) => ({
     courtId: String(rule.court),

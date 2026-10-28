@@ -4,6 +4,9 @@ const Court = require("../../models/court.model");
 const CourtType = require("../../models/court-types.model");
 const Voucher = require("../../models/finance.model");
 const drinkService = require("./drink.service");
+const cache = require("../../helpers/memory-cache");
+
+const TTL = 60 * 1000;
 
 const OBJECT_ID = /^[0-9a-fA-F]{24}$/;
 
@@ -19,13 +22,19 @@ function hoursOf(v) {
   return "06:00 - 22:00 hàng ngày";
 }
 
+async function courtTypes() {
+  return cache.remember("catalog:app-court-types", TTL, () => {
+    return CourtType.find().sort({ name: 1 }).lean();
+  });
+}
+
 async function courtTypeMap() {
-  const types = await CourtType.find().lean();
+  const types = await courtTypes();
   return new Map(types.map((t) => [String(t._id), t.name]));
 }
 
 async function listSports() {
-  const types = await CourtType.find().sort({ name: 1 }).lean();
+  const types = await courtTypes();
   return [
     { id: "all", label: "Tất cả" },
     ...types.map((t) => ({ id: String(t._id), label: t.name })),
@@ -38,6 +47,11 @@ function sportsOf(courts, typeNames) {
 }
 
 async function listForHome({ sport = "all", q = "" } = {}) {
+  const cacheKey = `app:home:${sport}:${q.trim().toLowerCase()}`;
+  return cache.remember(cacheKey, TTL, () => loadHome({ sport, q }));
+}
+
+async function loadHome({ sport = "all", q = "" } = {}) {
   const filter = { ...ACTIVE_VENUE };
   if (q.trim()) {
     const re = new RegExp(q.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
@@ -81,6 +95,10 @@ async function listForHome({ sport = "all", q = "" } = {}) {
 
 async function getDetail(id) {
   if (!OBJECT_ID.test(id || "")) return null;
+  return cache.remember(`app:facility:${id}`, TTL, () => loadDetail(id));
+}
+
+async function loadDetail(id) {
   const v = await Venue.findOne({ _id: id, ...ACTIVE_VENUE }).lean();
   if (!v) return null;
 
@@ -114,7 +132,9 @@ async function getDetail(id) {
 
 async function getVenue(id) {
   if (!OBJECT_ID.test(id || "")) return null;
-  return Venue.findOne({ _id: id, ...ACTIVE_VENUE }).lean();
+  return cache.remember(`app:venue:${id}`, TTL, () => {
+    return Venue.findOne({ _id: id, ...ACTIVE_VENUE }).lean();
+  });
 }
 
 async function getCourt(venueId, courtId) {
