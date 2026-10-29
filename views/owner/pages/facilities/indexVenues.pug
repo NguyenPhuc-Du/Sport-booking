@@ -1,75 +1,90 @@
 extends ../../layouts/default.pug
 include ../../../mixins/alert.pug
 include ../../../mixins/pagination.pug
+
 block head
-  +alert-success(5000)
-  +alert-error(5000)
   link(rel="stylesheet" href="/admin/css/facilities.css")
 
 block main
-  .fv-page
-    .fv-head
-      div
-        h1.fv-title Quản lý Cơ sở &amp; Cụm sân
-        p.fv-sub Cấu hình sân con, phân định khung giờ giờ vàng và điều phối lịch bảo dưỡng.
-      .fv-head-actions
-        a.fv-btn-add(href=`${prefixAdmin}/facilities/venues/create`)
-          i.bi.bi-plus-lg
-          | Thêm cơ sở
+  +alert-success(5000)
+  +alert-error(5000)
 
-    .fv-tabs
-      a.fv-tab(href=`${prefixAdmin}/facilities`) Sân con (#{countCourts})
-      a.fv-tab(href=`${prefixOwner}/facilities/price-rules`) Bảng giá
-      a.fv-tab.active(href=`${prefixAdmin}/facilities/venues`)
-        i.bi.bi-buildings
-        | Danh sách cơ sở (#{countVenues})
-    .fv-grid
-      if venues && venues.length
-        each item, index in venues
-          article.fv-card
-            .fv-card-media
-              img(
-                src=item.image_url
-                alt=item.name
-              )
-              if item.status === "active"
-                span.fv-status.fv-status-ok Đang hoạt động
-              else
-                span.fv-status.fv-status-off Ngưng hoạt động
-              span.fv-rating
-                i.bi.bi-star-fill
-                | 4.9
-            .fv-card-body
-              h2.fv-card-name #{item.name}
-              p.fv-address
-                i.bi.bi-geo-alt
-                | #{item.address}
-              .fv-card-foot
-                span
-                  | Giờ mở cửa:
-                  |
-                  strong #{item.open_time} - #{item.close_time}
-                span
-                  | Giá:
-                  |
-                  strong 110.000đ - 240.000đ
-              .fv-card-actions
-                a.fv-btn-edit(
-                  href=`${prefixAdmin}/facilities/venues/edit/${item.id}`
-                )
-                  i.bi.bi-pencil-square
-                  | Sửa
-                button.fv-btn-del(
-                  type="button"
-                  button-delete
-                  data-id=item.id
-                )
-                  i.bi.bi-trash3
-                  | Xóa
-      else
-        .fv-empty Không có cơ sở
+  .d-flex.justify-content-between.align-items-start.flex-wrap.gap-3.mb-4
+    div
+      h1.sz-title Quản lý Cơ sở &amp; Cụm sân
+      p.sz-subtitle Quản lý danh sách cơ sở, giờ mở cửa và trạng thái hoạt động.
+    .fv-head-actions
+      a.sz-btn.sz-btn-green(href=`${prefixAdmin}/facilities/venues/create`)
+        i.bi.bi-plus-lg
+        | Thêm cơ sở
+
+  .sz-tabs.mb-4
+    a.sz-tab(href=`${prefixAdmin}/facilities`) Sân con (#{countCourts})
+    a.sz-tab(href=`${prefixOwner}/facilities/price-rules`) Bảng giá
+    a.sz-tab.active(href=`${prefixAdmin}/facilities/venues`) Danh sách cơ sở (#{countVenues})
+
+  .sz-card.sz-panel
+    .d-flex.justify-content-between.align-items-center.flex-wrap.gap-2.mb-3
+      div
+        h2.sz-panel-title Danh sách cơ sở
+        p.sz-panel-sub Theo dõi địa chỉ, khung giờ và trạng thái từng cơ sở.
+
+    if venues && venues.length
+      .table-responsive
+        table.sz-table.fv-list-table
+          thead
+            tr
+              th Cơ sở
+              th Địa chỉ
+              th Giờ mở cửa
+              th Trạng thái
+              th Hành động
+          tbody
+            each item in venues
+              tr
+                td
+                  .fv-list-entity
+                    span.fv-list-thumb
+                      if item.image_url
+                        img(src=item.image_url alt=item.name)
+                      else
+                        i.bi.bi-buildings
+                    div
+                      strong.fv-list-name= item.name
+                      if item.city || item.district
+                        small.sz-muted= [item.district, item.city].filter(Boolean).join(", ")
+                td
+                  span.fv-list-address= item.address || "—"
+                td
+                  if item.open_time || item.close_time
+                    | #{item.open_time || "—"} - #{item.close_time || "—"}
+                  else
+                    | —
+                td
+                  if item.status === "active"
+                    span.sz-badge.sz-badge-ok Đang hoạt động
+                  else
+                    span.sz-badge.sz-badge-danger Ngưng hoạt động
+                td
+                  .fv-list-actions
+                    a.sz-btn.sz-btn-edit.sz-btn-sm(
+                      href=`${prefixAdmin}/facilities/venues/edit/${item.id || item._id}`
+                      title="Sửa"
+                    )
+                      i.bi.bi-pencil-square
+                    button.sz-btn.sz-btn-outline-danger.sz-btn-sm(
+                      type="button"
+                      button-delete
+                      data-id=item.id || item._id
+                      title="Xóa"
+                    )
+                      i.bi.bi-trash3
+    else
+      .fv-empty Không có cơ sở
+
     nav.fv-pagination(aria-label="Phân trang cơ sở")
       +pagination(pagination)
-    form(method='POST' action="" id="form-delete" data-path=`${prefixAdmin}/facilities/venues/delete`)
-    script(src="/js/script.js")
-    script(src="/admin/js/finance.js")
+
+  form(method="POST" action="" id="form-delete" data-path=`${prefixAdmin}/facilities/venues/delete`)
+  script(src="/js/script.js")
+  script(src="/admin/js/finance.js")

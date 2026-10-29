@@ -1,0 +1,86 @@
+extends ../../layouts/default.pug
+include ../../../mixins/alert.pug
+include ../../../mixins/pagination.pug
+
+block main
+  +alert-success(5000)
+  +alert-error(5000)
+  .vc-page
+    .vc-head
+      div
+        h1.vc-title Voucher · #{campaign.name}
+        p.vc-sub
+          | Cơ sở: #{campaign.venue_name}
+          |  · Thời hạn: #{campaign.start_date_display} → #{campaign.end_date_display}
+      .d-flex.gap-2.flex-wrap
+        a.vc-btn.vc-btn-sm(href=`${prefixAdmin}/finance` style="background:#fff;color:#0f172a;border:1px solid #e2e8f0;box-shadow:none")
+          i.bi.bi-arrow-left
+          | Chương trình
+        a.vc-btn.vc-btn-sm(href=`${prefixAdmin}/finance/campaigns/${campaign._id}/vouchers/create`)
+          i.bi.bi-plus-lg
+          | Tạo voucher
+
+    .vc-card
+      .vc-card-head
+        div
+          h2.vc-card-title Mã giảm giá trong chương trình
+          p.vc-card-sub Thời hạn voucher lấy theo chương trình (không nhập riêng)
+
+      .vc-table-wrap
+        table.vc-table
+          thead
+            tr
+              th Mã code
+              th Tiêu đề
+              th Mức giảm
+              th Đơn tối thiểu
+              th Đã dùng / Giới hạn
+              th Trạng thái
+              th Hành động
+          tbody
+            if voucher && voucher.length
+              each item in voucher
+                tr
+                  td
+                    span.vc-code #{item.code}
+                  td #{item.name}
+                  td
+                    if item.discount_type === "fixed"
+                      span.vc-discount #{item.display_value}
+                    else
+                      span.vc-discount #{item.discount_value}%
+                  td #{item.display_minorder}
+                  td.vc-usage
+                    span.vc-usage-text #{item.used_count}/#{item.quantity}
+                    .vc-bar
+                      .vc-bar-fill(style=`width: ${item.percentUsed}%`)
+                  td
+                    if item.status == "active"
+                      span.vc-status hoạt động
+                    else if item.status == "expired"
+                      span.vc-status.vc-status-muted hết lượt
+                    else
+                      span.vc-status.vc-status-danger ngưng
+                  td
+                    .vc-actions
+                      a.vc-btn-edit(href=`${prefixAdmin}/finance/edit/${item._id}`) Sửa
+                      button.vc-btn-del(
+                        type="button"
+                        button-delete
+                        data-id=item._id
+                      ) Xóa
+            else
+              tr
+                td.vc-empty(colspan="7") Không có voucher trong chương trình này
+
+      nav.vc-pagination(aria-label="Phân trang voucher")
+        +pagination(pagination)
+
+    form(
+      method="POST"
+      action=""
+      id="form-delete"
+      data-path=`${prefixAdmin}/finance/delete`
+    )
+    script(src="/admin/js/finance.js")
+    script(src="/js/script.js")

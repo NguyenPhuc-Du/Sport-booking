@@ -10,14 +10,18 @@ block main
   .d-flex.justify-content-between.align-items-start.flex-wrap.gap-3.mb-4
     div
       h1.sz-title #{pageTitle}
-      p.sz-subtitle Cấu hình sân con, bảng giá giờ vàng và lịch bảo trì cho cụm sân đang vận hành.
+      p.sz-subtitle Quản lý sân con, trạng thái hoạt động và bảo trì theo từng cơ sở.
     .fv-head-actions
       .fv-filter
         i.bi.bi-buildings.fv-filter-icon(aria-hidden="true")
         select.fv-select#venueFilter(name="venue_filter" aria-label="Lọc theo cơ sở")
-          option(value="") Tất cả sân con 
+          option(value="") Tất cả sân con
           each item in venues
             option(value=item._id selected=(String(item._id) === String(VenueSelected)))= item.name
+      a.sz-btn.sz-btn-green(href=`${prefixAdmin}/facilities/createCourts`)
+        i.bi.bi-plus-lg
+        | Thêm sân con
+
   .sz-tabs.mb-4#facilityTabs
     button.sz-tab.active(type="button" data-tab="courts") Sân con (#{countCourts})
     a.sz-tab(href=`${prefixOwner}/facilities/price-rules`) Bảng giá
@@ -26,59 +30,76 @@ block main
   .sz-card.sz-panel
     .d-flex.justify-content-between.align-items-center.flex-wrap.gap-2.mb-3
       div
-        h2.sz-panel-title Danh sách sân thi đấu thuộc SportPro Complex
-        p.sz-panel-sub Quản lý trạng thái hoạt động / bảo trì từng sân con
-      button.sz-btn.sz-btn-green(type="button")
-        a(href=`${prefixAdmin}/facilities/createCourts` style="color:white;text-decoration: none")
-          i.bi.bi-plus-lg
-          | Thêm sân con
+        h2.sz-panel-title Danh sách sân con
+        p.sz-panel-sub Theo dõi loại hình, mặt sân và trạng thái vận hành.
 
-    .row.g-3
-      if courts && courts.length
-        each court in courts
-          .col-12.col-md-6.col-xl-4
-            .sz-court-card(class=(court.status === "maintenance" ? "is-maint" : ""))
-              .d-flex.justify-content-between.align-items-start.mb-2
-                .d-flex.align-items-center.gap-2
-                  span.sz-court-icon
-                    img(src= court.court_type_id.icon_url)
-                  strong.sz-court-name= court.name
-                if court.status === "active"
-                  span(class="sz-badge sz-badge-ok" ) HOẠT ĐỘNG
-                else
-                  span(class="sz-badge sz-badge-danger" ) ĐANG BẢO TRÌ
-              ul.sz-court-meta
-                li
-                  span Mặt sân 
-                  strong= court.surface
-                li
-                  span Loại hình
-                  strong  #{court.court_type_id.name}
-              .sz-court-actions
-                a.sz-btn.sz-btn-detail.sz-btn-sm(
-                  href=`${prefixAdmin}/facilities/detailCourts/${court._id}`
-                )
-                  i.bi.bi-eye
-                  | Chi tiết
-                a.sz-btn.sz-btn-edit.sz-btn-sm(
-                  href=`${prefixAdmin}/facilities/editCourts/${court._id}`
-                )
-                  i.bi.bi-pencil-square
-                  | Sửa
-                if court.status === "active"
-                  button.sz-btn.sz-btn-outline-danger.sz-btn-sm.btn-open-maintain.btn(type="button" data-status= court.status data-id=court._id)
-                    i.bi.bi-exclamation-triangle
-                    | Bảo trì
-                else
-                  button.sz-btn.sz-btn-green.sz-btn-sm.btn(type="button" data-status= court.status data-id=court._id)
-                    i.bi.bi-check2-circle
-                    | Mở lạ 
-      else
-        .col-12
-          .fv-empty Không có sân con
+    if courts && courts.length
+      .table-responsive
+        table.sz-table.fv-list-table
+          thead
+            tr
+              th Sân
+              th Loại hình
+              th Mặt sân
+              th Trạng thái
+              th Hành động
+          tbody
+            each court in courts
+              tr
+                td
+                  .fv-list-entity
+                    span.fv-list-icon
+                      if court.court_type_id && court.court_type_id.icon_url
+                        img(src=court.court_type_id.icon_url alt="")
+                      else
+                        i.bi.bi-grid-3x3-gap
+                    div
+                      strong.fv-list-name= court.name
+                      if court.capacity
+                        small.sz-muted Sức chứa: #{court.capacity}
+                td= court.court_type_id ? court.court_type_id.name : "—"
+                td= court.surface || "—"
+                td
+                  if court.status === "active"
+                    span.sz-badge.sz-badge-ok Hoạt động
+                  else if court.status === "maintenance"
+                    span.sz-badge.sz-badge-danger Đang bảo trì
+                  else
+                    span.sz-badge.sz-badge-muted Ngưng
+                td
+                  .fv-list-actions
+                    a.sz-btn.sz-btn-detail.sz-btn-sm(
+                      href=`${prefixAdmin}/facilities/detailCourts/${court._id}`
+                      title="Chi tiết"
+                    )
+                      i.bi.bi-eye
+                    a.sz-btn.sz-btn-edit.sz-btn-sm(
+                      href=`${prefixAdmin}/facilities/editCourts/${court._id}`
+                      title="Sửa"
+                    )
+                      i.bi.bi-pencil-square
+                    if court.status === "active"
+                      button.sz-btn.sz-btn-outline-danger.sz-btn-sm.btn(
+                        type="button"
+                        data-status=court.status
+                        data-id=court._id
+                        title="Bảo trì"
+                      )
+                        i.bi.bi-exclamation-triangle
+                    else
+                      button.sz-btn.sz-btn-green.sz-btn-sm.btn(
+                        type="button"
+                        data-status=court.status
+                        data-id=court._id
+                        title="Mở lại"
+                      )
+                        i.bi.bi-check2-circle
+    else
+      .fv-empty Không có sân con
+
     nav.fv-pagination(aria-label="Phân trang sân")
-      +pagination(pagination)    
-    form(method='POST' action="" id="form-changeStatus" data-path=`${prefixAdmin}/facilities/changeStatus`)
-    script(src="/admin/js/courts.js")
-    script(src="/admin/js/script.js")
+      +pagination(pagination)
 
+  form(method="POST" action="" id="form-changeStatus" data-path=`${prefixAdmin}/facilities/changeStatus`)
+  script(src="/admin/js/courts.js")
+  script(src="/admin/js/script.js")

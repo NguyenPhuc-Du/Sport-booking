@@ -1,17 +1,18 @@
 module.exports.creatPost = (req, res, next) => {
+  const { code, name, discount_type, discount_value, quantity, campaign_id } =
+    req.body;
   if (
-    !req.body.code ||
-    !req.body.name ||
-    !req.body.discount_type ||
-    !req.body.venue_id ||
-    !req.body.discount_value ||
-    !req.body.quantity ||
-    !req.body.start_date ||
-    !req.body.end_date
+    !code ||
+    !name ||
+    !discount_type ||
+    !discount_value ||
+    !quantity ||
+    !campaign_id
   ) {
-    req.flash("error", "vui lòng nhập tiêu đề");
-    res.redirect(req.get("Referer"));
-    return;
+    req.flash("error", "Vui lòng nhập đủ thông tin voucher");
+    return res.redirect(req.get("Referer") || "/owner/finance");
   }
   next();
 };
+
+module.exports.editPatch = module.exports.creatPost;
