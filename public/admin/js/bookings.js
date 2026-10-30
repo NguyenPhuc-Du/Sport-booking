@@ -159,7 +159,71 @@
     setTimeout(function () { btn.classList.remove("is-reject"); }, 450);
   }
 
+  function vietnamNow() {
+    var parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Ho_Chi_Minh",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    }).formatToParts(new Date());
+    var get = function (type) {
+      var found = parts.find(function (part) { return part.type === type; });
+      return found ? found.value : "";
+    };
+    return {
+      date: get("year") + "-" + get("month") + "-" + get("day"),
+      time: get("hour") + ":" + get("minute"),
+    };
+  }
+
+  function earliestHour() {
+    var dateInput = document.getElementById("bookingDate");
+    var date = dateInput ? dateInput.value : "";
+    var now = vietnamNow();
+    if (date > now.date) return 6;
+    if (date < now.date) return 24;
+    var hour = Number(now.time.slice(0, 2));
+    if (!Number.isFinite(hour) || hour < 6) return 6;
+    return hour + 1;
+  }
+
+  function hourHasStarted(hour) {
+    return hour < earliestHour();
+  }
+
+  function pastSlotMessage() {
+    var next = earliestHour();
+    if (next > 21) return "Đã hết khung giờ có thể đặt trong hôm nay.";
+    return "Khung giờ đã qua. Chỉ được đặt từ " + pad(next) + ":00 trở đi.";
+  }
+
+  function lockStartedSlots() {
+    var minHour = earliestHour();
+    document.querySelectorAll(".sz-hour-pick").forEach(function (btn) {
+      if (Number(btn.dataset.hour) >= minHour) return;
+      btn.disabled = true;
+      btn.classList.remove("is-on");
+      btn.title = "Đã qua giờ";
+      var cell = btn.closest(".sz-timeline-cell");
+      if (!cell) return;
+      cell.classList.remove("is-free");
+      cell.classList.add("is-closed");
+      cell.title = "Đã qua giờ";
+    });
+    var before = selected.length;
+    selected = selected.filter(function (item) { return !hourHasStarted(item.hour); });
+    if (selected.length !== before) setError(pastSlotMessage());
+    refreshBar();
+  }
+
   function addHour(court, label, hour) {
+    if (hourHasStarted(hour)) {
+      setError(pastSlotMessage());
+      return false;
+    }
     if (!selected.length) {
       selected.push({ court: court, label: label, hour: hour });
       hintLock = false;
@@ -245,6 +309,10 @@
   }
 
   function applyRange(range) {
+    if (hourHasStarted(Number(String(range.start).slice(0, 2)))) {
+      setError(pastSlotMessage());
+      return false;
+    }
     var priced = quoteSelection(range);
     var court = document.getElementById("walkInCourt");
     var start = document.getElementById("walkInStart");
@@ -447,5 +515,7 @@
     else if (modal.classList.contains("is-open")) closeModal();
   });
 
+  lockStartedSlots();
+  setInterval(lockStartedSlots, 30000);
   refreshBar();
 })();
