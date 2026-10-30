@@ -135,10 +135,7 @@ private fun MainNavHost(
         val result = paymentResult ?: return@LaunchedEffect
         PaymentResultBus.consume()
         val flag = if (result.success) "success" else "failed"
-        navController.navigate("payment_result/$flag/${Uri.encode(result.code)}") {
-            popUpTo(navController.graph.findStartDestination().id) { inclusive = false }
-            launchSingleTop = true
-        }
+        navController.clearStack("payment_result/$flag/${Uri.encode(result.code)}")
     }
 
     Scaffold(
@@ -185,15 +182,8 @@ private fun MainNavHost(
                 ),
             ) {
                 PaymentResultScreen(
-                    onGoHome = {
-                        navController.navigate("home") {
-                            popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
-                            launchSingleTop = true
-                        }
-                    },
-                    onViewBookings = {
-                        navController.goToBookings()
-                    },
+                    onGoHome = { navController.clearStack("home") },
+                    onViewBookings = { navController.clearStack("bookings") },
                 )
             }
             composable(
@@ -233,7 +223,7 @@ private fun MainNavHost(
                 CheckoutScreen(
                     onBack = { navController.popBackStack() },
                     onPaymentStarted = {
-                        navController.goToBookings()
+                        navController.clearStack("bookings")
                         scope.launch { snackbarHostState.showSnackbar("Hoàn tất thanh toán trên VNPay trong 15 phút") }
                     },
                 )
@@ -242,9 +232,9 @@ private fun MainNavHost(
     }
 }
 
-private fun NavHostController.goToBookings() {
-    navigate("bookings") {
-        popUpTo(graph.findStartDestination().id) { saveState = true }
+private fun NavHostController.clearStack(route: String) {
+    navigate(route) {
+        popUpTo(graph.id) { inclusive = true }
         launchSingleTop = true
     }
 }
