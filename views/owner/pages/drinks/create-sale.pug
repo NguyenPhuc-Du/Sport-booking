@@ -173,50 +173,153 @@ block script
         renderCart();
       }
 
-      function changeQty(id, delta) {
-        cart = cart.map(function (row) {
-          if (row.id !== id) return row;
-          return { id: row.id, qty: row.qty + delta };
-        }).filter(function (row) { return row.qty > 0; });
-        var product = findProduct(id);
-        cart = cart.map(function (row) {
-          if (row.id !== id || !product) return row;
-          return { id: row.id, qty: Math.min(row.qty, product.stock) };
-        });
-        renderCart();
-      }
-
-      function renderCart() {
-        cartList.querySelectorAll(".sl-line").forEach(function (el) { el.remove(); });
+      function syncItems() {
         var amount = 0;
         cart.forEach(function (row) {
           var product = findProduct(row.id);
-          if (!product) return;
-          var lineTotal = product.price * row.qty;
-          amount += lineTotal;
-          var line = document.createElement("div");
-          line.className = "sl-line";
-          line.innerHTML =
-            '<div><div class="sl-line-name"></div><div class="sl-line-meta">' + fmt(product.price) + ' × ' + row.qty + '</div></div>' +
-            '<div><div class="sl-line-total">' + fmt(lineTotal) + '</div>' +
-            '<div class="sl-qty">' +
-              '<button type="button" data-delta="-1">−</button>' +
-              '<span>' + row.qty + '</span>' +
-              '<button type="button" data-delta="1">+</button>' +
-            '</div></div>';
-          line.querySelector(".sl-line-name").textContent = product.name;
-          line.querySelectorAll("button").forEach(function (btn) {
-            btn.addEventListener("click", function () {
-              changeQty(row.id, Number(btn.getAttribute("data-delta")));
-            });
-          });
-          cartList.appendChild(line);
+          if (product) amount += product.price * row.qty;
         });
-        cartEmpty.hidden = cart.length > 0;
         totalEl.textContent = fmt(amount);
         itemsInput.value = JSON.stringify(cart.map(function (row) {
           return { drinkId: row.id, qty: row.qty };
         }));
+      }
+
+      function changeQty(id, delta) {
+        var product = findProduct(id);
+        cart = cart.map(function (row) {
+          if (row.id !== id) return row;
+          var next = row.qty + delta;
+          if (product) next = Math.min(next, product.stock);
+          return { id: row.id, qty: next };
+        }).filter(function (row) { return row.qty > 0; });
+        renderCart();
+      }
+
+      function showQtyError(input, errorEl, message) {
+        input.classList.add("is-invalid");
+        errorEl.hidden = false;
+        errorEl.textContent = message;
+      }
+
+      function clearQtyError(input, errorEl) {
+        input.classList.remove("is-invalid");
+        errorEl.hidden = true;
+        errorEl.textContent = "";
+      }
+
+      function applyTypedQty(row, product, input, errorEl, meta, total, plus) {
+        var raw = input.value.trim();
+        if (raw === "") {
+          showQtyError(input, errorEl, "Nhập số lượng");
+          return;
+        }
+        if (!/^\d+$/.test(raw)) {
+          showQtyError(input, errorEl, "Số lượng phải là số nguyên");
+          return;
+        }
+        var qty = Number(raw);
+        if (qty < 1) {
+          showQtyError(input, errorEl, "Số lượng tối thiểu là 1");
+          return;
+        }
+        if (qty > product.stock) {
+          showQtyError(input, errorEl, "Không vượt tồn kho (còn " + product.stock + ")");
+          return;
+        }
+        clearQtyError(input, errorEl);
+        row.qty = qty;
+        meta.textContent = fmt(product.price) + " × " + qty;
+        total.textContent = fmt(product.price * qty);
+        plus.disabled = qty >= product.stock;
+        syncItems();
+      }
+
+      function renderCart() {
+        cartList.querySelectorAll(".sl-line").forEach(function (el) { el.remove(); });
+        cart.forEach(function (row) {
+          var product = findProduct(row.id);
+          if (!product) return;
+          var line = document.createElement("div");
+          line.className = "sl-line";
+
+          var info = document.createElement("div");
+          var name = document.createElement("div");
+          name.className = "sl-line-name";
+          name.textContent = product.name;
+          var meta = document.createElement("div");
+          meta.className = "sl-line-meta";
+          meta.textContent = fmt(product.price) + " × " + row.qty;
+          info.appendChild(name);
+          info.appendChild(meta);
+
+          var side = document.createElement("div");
+          var lineTotal = document.createElement("div");
+          lineTotal.className = "sl-line-total";
+          lineTotal.textContent = fmt(product.price * row.qty);
+
+          var qty = document.createElement("div");
+          qty.className = "sl-qty";
+          var minus = document.createElement("button");
+          minus.type = "button";
+          minus.textContent = "−";
+          minus.addEventListener("click", function () { changeQty(row.id, -1); });
+
+          var input = document.createElement("input");
+          input.type = "number";
+          input.className = "sl-qty-input";
+          input.min = "1";
+          input.max = String(product.stock);
+          input.step = "1";
+          input.inputMode = "numeric";
+          input.value = String(row.qty);
+          input.setAttribute("aria-label", "Số lượng " + product.name);
+
+          var plus = document.createElement("button");
+          plus.type = "button";
+          plus.textContent = "+";
+          plus.disabled = row.qty >= product.stock;
+          plus.addEventListener("click", function () { changeQty(row.id, 1); });
+
+          var errorEl = document.createElement("p");
+          errorEl.className = "sl-qty-error";
+          errorEl.hidden = true;
+
+          input.addEventListener("input", function () {
+            applyTypedQty(row, product, input, errorEl, meta, lineTotal, plus);
+          });
+          input.addEventListener("blur", function () {
+            var raw = input.value.trim();
+            if (raw === "" || !/^\d+$/.test(raw) || Number(raw) < 1) {
+              input.value = String(row.qty);
+              clearQtyError(input, errorEl);
+              plus.disabled = row.qty >= product.stock;
+              return;
+            }
+            if (Number(raw) > product.stock) {
+              showQtyError(input, errorEl, "Không vượt tồn kho (còn " + product.stock + ")");
+            }
+          });
+          input.addEventListener("keydown", function (e) {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              input.blur();
+            }
+          });
+          input.addEventListener("wheel", function (e) { e.preventDefault(); });
+
+          qty.appendChild(minus);
+          qty.appendChild(input);
+          qty.appendChild(plus);
+          side.appendChild(lineTotal);
+          side.appendChild(qty);
+          line.appendChild(info);
+          line.appendChild(side);
+          line.appendChild(errorEl);
+          cartList.appendChild(line);
+        });
+        cartEmpty.hidden = cart.length > 0;
+        syncItems();
       }
 
       venueEl.addEventListener("change", function () {
@@ -234,6 +337,14 @@ block script
         if (phone && !/^0\d{9}$/.test(phone)) { $("guestPhone").classList.add("is-invalid"); bad = true; }
         else { $("guestPhone").classList.remove("is-invalid"); }
         if (!cart.length) { bad = true; alert("Chưa chọn sản phẩm nào"); }
+        var overStock = cart.some(function (row) {
+          var product = findProduct(row.id);
+          return !product || !Number.isInteger(row.qty) || row.qty < 1 || row.qty > product.stock;
+        });
+        if (cartList.querySelector(".sl-qty-input.is-invalid") || overStock) {
+          bad = true;
+          alert("Số lượng phải là số nguyên từ 1 đến tồn kho hiện tại");
+        }
         if (bad) e.preventDefault();
       });
 

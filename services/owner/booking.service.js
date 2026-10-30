@@ -66,9 +66,12 @@ function hoursInRange(timeStart, timeEnd) {
 }
 
 function nextBookableStart(now) {
-  const hour = Number(now.time.slice(0, 2));
-  const startHour = hour < 6 ? 6 : hour;
-  return `${String(startHour).padStart(2, "0")}:00`;
+  const [hourText, minuteText] = String(now.time || "00:00").split(":");
+  const hour = Number(hourText);
+  const minute = Number(minuteText);
+  if (!Number.isInteger(hour) || !Number.isInteger(minute) || hour < 6) return "06:00";
+  // Khung HH:00 chỉ đặt được khi chưa tới. 07:21 thì khung 07:00 đã bắt đầu, mốc kế là 08:00.
+  return `${String(hour + 1).padStart(2, "0")}:00`;
 }
 
 function walkInLimits(date) {
@@ -252,7 +255,9 @@ async function createWalkIn(ownerId, body) {
   }
   const limits = walkInLimits(date);
   if (!limits.allowed) throw fail(limits.reason);
-  if (timeStart < limits.startMin) throw fail("Chỉ được đặt từ thời điểm hiện tại trở đi");
+  if (timeStart < limits.startMin) {
+    throw fail(`Khung ${timeStart} đã qua giờ. Chỉ được đặt từ ${limits.startMin} trở đi`);
+  }
 
   const customer = String(body.customer || "").trim();
   if (!customer) throw fail("Vui lòng nhập tên khách");
