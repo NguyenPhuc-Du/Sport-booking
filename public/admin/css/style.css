@@ -699,12 +699,45 @@ select:focus-visible {
 
 .sz-chart {
   display: flex;
-  align-items: flex-end;
-  gap: 24px;
+  flex-direction: column;
+  gap: 8px;
   height: 280px;
   margin-top: 20px;
   padding: 18px 10px 0;
   border-top: 1px solid #f1f5f9;
+}
+
+.sz-chart-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 24px;
+  flex: 1;
+  min-height: 0;
+}
+
+.sz-chart.is-dense .sz-chart-bars,
+.sz-chart.is-dense .sz-chart-months {
+  gap: 6px;
+}
+
+.sz-chart.is-dense .sz-bar-track {
+  max-width: 22px;
+  border-radius: 8px 8px 0 0;
+}
+
+.sz-chart-months {
+  display: flex;
+  gap: 24px;
+}
+
+.sz-chart-month {
+  min-width: 0;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  padding-top: 4px;
+  border-top: 2px solid #e2e8f0;
 }
 
 .sz-bar-col {
@@ -910,6 +943,10 @@ select:focus-visible {
 .sz-status.is-done {
   background: #dbeafe;
   color: #1d4ed8;
+}
+.sz-status.is-cancelled {
+  background: #fee2e2;
+  color: #b91c1c;
 }
 
 /* Buttons / forms */
