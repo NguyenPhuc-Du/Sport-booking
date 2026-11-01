@@ -32,18 +32,35 @@
   if (chart) {
     const weekData = readJson(chart, "chart");
     const max = Math.max(0.01, ...weekData.map((d) => Number(d.value) || 0));
-    chart.innerHTML = weekData.length
-      ? weekData
-          .map(
-            (d) => `
+    const monthGroups = [];
+    weekData.forEach((d) => {
+      const month = Number(d.month) || 0;
+      if (!month) return;
+      const last = monthGroups[monthGroups.length - 1];
+      if (last && last.month === month) last.span += 1;
+      else monthGroups.push({ month, span: 1 });
+    });
+    const bars = weekData
+      .map(
+        (d) => `
       <div class="sz-bar-col" title="${Number(d.value || 0).toFixed(2)} triệu đ">
         <div class="sz-bar-track">
           <div class="sz-bar" style="height:${((Number(d.value) || 0) / max) * 100}%"></div>
         </div>
         <span class="sz-bar-day">${d.day}</span>
       </div>`,
+      )
+      .join("");
+    const monthRow = monthGroups.length
+      ? `<div class="sz-chart-months">${monthGroups
+          .map(
+            (item) =>
+              `<span class="sz-chart-month" style="flex:${item.span}">Tháng ${item.month}</span>`,
           )
-          .join("")
+          .join("")}</div>`
+      : "";
+    chart.innerHTML = weekData.length
+      ? `<div class="sz-chart-bars">${bars}</div>${monthRow}`
       : `<p class="sz-panel-sub mb-0">Chưa có doanh thu trong kỳ này.</p>`;
   }
 

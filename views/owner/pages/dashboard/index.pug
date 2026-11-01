@@ -26,22 +26,16 @@ block main
           .sz-stat-note(class=s.noteClass)= s.note
 
   .row.g-3.mb-3
-    .col-12.col-xl-7
-      .sz-card.sz-panel.h-100
+    .col-12
+      .sz-card.sz-panel
         .d-flex.justify-content-between.align-items-start.flex-wrap.gap-2
           div
             h2.sz-panel-title= `Biểu đồ doanh thu ${rangeLabel}`
-            p.sz-panel-sub Đơn vị: triệu đồng · 7 ngày gần nhất trong kỳ
+            p.sz-panel-sub= chartSub
           .sz-legend
             span.sz-legend-dot
             |  Doanh thu ngày
-        #barChart.sz-chart(data-chart=JSON.stringify(chartData) aria-label="Biểu đồ doanh thu")
-
-    .col-12.col-xl-5
-      .sz-card.sz-panel.h-100
-        h2.sz-panel-title Phân bổ khung giờ cao điểm
-        p.sz-panel-sub Tỷ lệ lấp đầy theo khung giờ
-        #peakList.sz-peak-list(data-peak=JSON.stringify(peakData))
+        #barChart.sz-chart(class=(range === "month" ? "is-dense" : undefined) data-chart=JSON.stringify(chartData) aria-label="Biểu đồ doanh thu")
 
   .row.g-3
     .col-12.col-xl-6
@@ -72,7 +66,7 @@ block main
           div
             h2.sz-panel-title Đơn đặt sân mới nhất
             p.sz-panel-sub= latestBookings.length ? `${latestBookings.length} giao dịch gần đây` : "Chưa có giao dịch"
-          a.sz-link(href=`${prefixOwner}/bookings`) Xem tất cả →
+          a.sz-link(href=`${prefixOwner}/dashboard/bookings`) Xem tất cả →
         if latestBookings.length
           ul.sz-booking-list
             each b in latestBookings

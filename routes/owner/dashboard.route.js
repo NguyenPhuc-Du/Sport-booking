@@ -3,5 +3,6 @@ const router = express.Router();
 const controller = require("../../controllers/owner/dashboard.controller");
 
 router.get("/", controller.index);
+router.get("/bookings", controller.bookings);
 
 module.exports = router;

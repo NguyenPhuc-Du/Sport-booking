@@ -8,3 +8,12 @@ module.exports.index = async (req, res) => {
     ...data,
   });
 };
+
+module.exports.bookings = async (req, res) => {
+  const data = await dashboardService.listAllBookings(res.locals.user.id, req.query);
+
+  res.render("owner/pages/dashboard/bookings", {
+    pageTitle: "Tất cả đơn đặt sân",
+    ...data,
+  });
+};

@@ -1,0 +1,88 @@
+extends ../../layouts/default.pug
+
+block head
+  link(rel="stylesheet" href="/admin/css/drinks.css")
+  link(rel="stylesheet" href="/admin/css/drink-index.css")
+
+block main
+  - const f = typeof filter !== "undefined" ? filter : { status: "", q: "", venueId: "" }
+  - const list = typeof bookings !== "undefined" ? bookings : []
+  - const pg = typeof pagination !== "undefined" ? pagination : { currentPage: 1, totalPage: 1 }
+  - const c = typeof counts !== "undefined" ? counts : { all: 0 }
+  - const qs = (o) => { const p = Object.assign({}, f, o); return Object.keys(p).filter((k) => p[k] !== undefined && p[k] !== "").map((k) => k + "=" + encodeURIComponent(p[k])).join("&"); }
+
+  .d-flex.justify-content-between.align-items-start.flex-wrap.gap-3.mb-4
+    div
+      h1.sz-title Tất cả đơn đặt sân
+      p.sz-subtitle Xem chi tiết các đơn cũ và mới của toàn bộ cơ sở bạn quản lý.
+    a.sz-link(href=`${prefixOwner}/dashboard`) ← Về tổng quan
+
+  .sz-tabs.mb-3
+    a.sz-tab(href=`${prefixOwner}/dashboard/bookings?${qs({ status: "", page: 1 })}` class=(!f.status ? "active" : undefined)) Tất cả (#{c.all || 0})
+    a.sz-tab(href=`${prefixOwner}/dashboard/bookings?${qs({ status: "upcoming", page: 1 })}` class=(f.status === "upcoming" ? "active" : undefined)) Đã duyệt (#{c.upcoming || 0})
+    a.sz-tab(href=`${prefixOwner}/dashboard/bookings?${qs({ status: "pending_payment", page: 1 })}` class=(f.status === "pending_payment" ? "active" : undefined)) Chờ thanh toán (#{c.pending_payment || 0})
+    a.sz-tab(href=`${prefixOwner}/dashboard/bookings?${qs({ status: "completed", page: 1 })}` class=(f.status === "completed" ? "active" : undefined)) Hoàn thành (#{c.completed || 0})
+    a.sz-tab(href=`${prefixOwner}/dashboard/bookings?${qs({ status: "cancelled", page: 1 })}` class=(f.status === "cancelled" ? "active" : undefined)) Đã hủy (#{c.cancelled || 0})
+
+  .sz-card.sz-panel
+    form.sz-filter.mb-3(method="GET" action=`${prefixOwner}/dashboard/bookings`)
+      if f.status
+        input(type="hidden" name="status" value=f.status)
+      select.sz-input.sz-filter-select(name="venueId")
+        option(value="") Tất cả cơ sở
+        each v in (typeof venues !== "undefined" ? venues : [])
+          option(value=v._id selected=(String(f.venueId) === String(v._id)))= v.name
+      .sz-search
+        i.bi.bi-search
+        input.sz-input(type="search" name="q" placeholder="Mã đơn, tên khách, SĐT, sân..." value=f.q)
+      button.sz-btn.sz-btn-dark(type="submit") Lọc
+      a.sz-link(href=`${prefixOwner}/dashboard/bookings`) Xóa lọc
+
+    if list.length
+      .sz-table-wrap
+        table.sz-table
+          thead
+            tr
+              th Mã đơn
+              th Khách
+              th Cơ sở / Sân
+              th Ngày giờ
+              th Thanh toán
+              th Số tiền
+              th Trạng thái
+          tbody
+            each b in list
+              tr
+                td
+                  strong= b.code
+                  .sz-muted= b.pay
+                td
+                  div= b.customer
+                  if b.phone
+                    .sz-muted= b.phone
+                td
+                  div= b.court
+                  .sz-muted= b.venue
+                td
+                  div= b.time
+                td= b.pay
+                td
+                  strong= b.amount
+                td
+                  span.sz-status(class=`is-${b.status}`)= b.statusLabel
+
+      if pg.totalPage > 1
+        nav.sz-pagination(aria-label="Phân trang đơn đặt sân")
+          if pg.currentPage > 1
+            a.sz-page(href=`?${qs({ page: pg.currentPage - 1 })}`)
+              i.bi.bi-chevron-left
+          - for (let i = 1; i <= pg.totalPage; i++)
+            a.sz-page(href=`?${qs({ page: i })}` class=(i === pg.currentPage ? "active" : undefined))= i
+          if pg.currentPage < pg.totalPage
+            a.sz-page(href=`?${qs({ page: pg.currentPage + 1 })}`)
+              i.bi.bi-chevron-right
+    else
+      .sz-empty
+        i.bi.bi-calendar-x
+        h3 Chưa có đơn đặt sân
+        p Không tìm thấy đơn nào khớp bộ lọc hiện tại.
