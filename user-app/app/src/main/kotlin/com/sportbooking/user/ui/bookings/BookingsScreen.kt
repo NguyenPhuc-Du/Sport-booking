@@ -56,6 +56,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sportbooking.domain.model.Booking
 import com.sportbooking.domain.model.BookingCounts
 import com.sportbooking.user.R
+import com.sportbooking.user.ui.components.BookingReviewAction
 import com.sportbooking.user.ui.components.ConfirmBottomSheet
 import com.sportbooking.user.ui.components.EmptyState
 import com.sportbooking.user.ui.components.ErrorText
@@ -235,6 +236,7 @@ fun BookingsContent(
             onDismiss = { pendingCancelBooking = null },
         )
     }
+
 }
 
 @Composable
@@ -346,6 +348,15 @@ fun BookingTicketCard(
                         modifier = Modifier.size(width = 130.dp, height = 40.dp),
                     )
                 }
+            }
+
+            // Đơn đã thanh toán (sắp diễn ra / hoàn thành) mới được đánh giá cơ sở, mỗi đơn 1 lần.
+            if (booking.status == "upcoming" || booking.status == "completed") {
+                BookingReviewAction(
+                    bookingCode = booking.code,
+                    facilityName = booking.facilityName,
+                    fullWidth = true,
+                )
             }
         }
     }

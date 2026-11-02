@@ -66,6 +66,7 @@ import com.sportbooking.domain.common.DomainResult
 import com.sportbooking.domain.model.Booking
 import com.sportbooking.domain.usecase.GetBookingsUseCase
 import com.sportbooking.user.ui.theme.PillShape
+import com.sportbooking.user.ui.components.BookingReviewAction
 import com.sportbooking.user.ui.components.PrimaryButton
 import com.sportbooking.user.ui.components.SecondaryButton
 import com.sportbooking.user.ui.components.StatusBadge
@@ -219,6 +220,41 @@ fun PaymentResultScreen(
                     booking = state.booking,
                     isSuccess = isSuccess,
                 )
+            }
+
+            // Review: chỉ khi thanh toán thành công và đã có đơn. Gắn với mã đơn nên mỗi đơn đánh giá 1 lần.
+            val paidBooking = state.booking
+            if (isSuccess && paidBooking != null) {
+                Spacer(Modifier.height(MaterialTheme.spacing.medium))
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                    shape = MaterialTheme.shapes.large,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Column(
+                        modifier = Modifier.padding(MaterialTheme.spacing.normal),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
+                    ) {
+                        Text(
+                            text = "Bạn thấy ${paidBooking.facilityName} thế nào?",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            textAlign = TextAlign.Center,
+                        )
+                        Text(
+                            text = "Đánh giá dành cho cơ sở, mỗi đơn đặt sân đánh giá được 1 lần.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                        )
+                        BookingReviewAction(
+                            bookingCode = paidBooking.code,
+                            facilityName = paidBooking.facilityName,
+                            fullWidth = true,
+                        )
+                    }
+                }
             }
 
             Spacer(Modifier.height(MaterialTheme.spacing.large))

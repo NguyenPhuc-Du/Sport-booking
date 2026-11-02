@@ -1,0 +1,380 @@
+extends ../../layouts/default
+include ../../../mixins/alert.pug
+
+block head
+  link(rel="stylesheet" href="/admin/css/drinks.css")
+  link(rel="stylesheet" href="/admin/css/drink-index.css")
+  link(rel="stylesheet" href="/admin/css/reviews.css")
+
+block main
+  +alert-success(2000)
+  +alert-error(5000)
+
+  -
+    //- Dữ liệu thật do controller truyền vào qua biến `reviews`. Chưa có thì danh sách rỗng, không dùng dữ liệu giả.
+    const list = (typeof reviews !== "undefined" && Array.isArray(reviews)) ? reviews : []
+    const venueNames = Array.from(new Set(list.map((r) => r.venue)))
+    const avgOf = (arr) => arr.length ? arr.reduce((sum, r) => sum + Number(r.rating || 0), 0) / arr.length : 0
+    const overallAvg = avgOf(list)
+    const venueStats = venueNames.map((name) => {
+      const items = list.filter((r) => r.venue === name)
+      return { name, count: items.length, avg: avgOf(items) }
+    })
+
+  //- ===== TIÊU ĐỀ TRANG =====
+  .d-flex.justify-content-between.align-items-start.flex-wrap.gap-3
+    div
+      h1.sz-page-title Đánh giá & Phản hồi khách hàng
+      p.sz-page-sub Đánh giá tính theo từng cơ sở (không tách từng sân con). Chỉ khách đã thanh toán mới đánh giá được, mỗi đơn 1 lần.
+
+  //- ===== ĐIỂM THEO TỪNG CƠ SỞ =====
+  .row.g-3.mt-1
+    each v in venueStats
+      .col-12.col-md-6.col-xl-4
+        .sz-stat
+          .sz-stat-label= v.name.toUpperCase()
+          .sz-stat-value #{v.avg.toFixed(1)} <small>/ 5 · #{v.count} đánh giá</small>
+          .rv-stars
+            - for (let s = 1; s <= 5; s++)
+              if s <= Math.round(v.avg)
+                i.bi.bi-star-fill
+              else
+                i.bi.bi-star
+
+  //- ===== THỐNG KÊ TỔNG QUAN & PHÂN BỔ SAO =====
+  .rv-overview-grid.mt-3
+    .sz-card.rv-score-card
+      .rv-score-left
+        .rv-score-num#statAvg= overallAvg.toFixed(1)
+        .rv-stars.mt-2
+          - for (let s = 1; s <= 5; s++)
+            if s <= Math.round(overallAvg)
+              i.bi.bi-star-fill
+            else
+              i.bi.bi-star
+        .rv-score-out trên 5.0 sao
+      .rv-bars
+        each star in [5, 4, 3, 2, 1]
+          - const cnt = list.filter((r) => Number(r.rating) === star).length
+          - const pct = list.length ? Math.round((cnt / list.length) * 100) : 0
+          .rv-bar-row
+            span.rv-bar-label
+              | #{star}
+              i.bi.bi-star-fill
+            .rv-bar-track
+              .rv-bar-fill(style=`width:${pct}%` data-star-bar=star)
+            span.rv-bar-count(data-star-count=star)= cnt
+
+    .row.g-3
+      .col-6.col-xl-3
+        .sz-stat
+          .sz-stat-label TỔNG ĐÁNH GIÁ
+          .sz-stat-value#statTotal #{list.length} <small>lượt</small>
+          .sz-stat-note.green Từ các đơn hoàn thành
+      .col-6.col-xl-3
+        .sz-stat
+          .sz-stat-label CHƯA PHẢN HỒI
+          - const pendingCount = list.filter((r) => !r.reply).length
+          .sz-stat-value#statPending #{pendingCount} <small>đánh giá</small>
+          .sz-stat-note.orange Cần chủ sân phản hồi
+      .col-6.col-xl-3
+        .sz-stat
+          .sz-stat-label ĐÃ PHẢN HỒI
+          - const repliedCount = list.filter((r) => !!r.reply).length
+          .sz-stat-value#statReplied #{repliedCount} <small>đánh giá</small>
+          .sz-stat-note.green Hiển thị công khai trên app
+      .col-6.col-xl-3
+        .sz-stat
+          .sz-stat-label TỶ LỆ HÀI LÒNG
+          - const happyPct = list.length ? Math.round((list.filter((r) => r.rating >= 4).length / list.length) * 100) : 0
+          .sz-stat-value#statHappy #{happyPct}%
+          .sz-stat-note.green Đánh giá từ 4 - 5 sao
+
+  //- ===== TAB TRẠNG THÁI =====
+  nav.sz-tabs.mt-4#reviewTabs(aria-label="Lọc đánh giá")
+    a.sz-tab.active(href="javascript:void(0)" data-tab="all") Tất cả (#{list.length})
+    a.sz-tab(href="javascript:void(0)" data-tab="pending") Chưa phản hồi (#{pendingCount})
+    a.sz-tab(href="javascript:void(0)" data-tab="replied") Đã phản hồi (#{repliedCount})
+    a.sz-tab(href="javascript:void(0)" data-tab="5") 5 sao
+    a.sz-tab(href="javascript:void(0)" data-tab="4") 4 sao
+    a.sz-tab(href="javascript:void(0)" data-tab="low") 1 - 3 sao (Cần chú ý)
+    a.sz-tab(href="javascript:void(0)" data-tab="hidden") Đang ẩn
+
+  //- ===== DANH SÁCH ĐÁNH GIÁ =====
+  .sz-card.sz-list-card.mt-3
+    .d-flex.justify-content-between.align-items-end.flex-wrap.gap-3.mb-3
+      div
+        h2.sz-card-title Danh sách nhận xét từ người chơi
+        p.sz-card-sub Lọc theo cơ sở, số sao hoặc phản hồi ngay cho khách hàng
+
+      .sz-filter
+        select.sz-input.sz-filter-select#venueFilter
+          option(value="") Tất cả cơ sở
+          each name in venueNames
+            option(value=name)= name
+        select.sz-input.sz-filter-select#sortFilter
+          option(value="newest") Mới nhất trước
+          option(value="lowest") Điểm thấp trước
+          option(value="highest") Điểm cao trước
+        .sz-search
+          i.bi.bi-search
+          input.sz-input#keywordFilter(type="search" placeholder="Tìm khách, mã đơn, nội dung...")
+        button.sz-btn-outline#resetReviewFilter(type="button") Xóa lọc
+
+    .rv-list#reviewList
+      each item in list
+        article.rv-item(
+          class=(item.hidden ? "is-hidden" : undefined)
+          data-id=item.id
+          data-venue=item.venue
+          data-rating=item.rating
+          data-replied=(item.reply ? "true" : "false")
+          data-hidden=(item.hidden ? "true" : "false")
+          data-customer=item.customer
+        )
+          .rv-item-head
+            .rv-user
+              .rv-avatar= item.customer.trim().charAt(0).toUpperCase()
+              div
+                .rv-user-name
+                  span= item.customer
+                  span.rv-booking-code ##{item.bookingCode}
+                .rv-meta
+                  span
+                    i.bi.bi-clock.me-1
+                    | Đánh giá lúc #{item.createdAt}
+                  span ·
+                  span Ca chơi: #{item.slot}
+
+            .rv-head-right
+              .rv-stars(aria-label=`${item.rating} trên 5 sao`)
+                - for (let s = 1; s <= 5; s++)
+                  if s <= item.rating
+                    i.bi.bi-star-fill
+                  else
+                    i.bi.bi-star
+              span.rv-badge.replied(data-badge-replied hidden=!item.reply)
+                i.bi.bi-check2-circle
+                | Đã phản hồi
+              span.rv-badge.pending(data-badge-pending hidden=!!item.reply)
+                i.bi.bi-hourglass-split
+                | Chờ phản hồi
+              span.rv-badge.hidden(data-badge-hidden hidden=!item.hidden)
+                i.bi.bi-eye-slash
+                | Đang ẩn
+
+          if item.tags && item.tags.length
+            .rv-tags
+              each t in item.tags
+                span.rv-tag= t
+
+          p.rv-comment= item.comment
+
+          .rv-reply-box(data-reply-box hidden=!item.reply)
+            .rv-reply-head
+              span.rv-reply-title
+                i.bi.bi-shop
+                | Phản hồi của chủ sân
+              span.rv-reply-date(data-reply-date)= item.replyDate
+            p.rv-reply-text(data-reply-text)= item.reply
+
+          .rv-actions
+            span.rv-court-pill
+              i.bi.bi-geo-alt-fill.text-success
+              strong= item.venue
+
+            .rv-btn-group
+              button.rv-btn-sm.primary(type="button" data-action="reply")
+                i.bi.bi-reply-fill
+                span(data-reply-btn-label)= item.reply ? "Sửa phản hồi" : "Phản hồi ngay"
+              button.rv-btn-sm(type="button" data-action="toggle-hide")
+                i.bi(class=(item.hidden ? "bi-eye" : "bi-eye-slash"))
+                span(data-hide-btn-label)= item.hidden ? "Hiện lại" : "Ẩn đánh giá"
+
+    .sz-empty#reviewEmptyState(hidden=(list.length > 0))
+      i.bi.bi-chat-square-heart
+      if list.length
+        h3 Không có đánh giá phù hợp
+        p Thử đổi bộ lọc số sao, cơ sở hoặc từ khóa tìm kiếm.
+      else
+        h3 Chưa có đánh giá nào
+        p Khi khách thanh toán xong và đánh giá cơ sở, nhận xét sẽ hiện ở đây.
+
+  //- ===== MODAL PHẢN HỒI KHÁCH HÀNG =====
+  .modal.fade#replyReviewModal(tabindex="-1" aria-hidden="true")
+    .modal-dialog.modal-dialog-centered
+      .modal-content(style="border-radius: 22px; border: 1px solid #e3ece7;")
+        .modal-header.border-0.pb-0.px-4.pt-4
+          div
+            h5.modal-title.fw-bold Phản hồi đánh giá khách hàng
+            p.text-muted.small.mb-0#replyModalMeta —
+          button.btn-close(type="button" data-bs-dismiss="modal" aria-label="Đóng")
+        .modal-body.px-4.pt-3
+          .p-3.rounded-3.mb-3(style="background:#f8fafc;border:1px solid #e2e8f0;")
+            .small.fw-bold.text-secondary.mb-1 Nội dung khách nhận xét:
+            .small.text-dark#replyModalComment —
+
+          label.sz-label.mb-2 Mẫu câu trả lời nhanh
+          .rv-quick-Templates.mb-3
+            span.rv-template-chip(data-template="Cảm ơn bạn đã tin tưởng và đặt sân! Rất mong được đón bạn quay lại vào các trận đấu tới.") Cảm ơn khách 5 sao
+            span.rv-template-chip(data-template="Cơ sở xin ghi nhận góp ý của bạn và đã tiến hành kiểm tra, khắc phục ngay để phục vụ tốt hơn.") Ghi nhận góp ý & khắc phục
+            span.rv-template-chip(data-template="Cảm ơn đánh giá của bạn! Đội ngũ nhân viên cơ sở sẽ tiếp tục nâng cao chất lượng dịch vụ.") Phản hồi thân thiện
+
+          label.sz-label(for="replyTextarea")
+            | Nội dung phản hồi của chủ sân
+            span.sz-req  *
+          textarea.sz-input#replyTextarea(
+            rows="4"
+            style="height:auto;padding:12px 14px;"
+            placeholder="Nhập lời cảm ơn hoặc giải đáp cho người chơi..."
+          )
+        .modal-footer.border-0.px-4.pb-4.pt-1
+          button.sz-btn-outline(type="button" data-bs-dismiss="modal") Hủy
+          button.sz-btn-primary#saveReplyBtn(type="button")
+            i.bi.bi-send-check.me-1
+            | Gửi phản hồi
+
+block script
+  script.
+    (function () {
+      var activeTab = "all";
+      var currentCard = null;
+      var modalEl = document.getElementById("replyReviewModal");
+      var bsModal = modalEl && window.bootstrap ? new window.bootstrap.Modal(modalEl) : null;
+      var replyTextarea = document.getElementById("replyTextarea");
+
+      function cards() {
+        return Array.prototype.slice.call(document.querySelectorAll("#reviewList .rv-item"));
+      }
+
+      function applyFilters() {
+        var venue = (document.getElementById("venueFilter").value || "").trim();
+        var keyword = (document.getElementById("keywordFilter").value || "").trim().toLowerCase();
+        var sort = document.getElementById("sortFilter").value;
+        var listEl = document.getElementById("reviewList");
+        var all = cards();
+
+        all.sort(function (a, b) {
+          var ra = Number(a.getAttribute("data-rating") || 0);
+          var rb = Number(b.getAttribute("data-rating") || 0);
+          if (sort === "lowest") return ra - rb;
+          if (sort === "highest") return rb - ra;
+          return 0;
+        }).forEach(function (el) { listEl.appendChild(el); });
+
+        var visible = 0;
+        all.forEach(function (card) {
+          var rating = Number(card.getAttribute("data-rating") || 0);
+          var replied = card.getAttribute("data-replied") === "true";
+          var hidden = card.getAttribute("data-hidden") === "true";
+          var cardVenue = card.getAttribute("data-venue") || "";
+          var text = card.textContent.toLowerCase();
+
+          var matchTab = true;
+          if (activeTab === "pending") matchTab = !replied && !hidden;
+          else if (activeTab === "replied") matchTab = replied && !hidden;
+          else if (activeTab === "5") matchTab = rating === 5 && !hidden;
+          else if (activeTab === "4") matchTab = rating === 4 && !hidden;
+          else if (activeTab === "low") matchTab = rating <= 3 && !hidden;
+          else if (activeTab === "hidden") matchTab = hidden;
+
+          var matchVenue = !venue || cardVenue === venue;
+          var matchKeyword = !keyword || text.indexOf(keyword) !== -1;
+
+          var show = matchTab && matchVenue && matchKeyword;
+          card.hidden = !show;
+          if (show) visible += 1;
+        });
+
+        document.getElementById("reviewEmptyState").hidden = visible > 0;
+      }
+
+      function refreshCounters() {
+        var all = cards();
+        var pending = all.filter(function (c) { return c.getAttribute("data-replied") !== "true"; }).length;
+        var replied = all.length - pending;
+        document.getElementById("statPending").innerHTML = pending + " <small>đánh giá</small>";
+        document.getElementById("statReplied").innerHTML = replied + " <small>đánh giá</small>";
+      }
+
+      document.querySelectorAll("#reviewTabs .sz-tab").forEach(function (tab) {
+        tab.addEventListener("click", function () {
+          document.querySelectorAll("#reviewTabs .sz-tab").forEach(function (t) { t.classList.remove("active"); });
+          tab.classList.add("active");
+          activeTab = tab.getAttribute("data-tab") || "all";
+          applyFilters();
+        });
+      });
+
+      ["venueFilter", "sortFilter", "keywordFilter"].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener("input", applyFilters);
+        el.addEventListener("change", applyFilters);
+      });
+
+      document.getElementById("resetReviewFilter").addEventListener("click", function () {
+        document.getElementById("venueFilter").value = "";
+        document.getElementById("sortFilter").value = "newest";
+        document.getElementById("keywordFilter").value = "";
+        activeTab = "all";
+        document.querySelectorAll("#reviewTabs .sz-tab").forEach(function (t, i) {
+          t.classList.toggle("active", i === 0);
+        });
+        applyFilters();
+      });
+
+      document.getElementById("reviewList").addEventListener("click", function (e) {
+        var replyBtn = e.target.closest("[data-action='reply']");
+        if (replyBtn) {
+          currentCard = replyBtn.closest(".rv-item");
+          var customer = currentCard.getAttribute("data-customer") || "";
+          var venue = currentCard.getAttribute("data-venue") || "";
+          var comment = currentCard.querySelector(".rv-comment").textContent;
+          var existingReply = currentCard.querySelector("[data-reply-text]").textContent;
+          document.getElementById("replyModalMeta").textContent = customer + " · " + venue;
+          document.getElementById("replyModalComment").textContent = comment;
+          replyTextarea.value = existingReply || "";
+          if (bsModal) bsModal.show();
+          return;
+        }
+
+        var hideBtn = e.target.closest("[data-action='toggle-hide']");
+        if (hideBtn) {
+          var card = hideBtn.closest(".rv-item");
+          var isHidden = card.getAttribute("data-hidden") === "true";
+          var nextHidden = !isHidden;
+          card.setAttribute("data-hidden", nextHidden ? "true" : "false");
+          card.classList.toggle("is-hidden", nextHidden);
+          card.querySelector("[data-badge-hidden]").hidden = !nextHidden;
+          card.querySelector("[data-hide-btn-label]").textContent = nextHidden ? "Hiện lại" : "Ẩn đánh giá";
+          applyFilters();
+        }
+      });
+
+      document.querySelectorAll(".rv-template-chip").forEach(function (chip) {
+        chip.addEventListener("click", function () {
+          replyTextarea.value = chip.getAttribute("data-template") || "";
+          replyTextarea.focus();
+        });
+      });
+
+      document.getElementById("saveReplyBtn").addEventListener("click", function () {
+        if (!currentCard) return;
+        var text = (replyTextarea.value || "").trim();
+        if (!text) {
+          replyTextarea.focus();
+          return;
+        }
+        currentCard.setAttribute("data-replied", "true");
+        currentCard.querySelector("[data-reply-text]").textContent = text;
+        currentCard.querySelector("[data-reply-date]").textContent = "Vừa xong";
+        currentCard.querySelector("[data-reply-box]").hidden = false;
+        currentCard.querySelector("[data-badge-replied]").hidden = false;
+        currentCard.querySelector("[data-badge-pending]").hidden = true;
+        currentCard.querySelector("[data-reply-btn-label]").textContent = "Sửa phản hồi";
+        refreshCounters();
+        applyFilters();
+        if (bsModal) bsModal.hide();
+      });
+    })();
