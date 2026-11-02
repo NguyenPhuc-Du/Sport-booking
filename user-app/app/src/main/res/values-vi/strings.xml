@@ -37,6 +37,14 @@
     <string name="facility_book_cta">Chọn sân và khung giờ</string>
     <string name="facility_no_courts_cta">Chưa có sân khả dụng</string>
     <string name="facility_no_courts_desc">Cơ sở này hiện chưa có danh sách sân để đặt chỗ.</string>
+    <string name="facility_reviews_title">Đánh giá từ người chơi</string>
+    <string name="review_only_after_payment">Chỉ khách đã thanh toán đơn đặt sân mới được đánh giá, mỗi đơn 1 lần.</string>
+    <string name="review_sheet_title">Đánh giá cơ sở</string>
+    <string name="review_comment_hint">Chia sẻ cảm nhận về mặt sân, ánh sáng, thái độ phục vụ…</string>
+    <string name="review_submit_btn">Gửi đánh giá</string>
+    <string name="review_owner_reply_label">Phản hồi từ chủ sân</string>
+    <string name="bookings_review_btn">Đánh giá cơ sở</string>
+    <string name="bookings_reviewed_label">Đã đánh giá</string>
 
     <!-- Booking Screen -->
     <string name="booking_title">Chọn sân &amp; giờ</string>

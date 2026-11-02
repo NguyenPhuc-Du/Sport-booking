@@ -347,16 +347,29 @@ fun ProfileContent(
         }
 
         // Reviews Section
-        if (state.reviews.isNotEmpty()) {
+        val displayReviews = state.reviews
+        if (displayReviews.isNotEmpty()) {
             item(key = "profile_reviews_header") {
-                Text(
-                    text = stringResource(R.string.profile_reviews),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = stringResource(R.string.profile_reviews),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        text = "${displayReviews.size} đánh giá",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
             }
 
-            items(state.reviews, key = { it.facility + it.rating }) { review ->
+            items(displayReviews, key = { it.facility + it.rating + it.text.hashCode() }) { review ->
                 ReviewTile(review = review)
             }
         }
@@ -453,17 +466,14 @@ private fun ReviewTile(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Star,
-                        contentDescription = null,
-                        tint = MaterialTheme.extraColors.rating,
-                        modifier = Modifier.size(16.dp),
-                    )
-                    Text(
-                        text = "${review.rating}/5",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                    )
+                    for (i in 1..5) {
+                        Icon(
+                            imageVector = Icons.Rounded.Star,
+                            contentDescription = null,
+                            tint = if (i <= review.rating) MaterialTheme.extraColors.rating else MaterialTheme.colorScheme.outlineVariant,
+                            modifier = Modifier.size(15.dp),
+                        )
+                    }
                 }
             }
             Text(

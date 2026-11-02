@@ -37,6 +37,14 @@
     <string name="facility_book_cta">Select Court &amp; Slot</string>
     <string name="facility_no_courts_cta">No courts available</string>
     <string name="facility_no_courts_desc">This venue currently has no courts configured for booking.</string>
+    <string name="facility_reviews_title">Player Reviews</string>
+    <string name="review_only_after_payment">Only guests who have paid for a booking can review, once per booking.</string>
+    <string name="review_sheet_title">Rate this venue</string>
+    <string name="review_comment_hint">Share your thoughts on court surface, lighting, service…</string>
+    <string name="review_submit_btn">Submit Review</string>
+    <string name="review_owner_reply_label">Owner Reply</string>
+    <string name="bookings_review_btn">Rate venue</string>
+    <string name="bookings_reviewed_label">Reviewed</string>
 
     <!-- Booking Screen -->
     <string name="booking_title">Select Court &amp; Time</string>
