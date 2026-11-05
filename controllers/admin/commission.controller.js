@@ -1,6 +1,5 @@
 const asyncHandler = require("../../middlewares/admin/async-handler");
 const commission = require("../../services/admin/commission.service");
-const ledger = require("../../services/admin/ledger.service");
 const rate = require("../../services/admin/rate.service");
 const { ServiceError } = require("../../services/admin/auth.service");
 
@@ -14,7 +13,6 @@ function fail(req, res, error, tab) {
 }
 
 const index = asyncHandler(async (req, res) => {
-  await ledger.syncPaidBookings();
   const data = await commission.page(req.query);
   res.render("admin/pages/platform/commissions", {
     pageTitle: "Hoa hồng",

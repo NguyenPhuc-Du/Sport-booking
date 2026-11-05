@@ -1,6 +1,5 @@
 const User = require("../../models/user.model");
 const Venue = require("../../models/facilities.model");
-const Booking = require("../../models/booking.model");
 const Ledger = require("../../models/ledger-entry.model");
 const { ServiceError } = require("./auth.service");
 const audit = require("./audit.service");
@@ -12,14 +11,12 @@ const {
   LEDGER_CODES,
   CHARTS,
   byCode,
-  isoDate,
   startOfDay,
   startOfWeek,
   startOfMonth,
   addUnit,
 } = require("./catalog");
 
-const PAID = ["upcoming", "completed"];
 const PAGE_SIZE = 12;
 
 function nextCode() {
@@ -169,20 +166,6 @@ async function recordRefund(booking) {
       effect: 0,
       note: "Hoàn hoa hồng do hủy đơn",
     });
-  }
-}
-
-async function syncPaidBookings() {
-  const rows = await Booking.find({
-    status: { $in: PAID },
-    paidAt: { $ne: null },
-  })
-    .sort({ paidAt: 1 })
-    .select("userId facilityId amount paymentMethod code paidAt")
-    .lean();
-
-  for (const booking of rows) {
-    await recordPaidBooking(booking);
   }
 }
 
@@ -350,13 +333,12 @@ async function adjust(actorId, body) {
 
 async function ownerPosition(ownerId) {
   const lines = await Ledger.find({ owner_id: ownerId }).lean();
-  const extra = await Ledger.find({
-    settled_booking_ids: {
-      $in: lines.map((row) => row.booking_id).filter(Boolean),
-    },
-  })
-    .select("settled_booking_ids type amount booking_id")
-    .lean();
+  const ids = lines.map((row) => row.booking_id).filter(Boolean);
+  const extra = ids.length
+    ? await Ledger.find({ settled_booking_ids: { $in: ids } })
+        .select("settled_booking_ids type amount booking_id")
+        .lean()
+    : [];
   const marks = marksOf([...lines, ...extra]);
   const commissions = lines.filter((row) => row.type === "commission");
   const debt = commissions
@@ -380,92 +362,11 @@ async function ownerPosition(ownerId) {
   };
 }
 
-async function sumAmount(filter) {
-  const [row] = await Ledger.aggregate([
-    { $match: filter },
-    { $group: { _id: null, total: { $sum: "$amount" } } },
-  ]);
-  return row ? row.total : 0;
+function countOf(list, field) {
+  return list && list[0] && list[0][field] ? list[0][field] : 0;
 }
 
-async function dashboard(range) {
-  const now = new Date();
-  const weekStart = startOfWeek(now);
-  const monthStart = startOfMonth(now);
-  const roleCounts = await Promise.all(
-    ROLES.map((item) => User.countDocuments({ role: item.code })),
-  );
-  const byRole = ROLES.map((item, index) => ({
-    ...item,
-    count: roleCounts[index],
-  }));
-  const [
-    totalUsers,
-    activeUsers,
-    weekNew,
-    monthNew,
-    entries,
-    gmv,
-    monthFee,
-    collected,
-  ] = await Promise.all([
-    User.countDocuments(),
-    User.countDocuments({ status: "active" }),
-    User.countDocuments({ createdAt: { $gte: weekStart } }),
-    User.countDocuments({ createdAt: { $gte: monthStart } }),
-    Ledger.countDocuments(),
-    sumAmount({ type: "payment" }),
-    sumAmount({ type: "commission", created_at: { $gte: monthStart } }),
-    sumAmount({ type: "commission", collected: true }),
-  ]);
-
-  const chart = await commissionChart(range);
-  const recent = await Ledger.find()
-    .populate("user_id", "fullName")
-    .sort({ created_at: -1 })
-    .limit(8)
-    .lean();
-
-  const cards = [
-    {
-      href: "/admin/users",
-      icon: "bi-people",
-      label: "Tổng tài khoản",
-      value: String(totalUsers),
-      note: byRole.map((item) => `${item.label} ${item.count}`).join(" · "),
-    },
-    {
-      href: "/admin/users?status=active",
-      icon: "bi-person-check",
-      label: "Tài khoản hoạt động",
-      value: String(activeUsers),
-      note: `Mới tuần này ${weekNew} · tháng này ${monthNew}`,
-    },
-    {
-      href: "/admin/ledger",
-      icon: "bi-journal-text",
-      label: "Tổng giao dịch",
-      value: String(entries),
-      note: `GMV ${formatVnd(gmv)}`,
-    },
-    {
-      href: "/admin/commissions",
-      icon: "bi-percent",
-      label: "Hoa hồng tháng này",
-      value: formatVnd(monthFee),
-      note: `Đã thu ${formatVnd(collected)}`,
-    },
-  ];
-
-  return {
-    cards,
-    chart,
-    charts: CHARTS,
-    recent: recent.map(presentRow),
-  };
-}
-
-async function commissionChart(range) {
+function chartBuckets(range) {
   const spec = byCode(CHARTS, range) || CHARTS[0];
   const today = startOfDay(new Date());
   const buckets = [];
@@ -481,17 +382,10 @@ async function commissionChart(range) {
       amount: 0,
     });
   }
+  return { spec, buckets };
+}
 
-  const rows = await Ledger.find({
-    type: "commission",
-    created_at: {
-      $gte: buckets[0].start,
-      $lt: buckets[buckets.length - 1].end,
-    },
-  })
-    .select("amount created_at")
-    .lean();
-
+function paintBuckets(buckets, rows) {
   rows.forEach((row) => {
     const at = new Date(row.created_at).getTime();
     const bucket = buckets.find(
@@ -499,17 +393,136 @@ async function commissionChart(range) {
     );
     if (bucket) bucket.amount += row.amount;
   });
-
   const max = buckets.reduce((peak, item) => Math.max(peak, item.amount), 0);
+  const total = buckets.reduce((sum, item) => sum + item.amount, 0);
   return {
-    code: spec.code,
-    totalLabel: formatVnd(buckets.reduce((sum, item) => sum + item.amount, 0)),
+    totalLabel: formatVnd(total),
     buckets: buckets.map((item) => ({
       label: item.label,
       amount: item.amount,
       amountLabel: formatVnd(item.amount),
       height: max ? Math.max(8, Math.round((item.amount / max) * 100)) : 8,
     })),
+  };
+}
+
+async function dashboard(range) {
+  const now = new Date();
+  const weekStart = startOfWeek(now);
+  const monthStart = startOfMonth(now);
+  const { spec, buckets } = chartBuckets(range);
+  const chartFrom = buckets[0].start;
+  const chartTo = buckets[buckets.length - 1].end;
+
+  const [userFacet, ledgerFacet] = await Promise.all([
+    User.aggregate([
+      {
+        $facet: {
+          byRole: [{ $group: { _id: "$role", count: { $sum: 1 } } }],
+          active: [{ $match: { status: "active" } }, { $count: "n" }],
+          weekNew: [
+            { $match: { createdAt: { $gte: weekStart } } },
+            { $count: "n" },
+          ],
+          monthNew: [
+            { $match: { createdAt: { $gte: monthStart } } },
+            { $count: "n" },
+          ],
+        },
+      },
+    ]),
+    Ledger.aggregate([
+      {
+        $facet: {
+          entries: [{ $count: "n" }],
+          gmv: [
+            { $match: { type: "payment" } },
+            { $group: { _id: null, total: { $sum: "$amount" } } },
+          ],
+          monthFee: [
+            {
+              $match: {
+                type: "commission",
+                created_at: { $gte: monthStart },
+              },
+            },
+            { $group: { _id: null, total: { $sum: "$amount" } } },
+          ],
+          collected: [
+            { $match: { type: "commission", collected: true } },
+            { $group: { _id: null, total: { $sum: "$amount" } } },
+          ],
+          chart: [
+            {
+              $match: {
+                type: "commission",
+                created_at: { $gte: chartFrom, $lt: chartTo },
+              },
+            },
+            { $project: { amount: 1, created_at: 1 } },
+          ],
+          recent: [
+            { $sort: { created_at: -1 } },
+            { $limit: 8 },
+            {
+              $lookup: {
+                from: "users",
+                localField: "user_id",
+                foreignField: "_id",
+                pipeline: [{ $project: { fullName: 1 } }],
+                as: "user",
+              },
+            },
+          ],
+        },
+      },
+    ]),
+  ]);
+
+  const users = userFacet[0];
+  const books = ledgerFacet[0];
+  const roleMap = new Map(users.byRole.map((row) => [row._id, row.count]));
+  const totalUsers = users.byRole.reduce((sum, row) => sum + row.count, 0);
+  const painted = paintBuckets(buckets, books.chart);
+
+  return {
+    cards: [
+      {
+        href: "/admin/users",
+        icon: "bi-people",
+        label: "Tổng tài khoản",
+        value: String(totalUsers),
+        note: ROLES.map(
+          (item) => `${item.label} ${roleMap.get(item.code) || 0}`,
+        ).join(" · "),
+      },
+      {
+        href: "/admin/users?status=active",
+        icon: "bi-person-check",
+        label: "Tài khoản hoạt động",
+        value: String(countOf(users.active, "n")),
+        note: `Mới tuần này ${countOf(users.weekNew, "n")} · tháng này ${countOf(users.monthNew, "n")}`,
+      },
+      {
+        href: "/admin/ledger",
+        icon: "bi-journal-text",
+        label: "Tổng giao dịch",
+        value: String(countOf(books.entries, "n")),
+        note: `GMV ${formatVnd(countOf(books.gmv, "total"))}`,
+      },
+      {
+        href: "/admin/commissions",
+        icon: "bi-percent",
+        label: "Hoa hồng tháng này",
+        value: formatVnd(countOf(books.monthFee, "total")),
+        note: `Đã thu ${formatVnd(countOf(books.collected, "total"))}`,
+      },
+    ],
+    charts: CHARTS,
+    chart: { code: spec.code, ...painted },
+    recent: books.recent.map((row) =>
+      presentRow({ ...row, user_id: row.user[0] || null }),
+    ),
   };
 }
 
@@ -525,7 +538,6 @@ module.exports = {
   appendLine,
   recordPaidBooking,
   recordRefund,
-  syncPaidBookings,
   marksOf,
   isVoid,
   isSettled,
