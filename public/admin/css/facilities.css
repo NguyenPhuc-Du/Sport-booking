@@ -192,6 +192,30 @@
   pointer-events: none;
 }
 
+.fv-status {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 11px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.95);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
+}
+
+.fv-status-ok {
+  color: var(--green);
+}
+
+.fv-status-off {
+  color: #dc2626;
+}
+
 .fv-rating {
   position: absolute;
   top: 12px;

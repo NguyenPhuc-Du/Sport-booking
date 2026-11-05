@@ -37,6 +37,10 @@ block main
               src=item.image_url
               alt=item.name
             )
+            if item.status === "active"
+              span.fv-status.fv-status-ok Đang hoạt động
+            else
+              span.fv-status.fv-status-off Ngưng hoạt động
             span.fv-rating
               i.bi.bi-star-fill
               | 4.9
