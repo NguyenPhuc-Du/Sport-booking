@@ -1,0 +1,53 @@
+extends ../../../owner/layouts/default.pug
+include ../../../mixins/alert.pug
+
+block main
+  +alert-success(3000)
+  +alert-error(5000)
+
+  header.pf-head
+    div
+      p.pf-kicker Quản trị hệ thống / Tài khoản
+      h1.pf-title= user.fullName
+      p.pf-sub #{user.email} · #{user.phone}
+    a.sz-btn(href="/admin/users") Về danh sách
+
+  .pf-stats
+    .pf-stat
+      span.pf-stat-label Vai trò
+      - const roleItem = roles.find((item) => item.code === user.role)
+      strong.pf-stat-value= user.role
+      span.pf-stat-note= roleItem ? roleItem.label : ""
+    .pf-stat
+      span.pf-stat-label Trạng thái
+      strong.pf-stat-value= user.status === "active" ? "Hoạt động" : "Đã khóa"
+      span.pf-stat-note= user.createdAt ? new Date(user.createdAt).toLocaleDateString("vi-VN") : ""
+    if position
+      .pf-stat
+        span.pf-stat-label Tiền sàn đang giữ hộ
+        strong.pf-stat-value= position.heldLabel
+        span.pf-stat-note Phần VNPay chưa trả chủ sân
+      .pf-stat
+        span.pf-stat-label Công nợ hoa hồng
+        strong.pf-stat-value= position.debtLabel
+        span.pf-stat-note Hoa hồng tiền mặt chưa chốt
+
+  section.sz-card.sz-panel
+    h2.sz-panel-title Nhật ký trên tài khoản này
+    if audits.length
+      table.sz-table.pf-table
+        thead
+          tr
+            th Thời gian
+            th Người thực hiện
+            th Việc
+            th Chi tiết
+        tbody
+          each row in audits
+            tr
+              td= row.when
+              td= row.actorName
+              td= row.actionLabel
+              td= row.detail
+    else
+      p.sz-empty Chưa có thao tác trên tài khoản này.

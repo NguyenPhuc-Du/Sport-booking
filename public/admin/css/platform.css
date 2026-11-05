@@ -129,3 +129,251 @@
     grid-template-columns: 1fr;
   }
 }
+.pf-person {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.pf-person strong,
+.pf-person small {
+  display: block;
+}
+.pf-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: #d1fae5;
+  color: #047857;
+  font-size: 12px;
+  font-weight: 800;
+  flex: none;
+}
+.pf-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.pf-actions form {
+  margin: 0;
+}
+.pf-dialog {
+  border: 0;
+  border-radius: 18px;
+  padding: 22px;
+  width: min(440px, calc(100vw - 32px));
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+}
+.pf-dialog::backdrop {
+  background: rgba(15, 23, 42, 0.45);
+}
+.pf-dialog label {
+  display: block;
+  margin: 12px 0 6px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.pf-dialog .sz-input,
+.pf-dialog .sz-select {
+  width: 100%;
+}
+.pf-dialog-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.pf-dialog-head h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+}
+.pf-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 18px;
+}
+.pf-choice {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+.pf-choice small {
+  display: block;
+  color: var(--muted);
+  font-weight: 600;
+}
+.pf-split {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 14px;
+  margin-top: 14px;
+}
+.pf-split-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.pf-bars {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(36px, 1fr));
+
+  gap: 8px;
+  align-items: end;
+  min-height: 180px;
+}
+
+.pf-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  height: 180px;
+  justify-content: flex-end;
+}
+.pf-bar-fill {
+  width: 100%;
+  max-width: 36px;
+  background: #10b981;
+  border-radius: 8px 8px 4px 4px;
+  min-height: 8px;
+}
+.pf-order {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+.pf-order small,
+.pf-order span {
+  display: block;
+}
+.pf-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 16px 0;
+}
+.pf-tabs a {
+  text-decoration: none;
+  font-weight: 700;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: #fff;
+}
+.pf-tabs a.active {
+  color: #047857;
+  border-color: #a7f3d0;
+  background: #ecfdf5;
+}
+.pf-cycles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+@media (max-width: 991px) {
+  .pf-split {
+    grid-template-columns: 1fr;
+  }
+}
+
+.pf-table th {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 800;
+}
+.pf-table td {
+  padding-top: 14px;
+  padding-bottom: 14px;
+  vertical-align: middle;
+}
+.pf-table tbody tr:hover {
+  background: #f8fafc;
+}
+.pf-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.pf-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 800;
+}
+.pf-pill.is-wait {
+  background: #fef3c7;
+  color: #b45309;
+}
+.pf-pill.is-soon {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+.pf-pill.is-done {
+  background: #d1fae5;
+  color: #047857;
+}
+.pf-pill.is-off {
+  background: #f1f5f9;
+  color: #64748b;
+}
+.pf-empty {
+  padding: 28px 8px;
+  text-align: center;
+}
+.pf-empty strong {
+  display: block;
+  margin-bottom: 4px;
+}
+.pf-empty p {
+  margin: 0;
+  color: var(--muted);
+}
+.pf-pay {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr 1.2fr auto;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+a.pf-order {
+  text-decoration: none;
+  color: inherit;
+  border-radius: 12px;
+}
+a.pf-order:hover {
+  background: #f8fafc;
+}
+@media (max-width: 800px) {
+  .pf-pay {
+    grid-template-columns: 1fr;
+  }
+}
+.pf-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.pf-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+}

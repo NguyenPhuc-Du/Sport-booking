@@ -10,14 +10,13 @@ aside.sz-sidebar
         |  Quản trị hệ thống
     .sz-menu-title PHÂN HỆ QUẢN TRỊ
     nav.sz-menu(aria-label="Menu quản trị")
-      a.sz-menu-item(href="/admin/dashboard" class=(activeMenu === "dashboard" ? "active" : undefined))
-        i.bi.bi-grid
-        span.sz-menu-text Tổng quan sàn
-      a.sz-menu-item(href="/admin/users" class=(activeMenu === "users" ? "active" : undefined))
-        i.bi.bi-people
-        span.sz-menu-text Tài khoản
+      each item in adminMenu
+        a.sz-menu-item(href=item.href class=(activeMenu === item.key ? "active" : undefined))
+          i.bi(class=item.icon)
+          span.sz-menu-text= item.text
     .sz-sidebar-bottom
       .sz-copy Hệ thống SportZone 
+
 
   else
     .sz-facility
