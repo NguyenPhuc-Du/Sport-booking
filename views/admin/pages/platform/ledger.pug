@@ -1,0 +1,85 @@
+extends ../../../owner/layouts/default.pug
+include ../../../mixins/alert.pug
+
+block main
+  +alert-success(3000)
+  +alert-error(5000)
+
+  header.pf-head
+    div
+      p.pf-kicker Quản trị hệ thống / Sổ cái
+      h1.pf-title Sổ cái nền tảng
+      p.pf-sub Mỗi dòng chỉ ghi thêm. Sai thì lập bút toán điều chỉnh, không sửa dòng cũ.
+
+  form.pf-filters(method="get" action="/admin/ledger")
+    input.sz-input(type="search" name="q" value=q placeholder="Mã giao dịch")
+    select.sz-select(name="userId")
+      option(value="" selected=!userId) Mọi tài khoản
+      each account in accounts
+        option(value=account._id selected=String(userId) === String(account._id))= account.fullName
+    select.sz-select(name="type")
+      option(value="" selected=!type) Mọi loại
+      each item in types
+        option(value=item.code selected=type === item.code)= item.label
+    input.sz-input(type="date" name="from" value=from)
+    input.sz-input(type="date" name="to" value=to)
+    button.sz-btn.sz-btn-dark(type="submit") Lọc
+    a.sz-btn(href="/admin/ledger") Xóa lọc
+    a.sz-btn(href=`/admin/ledger/export?q=${encodeURIComponent(q)}&userId=${userId}&type=${type}&from=${from}&to=${to}`) Xuất CSV
+
+  .pf-split
+    section.sz-card.sz-panel
+      if items.length
+        .table-responsive
+          table.sz-table.pf-table
+            thead
+              tr
+                th Thời gian
+                th Mã
+                th Tài khoản
+                th Loại
+                th.pf-num Số tiền
+                th.pf-num Số dư sau
+                th Ghi chú
+            tbody
+              each row in items
+                - const tones = { payment: "is-done", commission: "is-off", refund: "is-wait", withdrawal: "is-wait", adjustment: "is-soon" }
+                tr
+                  td= row.when
+                  td
+                    strong= row.code
+                  td= row.account
+                  td
+                    span.pf-pill(class=tones[row.type] || "is-off")= row.typeLabel
+                  td.pf-num= row.amountLabel
+                  td.pf-num= row.balanceLabel
+                  td= row.note
+        nav.pf-pager
+          - const query = `q=${encodeURIComponent(q)}&userId=${userId}&type=${type}&from=${from}&to=${to}`
+          if page > 1
+            a(href=`/admin/ledger?page=${page - 1}&${query}`) Trước
+          span Trang #{page} / #{pages} · #{total} dòng
+          if page < pages
+            a(href=`/admin/ledger?page=${page + 1}&${query}`) Sau
+      else
+        .pf-empty
+          strong Chưa có dòng sổ
+          p Không có bút toán khớp bộ lọc, hoặc chưa có thanh toán nào.
+
+    section.sz-card.sz-panel
+      h2.sz-panel-title Bút toán điều chỉnh
+      p.sz-panel-sub Số dương là tiền vào. Số âm là tiền ra. Dòng đã ghi không sửa được.
+      form.pf-form(method="post" action="/admin/ledger/adjustments" data-confirm="Ghi bút toán điều chỉnh này? Dòng đã ghi không xóa được.")
+        label.pf-field Tài khoản
+          select.sz-select(name="userId" required)
+            option(value="") Chọn tài khoản
+            each account in accounts
+              option(value=account._id)= account.fullName
+        label.pf-field Số tiền
+          input.sz-input(type="number" name="amount" step="1000" required placeholder="Ví dụ: 50000 hoặc -50000")
+        label.pf-field Lý do
+          input.sz-input(type="text" name="note" required placeholder="Lý do điều chỉnh")
+        button.sz-btn.sz-btn-green(type="submit") Ghi điều chỉnh
+
+block script
+  script(src="/admin/js/platform.js")

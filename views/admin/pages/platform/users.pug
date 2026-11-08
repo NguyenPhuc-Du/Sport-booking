@@ -1,80 +1,183 @@
 extends ../../../owner/layouts/default.pug
 include ../../../mixins/alert.pug
- 
+
 block main
   +alert-success(3000)
   +alert-error(5000)
- 
+
   header.pf-head
     div
-      p.pf-kicker Quản trị hệ thống
-      h1.pf-title Tài khoản
-      p.pf-sub Gán role là cấp quyền đăng nhập. Không tạo sân và không tạo voucher.
-    form.pf-filters(method="get" action="/admin/users")
-      input.sz-input(type="search" name="q" value=q placeholder="Tên, email, số điện thoại")
-      select.sz-select(name="role")
-        option(value="" selected=!role) Mọi role
-        option(value="USER" selected=role === "USER") USER
-        option(value="OWNER" selected=role === "OWNER") OWNER
-        option(value="ADMIN" selected=role === "ADMIN") ADMIN
-      select.sz-select(name="status")
-        option(value="" selected=!status) Mọi trạng thái
-        option(value="active" selected=status === "active") Đang hoạt động
-        option(value="inactive" selected=status === "inactive") Đã khóa
-      button.sz-btn.sz-btn-dark(type="submit") Lọc
- 
-  section.sz-card.sz-panel
-    if users.length
-      .table-responsive
-        table.sz-table
-          thead
-            tr
-              th Tài khoản
-              th Liên hệ
-              th Role
-              th Trạng thái
-              th Tạo lúc
-              th
-          tbody
-            each u in users
+      p.pf-kicker Quản trị hệ thống / Tài khoản
+      h1.pf-title Quản lý Người dùng & Tài khoản
+    if tab === "users"
+      button.sz-btn.sz-btn-green(type="button" data-open="dialog-create") Thêm tài khoản mới
+
+  nav.pf-tabs
+    a(href="/admin/users" class=tab === "users" ? "active" : undefined) Danh sách
+    a(href="/admin/users?tab=audit" class=tab === "audit" ? "active" : undefined) Nhật ký thao tác
+
+  if tab === "audit"
+    section.sz-card.sz-panel
+      if audits.length
+        .table-responsive
+          table.sz-table.pf-table
+            thead
               tr
-                td
-                  strong= u.fullName
-                td
-                  div= u.email
-                  small.sz-muted= u.phone
-                td
-                  span.sz-role(class=`role-${u.role.toLowerCase()}`)= u.role
-                td
-                  if u.status === "active"
-                    span.sz-badge.sz-badge-ok Hoạt động
-                  else
-                    span.sz-badge.sz-badge-danger Đã khóa
-                td= u.createdAt ? new Date(u.createdAt).toLocaleString("vi-VN") : "—"
-                td
-                  details.pf-menu
-                    summary Thao tác
-                    form(method="post" action=`/admin/users/${u._id}/roles`)
-                    select.sz-select(name="role" required)
-                      option(value="USER" selected=u.role === "USER") USER
-                      option(value="OWNER" selected=u.role === "OWNER") OWNER
-                      option(value="ADMIN" selected=u.role === "ADMIN") ADMIN
-                    button.sz-btn.sz-btn-dark.sz-btn-sm(type="submit") Lưu 
-                      form(method="post" action=`/admin/users/${u._id}/roles/${item.id}/remove` data-confirm=`Gỡ ${item.code} của ${u.fullName}?`)
-                        button.sz-btn.sz-btn-outline-danger.sz-btn-sm(type="submit") Gỡ #{item.code}
-                    - const nextStatus = u.status === "active" ? "inactive" : "active"
-                    form(method="post" action=`/admin/users/${u._id}/status` data-confirm=u.status === "active" ? `Khóa đăng nhập của ${u.fullName}? Sân của họ không bị đổi.` : `Mở khóa ${u.fullName}?`)
-                      input(type="hidden" name="status" value=nextStatus)
-                      button.sz-btn.sz-btn-sm(type="submit" class=u.status === "active" ? "sz-btn-outline-danger" : "sz-btn-green")
-                        = u.status === "active" ? "Khóa đăng nhập" : "Mở khóa"
-      nav.pf-pager
-        if page > 1
-          a(href=`/admin/users?page=${page - 1}&q=${q}&role=${role}&status=${status}`) Trước
-        span Trang #{page} / #{pages} · #{total} tài khoản
-        if page < pages
-          a(href=`/admin/users?page=${page + 1}&q=${q}&role=${role}&status=${status}`) Sau
-    else
-      p.sz-empty Không có tài khoản khớp bộ lọc.
- 
+                th Thời gian
+                th Người thực hiện
+                th Việc
+                th Chi tiết
+            tbody
+              each row in audits
+                tr
+                  td= row.when
+                  td= row.actorName
+                  td= row.actionLabel
+                  td= row.detail
+      else
+        .pf-empty
+          strong Chưa có thao tác
+          p Khóa tài khoản, đổi vai trò hoặc đổi tỷ lệ sẽ hiện ở đây.
+
+  else
+    form.pf-filters(method="get" action="/admin/users")
+      input.sz-input(type="search" name="q" value=q placeholder="Tìm theo tên, email hoặc số điện thoại")
+      select.sz-select(name="role")
+        option(value="" selected=!role) Tất cả vai trò
+        each item in roles
+          option(value=item.code selected=role === item.code) #{item.code} · #{item.label}
+      select.sz-select(name="status")
+        option(value="" selected=!status) Tất cả trạng thái
+        each item in statuses
+          option(value=item.code selected=status === item.code)= item.label
+      button.sz-btn.sz-btn-dark(type="submit") Lọc
+      a.sz-btn(href="/admin/users") Xóa lọc
+
+    section.sz-card.sz-panel
+      if users.length
+        .table-responsive
+          table.sz-table
+            thead
+              tr
+                th Họ tên
+                th Liên hệ
+                th Vai trò
+                th Trạng thái
+                th Ngày tham gia
+                th Hành động
+            tbody
+              each u in users
+                - const parts = String(u.fullName || "").trim().split(/\s+/).filter(Boolean)
+                - const initials = ((parts[0] && parts[0][0]) || "U") + (parts.length > 1 ? parts[parts.length - 1][0] : "")
+                - const roleItem = roles.find((item) => item.code === u.role)
+                - const nextStatus = u.status === "active" ? "inactive" : "active"
+                tr
+                  td
+                    .pf-person
+                      span.pf-avatar= initials.toUpperCase()
+                      div
+                        a(href=`/admin/users/${u._id}`)
+                          strong= u.fullName
+                        small.sz-muted= String(u._id).slice(-6).toUpperCase()
+                  td
+                    div= u.email
+                    small.sz-muted= u.phone
+                  td
+                    span.sz-role(class=`role-${String(u.role || "user").toLowerCase()}`)= roleItem ? roleItem.label : u.role
+                  td
+                    if u.status === "active"
+                      span.sz-badge.sz-badge-ok Hoạt động
+                    else
+                      span.sz-badge.sz-badge-danger Đã khóa
+                  td= u.createdAt ? new Date(u.createdAt).toLocaleDateString("vi-VN") : "—"
+                  td
+                    .pf-actions
+                      a.sz-btn.sz-btn-sm(href=`/admin/users/${u._id}`) Xem
+                      button.sz-btn.sz-btn-sm(type="button" data-open=`edit-${u._id}`) Sửa
+                      button.sz-btn.sz-btn-sm(type="button" data-open=`role-${u._id}`) Đổi vai trò
+                      button.sz-btn.sz-btn-sm(type="button" data-open=`pass-${u._id}`) Mật khẩu
+                      form(method="post" action=`/admin/users/${u._id}/status` data-confirm=u.status === "active" ? `Khóa đăng nhập của ${u.fullName}?` : `Mở khóa ${u.fullName}?`)
+                        input(type="hidden" name="status" value=nextStatus)
+                        button.sz-btn.sz-btn-sm(type="submit" class=u.status === "active" ? "sz-btn-outline-danger" : "sz-btn-green")
+                          = u.status === "active" ? "Khóa" : "Mở khóa"
+
+                dialog.pf-dialog(id=`edit-${u._id}`)
+                  form(method="post" action=`/admin/users/${u._id}`)
+                    .pf-dialog-head
+                      h2 Sửa thông tin
+                      button(type="button" data-close aria-label="Đóng") ×
+                    label Họ và tên
+                    input.sz-input(type="text" name="fullName" value=u.fullName required)
+                    label Email
+                    input.sz-input(type="email" name="email" value=u.email required)
+                    label Số điện thoại
+                    input.sz-input(type="text" name="phone" value=u.phone required)
+                    .pf-dialog-actions
+                      button.sz-btn(type="button" data-close) Hủy
+                      button.sz-btn.sz-btn-green(type="submit") Lưu
+
+                dialog.pf-dialog(id=`pass-${u._id}`)
+                  form(method="post" action=`/admin/users/${u._id}/password`)
+                    .pf-dialog-head
+                      h2 Đặt lại mật khẩu
+                      button(type="button" data-close aria-label="Đóng") ×
+                    p.sz-muted= u.fullName
+                    label Mật khẩu mới
+                    input.sz-input(type="password" name="password" required minlength="6" autocomplete="new-password")
+                    .pf-dialog-actions
+                      button.sz-btn(type="button" data-close) Hủy
+                      button.sz-btn.sz-btn-green(type="submit") Lưu mật khẩu
+
+                dialog.pf-dialog(id=`role-${u._id}`)
+                  form(method="post" action=`/admin/users/${u._id}/roles`)
+                    .pf-dialog-head
+                      h2 Thay đổi vai trò
+                      button(type="button" data-close aria-label="Đóng") ×
+                    p
+                      strong= u.fullName
+                      br
+                      span.sz-muted #{u.email} · #{u.phone}
+                    each item in roles
+                      label.pf-choice
+                        input(type="radio" name="role" value=item.code checked=u.role === item.code required)
+                        span
+                          strong= item.label
+                          small= item.code
+                    .pf-dialog-actions
+                      button.sz-btn(type="button" data-close) Hủy
+                      button.sz-btn.sz-btn-green(type="submit") Lưu thay đổi
+
+        nav.pf-pager
+          if page > 1
+            a(href=`/admin/users?page=${page - 1}&q=${encodeURIComponent(q)}&role=${role}&status=${status}`) Trước
+          span Trang #{page} / #{pages} · #{total} tài khoản
+          if page < pages
+            a(href=`/admin/users?page=${page + 1}&q=${encodeURIComponent(q)}&role=${role}&status=${status}`) Sau
+      else
+        .pf-empty
+          strong Không có tài khoản
+          p Không có tài khoản khớp bộ lọc.
+
+    dialog.pf-dialog#dialog-create
+      form(method="post" action="/admin/users")
+        .pf-dialog-head
+          h2 Tạo tài khoản người dùng mới
+          button(type="button" data-close aria-label="Đóng") ×
+        label Họ và tên
+        input.sz-input(type="text" name="fullName" required placeholder="Ví dụ: Lê Hoàng Long")
+        label Email
+        input.sz-input(type="email" name="email" required placeholder="ten@email.com")
+        label Số điện thoại
+        input.sz-input(type="text" name="phone" required placeholder="0912345678")
+        label Mật khẩu
+        input.sz-input(type="password" name="password" required minlength="6" autocomplete="new-password")
+        label Vai trò
+        select.sz-select(name="role" required)
+          each item in roles
+            option(value=item.code selected=item.code === "USER") #{item.label}
+        .pf-dialog-actions
+          button.sz-btn(type="button" data-close) Hủy
+          button.sz-btn.sz-btn-green(type="submit") Tạo tài khoản
+
 block script
   script(src="/admin/js/platform.js")

@@ -6,7 +6,8 @@ const requireAdmin = require("../../middlewares/admin/require-admin.middleware")
 const authRoutes = require("./auth.route");
 const dashboardRoutes = require("./platform-dashboard.route");
 const userRoutes = require("./user.route");
-const readonlyRoutes = require("./readonly.route");
+const commissionRoutes = require("./commission.route");
+const ledgerRoutes = require("./ledger.route");
 
 module.exports = (app) => {
   const PATH = systemConfig.prefixAdmin;
@@ -18,5 +19,6 @@ module.exports = (app) => {
   app.get(PATH, (req, res) => res.redirect(PATH + "/dashboard"));
   app.use(PATH + "/dashboard", dashboardRoutes);
   app.use(PATH + "/users", userRoutes);
-  app.use(PATH, readonlyRoutes);
+  app.use(PATH + "/ledger", ledgerRoutes);
+  app.use(PATH + "/commissions", commissionRoutes);
 };

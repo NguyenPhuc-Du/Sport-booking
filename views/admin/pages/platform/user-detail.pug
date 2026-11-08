@@ -1,0 +1,65 @@
+extends ../../../owner/layouts/default.pug
+include ../../../mixins/alert.pug
+
+block main
+  +alert-success(3000)
+  +alert-error(5000)
+
+  header.pf-head
+    div
+      p.pf-kicker
+        a(href="/admin/users") Về danh sách
+      h1.pf-title= user.fullName
+      p.pf-sub #{user.email} · #{user.phone} · #{String(user._id).slice(-6).toUpperCase()}
+    p.pf-sub Ngày tham gia: #{user.createdAt ? new Date(user.createdAt).toLocaleDateString("vi-VN") : "—"}
+
+  - const roleItem = roles.find((item) => item.code === user.role)
+  .pf-stats
+    .pf-stat
+      i.bi.bi-shield-check
+      span.pf-stat-label Vai trò
+      strong.pf-stat-value= roleItem ? roleItem.label : user.role
+      span.pf-stat-note= user.role
+    .pf-stat
+      i.bi.bi-person
+      span.pf-stat-label Trạng thái
+      strong.pf-stat-value= user.status === "active" ? "Hoạt động" : "Đã khóa"
+      span.pf-stat-note= user.status === "active" ? "Đang đăng nhập được" : "Đã khóa đăng nhập"
+    if user.role === "OWNER" && position
+      .pf-stat
+        i.bi.bi-wallet2
+        span.pf-stat-label Tiền sàn đang giữ hộ
+        strong.pf-stat-value= position.heldLabel
+        span.pf-stat-note Phần thanh toán chưa trả chủ sân
+      .pf-stat
+        i.bi.bi-file-text
+        span.pf-stat-label Công nợ hoa hồng
+        strong.pf-stat-value= position.debtLabel
+        span.pf-stat-note Hoa hồng chưa chốt
+
+  section.sz-card.sz-panel
+    .pf-split-head
+      div
+        h2.sz-panel-title Nhật ký tài khoản
+        p.sz-panel-sub Thao tác quản trị trên tài khoản này
+      span.sz-muted #{audits.length} sự kiện
+    if audits.length
+      .table-responsive
+        table.sz-table.pf-table
+          thead
+            tr
+              th Thời gian
+              th Người thực hiện
+              th Việc
+              th Chi tiết
+          tbody
+            each row in audits
+              tr
+                td= row.when
+                td= row.actorName
+                td= row.actionLabel
+                td= row.detail
+    else
+      .pf-empty
+        strong Chưa có nhật ký cho tài khoản này
+        p Chưa có thao tác khóa, đổi vai trò hay đổi tỷ lệ trên tài khoản này.

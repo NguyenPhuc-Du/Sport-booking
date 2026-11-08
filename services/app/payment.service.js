@@ -3,6 +3,7 @@ const User = require("../../models/user.model");
 const Voucher = require("../../models/finance.model");
 const mailService = require("./mail.service");
 const drinkService = require("./drink.service");
+const ledger = require("../admin/ledger.service");
 
 async function markPaidAndMail(txnRef, transactionNo) {
   const booking = await Booking.findOneAndUpdate(
@@ -22,7 +23,15 @@ async function markPaidAndMail(txnRef, transactionNo) {
   if (!booking) return { ok: (await Booking.exists({ code: txnRef })) != null };
 
   if (booking.voucherCode) {
-    await Voucher.updateOne({ code: booking.voucherCode }, { $inc: { used_count: 1 } });
+    await Voucher.updateOne(
+      { code: booking.voucherCode },
+      { $inc: { used_count: 1 } },
+    );
+  }
+  try {
+    await ledger.recordPaidBooking(booking);
+  } catch (error) {
+    console.error(error);
   }
 
   const user = await User.findById(booking.userId);

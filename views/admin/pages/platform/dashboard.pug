@@ -1,35 +1,100 @@
 extends ../../../owner/layouts/default.pug
 include ../../../mixins/alert.pug
- 
+
 block main
   +alert-error(5000)
   header.pf-head
     div
-      p.pf-kicker Quản trị hệ thống
+      p.pf-kicker Quản trị hệ thống / Tổng quan sàn
       h1.pf-title Tổng quan sàn
-      p.pf-sub Số liệu toàn sàn tại thời điểm này.
+      p.pf-sub Theo dõi tài khoản và dòng tiền toàn nền tảng.
 
   if loadError
-    p.sz-empty= loadError
+    section.sz-card.sz-panel.pf-empty
+      strong Không đọc được số liệu.
+      p= loadError
+      a.sz-btn.sz-btn-green(href="/admin/dashboard") Thử lại
   else
     .pf-stats
-      a.pf-stat(href="/admin/users")
-        i.bi.bi-people
-        span.pf-stat-label Tài khoản
-        strong.pf-stat-value= stats.users
-        span.pf-stat-note Mở danh sách
-      a.pf-stat(href="/admin/users?role=OWNER")
-        i.bi.bi-person-badge
-        span.pf-stat-label Chủ sân
-        strong.pf-stat-value= stats.owners
-        span.pf-stat-note Tài khoản đang là chủ sân
-      a.pf-stat(href="/admin/venues")
-        i.bi.bi-buildings
-        span.pf-stat-label Cơ sở đang mở
-        strong.pf-stat-value= stats.venues
-        span.pf-stat-note Đang nhận khách
-      a.pf-stat(href="/admin/bookings")
-        i.bi.bi-calendar-check
-        span.pf-stat-label Đơn đặt
-        strong.pf-stat-value= stats.bookings
-        span.pf-stat-note= stats.bookingsExists ? "Có đơn trong hệ thống" : "Chưa có đơn đặt"
+      each card in cards
+        a.pf-stat(href=card.href)
+          i.bi(class=card.icon)
+          span.pf-stat-label= card.label
+          strong.pf-stat-value= card.value
+          span.pf-stat-note= card.note
+
+    .pf-split
+      section.sz-card.sz-panel
+        .pf-split-head
+          div
+            h2.sz-panel-title Hoa hồng
+            p.sz-panel-sub= chart.totalLabel
+          nav.pf-tabs
+            each item in charts
+              a(href=`/admin/dashboard?range=${item.code}` class=chart.code === item.code ? "active" : undefined)= item.label
+        - const hasChart = chart.buckets && chart.buckets.some((day) => Number(day.amount) > 0)
+        if hasChart
+          .pf-bars
+            each day in chart.buckets
+              .pf-bar
+                span.pf-bar-fill(style=`height:${day.height}%` title=day.amountLabel)
+                small= day.label
+                strong= day.amountLabel
+        else
+          .pf-empty
+            strong Chưa có hoa hồng trong kỳ này.
+            p Đổi tab Ngày, Tuần hoặc Tháng để xem kỳ khác.
+
+      section.sz-card.sz-panel
+        .pf-split-head
+          h2.sz-panel-title Bút toán mới nhất
+          a(href="/admin/ledger") Xem tất cả
+        if recent.length
+          each item, index in recent
+            button.pf-order(type="button" data-open=`ledger-${index}`)
+              div
+                strong= item.code
+                small.sz-muted #{item.typeLabel} · #{item.account}
+              div
+                span= item.amountLabel
+                small.sz-muted= item.when
+            dialog.pf-dialog(id=`ledger-${index}`)
+              .pf-dialog-head
+                div
+                  p.pf-kicker Chi tiết bút toán
+                  h2= item.code
+                button(type="button" data-close aria-label="Đóng") ×
+              p
+                span.sz-muted Loại
+                br
+                strong= item.typeLabel
+              p
+                span.sz-muted Tài khoản
+                br
+                strong= item.account
+              p
+                span.sz-muted Thời gian
+                br
+                strong= item.when
+              p
+                span.sz-muted Số tiền
+                br
+                strong= item.amountLabel
+              p
+                span.sz-muted Số dư sau
+                br
+                strong= item.balanceLabel
+              p
+                span.sz-muted Ghi chú
+                br
+                = item.note || "—"
+              .pf-dialog-actions
+                a.sz-btn(href=`/admin/ledger?q=${encodeURIComponent(item.code)}`) Mở sổ cái
+                button.sz-btn.sz-btn-green(type="button" data-close) Đóng
+        else
+          .pf-empty
+            strong Chưa có bút toán.
+            p Đơn đã thanh toán sẽ tự ghi vào sổ cái.
+
+block script
+  script(src="/admin/js/platform.js")
