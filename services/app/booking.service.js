@@ -2,6 +2,7 @@ const Booking = require("../../models/booking.model");
 const facilityService = require("./facility.service");
 const drinkService = require("./drink.service");
 const slotService = require("./slot.service");
+const reviewService = require("./review.service");
 const vnpay = require("./vnpay.service");
 
 const HOLD_MS = 15 * 60 * 1000;
@@ -18,7 +19,7 @@ function toMinutes(hhmm) {
   return h * 60 + m;
 }
 
-function publicBooking(doc) {
+function publicBooking(doc, review = null) {
   const b = doc.toObject ? doc.toObject() : doc;
   return {
     code: b.code,
@@ -43,6 +44,9 @@ function publicBooking(doc) {
     voucherCode: b.voucherCode,
     paymentMethod: b.paymentMethod,
     bookedAt: b.bookedAt,
+    review: review
+      ? { id: review.id, rating: review.rating, text: review.text }
+      : null,
   };
 }
 
@@ -178,7 +182,12 @@ async function list(userId, filter = "all") {
     cancelled: all.filter((b) => b.status === "cancelled").length,
   };
   const bookings = filter === "all" ? all : all.filter((b) => b.status === filter);
-  return { filter, counts, bookings: bookings.map(publicBooking) };
+  const reviewMap = await reviewService.mapByBookingCodes(bookings.map((b) => b.code));
+  return {
+    filter,
+    counts,
+    bookings: bookings.map((b) => publicBooking(b, reviewMap.get(b.code) || null)),
+  };
 }
 
 async function cancel(userId, code) {

@@ -4,6 +4,7 @@ const profile = require("../../controllers/api/profile.controller");
 const facility = require("../../controllers/api/facility.controller");
 const booking = require("../../controllers/api/booking.controller");
 const payment = require("../../controllers/api/payment.controller");
+const review = require("../../controllers/api/review.controller");
 const requireAuth = require("../../middlewares/api/auth.middleware");
 const upload = require("../../middlewares/api/upload.middleware");
 
@@ -20,8 +21,13 @@ router.get("/auth/me", requireAuth, auth.me);
 
 router.get("/home", requireAuth, facility.home);
 router.get("/facilities/:id", requireAuth, facility.detail);
+router.get("/facilities/:id/reviews", requireAuth, review.forFacility);
 router.get("/facilities/:id/slots", requireAuth, facility.slots);
 router.get("/checkout/options", requireAuth, facility.checkoutOptions);
+
+router.get("/reviews/mine", requireAuth, review.mine);
+router.post("/reviews", requireAuth, review.create);
+router.put("/reviews/:id", requireAuth, review.update);
 
 router.post("/bookings/quote", requireAuth, booking.quote);
 router.post("/bookings", requireAuth, booking.create);

@@ -163,11 +163,6 @@ block main
                 i.bi.bi-eye-slash
                 | Đang ẩn
 
-          if item.tags && item.tags.length
-            .rv-tags
-              each t in item.tags
-                span.rv-tag= t
-
           p.rv-comment= item.comment
 
           .rv-reply-box(data-reply-box hidden=!item.reply)
@@ -236,6 +231,7 @@ block main
 
 block script
   script.
+    window.__OWNER_PREFIX = "#{prefixOwner || '/owner'}";
     (function () {
       var activeTab = "all";
       var currentCard = null;
@@ -342,13 +338,31 @@ block script
         var hideBtn = e.target.closest("[data-action='toggle-hide']");
         if (hideBtn) {
           var card = hideBtn.closest(".rv-item");
-          var isHidden = card.getAttribute("data-hidden") === "true";
-          var nextHidden = !isHidden;
-          card.setAttribute("data-hidden", nextHidden ? "true" : "false");
-          card.classList.toggle("is-hidden", nextHidden);
-          card.querySelector("[data-badge-hidden]").hidden = !nextHidden;
-          card.querySelector("[data-hide-btn-label]").textContent = nextHidden ? "Hiện lại" : "Ẩn đánh giá";
-          applyFilters();
+          var id = card.getAttribute("data-id");
+          hideBtn.disabled = true;
+          fetch((window.__OWNER_PREFIX || "/owner") + "/reviews/" + id + "/toggle-hide", {
+            method: "POST",
+            headers: { "Accept": "application/json", "Content-Type": "application/json" },
+            credentials: "same-origin",
+          })
+            .then(function (res) { return res.json().then(function (body) { return { ok: res.ok, body: body }; }); })
+            .then(function (result) {
+              hideBtn.disabled = false;
+              if (!result.ok) {
+                alert((result.body && result.body.message) || "Không cập nhật được");
+                return;
+              }
+              var nextHidden = !!result.body.hidden;
+              card.setAttribute("data-hidden", nextHidden ? "true" : "false");
+              card.classList.toggle("is-hidden", nextHidden);
+              card.querySelector("[data-badge-hidden]").hidden = !nextHidden;
+              card.querySelector("[data-hide-btn-label]").textContent = nextHidden ? "Hiện lại" : "Ẩn đánh giá";
+              applyFilters();
+            })
+            .catch(function () {
+              hideBtn.disabled = false;
+              alert("Không kết nối được máy chủ");
+            });
         }
       });
 
@@ -366,15 +380,36 @@ block script
           replyTextarea.focus();
           return;
         }
-        currentCard.setAttribute("data-replied", "true");
-        currentCard.querySelector("[data-reply-text]").textContent = text;
-        currentCard.querySelector("[data-reply-date]").textContent = "Vừa xong";
-        currentCard.querySelector("[data-reply-box]").hidden = false;
-        currentCard.querySelector("[data-badge-replied]").hidden = false;
-        currentCard.querySelector("[data-badge-pending]").hidden = true;
-        currentCard.querySelector("[data-reply-btn-label]").textContent = "Sửa phản hồi";
-        refreshCounters();
-        applyFilters();
-        if (bsModal) bsModal.hide();
+        var id = currentCard.getAttribute("data-id");
+        var btn = document.getElementById("saveReplyBtn");
+        btn.disabled = true;
+        fetch((window.__OWNER_PREFIX || "/owner") + "/reviews/" + id + "/reply", {
+          method: "POST",
+          headers: { "Accept": "application/json", "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({ reply: text }),
+        })
+          .then(function (res) { return res.json().then(function (body) { return { ok: res.ok, body: body }; }); })
+          .then(function (result) {
+            btn.disabled = false;
+            if (!result.ok) {
+              alert((result.body && result.body.message) || "Gửi phản hồi thất bại");
+              return;
+            }
+            currentCard.setAttribute("data-replied", "true");
+            currentCard.querySelector("[data-reply-text]").textContent = result.body.reply || text;
+            currentCard.querySelector("[data-reply-date]").textContent = result.body.replyDate || "Vừa xong";
+            currentCard.querySelector("[data-reply-box]").hidden = false;
+            currentCard.querySelector("[data-badge-replied]").hidden = false;
+            currentCard.querySelector("[data-badge-pending]").hidden = true;
+            currentCard.querySelector("[data-reply-btn-label]").textContent = "Sửa phản hồi";
+            refreshCounters();
+            applyFilters();
+            if (bsModal) bsModal.hide();
+          })
+          .catch(function () {
+            btn.disabled = false;
+            alert("Không kết nối được máy chủ");
+          });
       });
     })();

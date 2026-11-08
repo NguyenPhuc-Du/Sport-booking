@@ -38,6 +38,16 @@ data class Court(
     val capacity: String,
 )
 
+data class FacilityReview(
+    val id: String,
+    val author: String,
+    val rating: Int,
+    val date: String,
+    val text: String,
+    val ownerReply: String? = null,
+    val ownerReplyDate: String? = null,
+)
+
 data class FacilityDetail(
     val id: String,
     val name: String,
@@ -53,6 +63,7 @@ data class FacilityDetail(
     val image: String,
     val images: List<String>,
     val courts: List<Court>,
+    val reviewList: List<FacilityReview> = emptyList(),
 )
 
 data class TimeSlot(
@@ -132,6 +143,12 @@ data class BookingDraft(
     val drinks: List<DrinkSelection> = emptyList(),
 )
 
+data class BookingReviewSummary(
+    val id: String,
+    val rating: Int,
+    val text: String,
+)
+
 data class Booking(
     val code: String,
     val status: String,
@@ -150,6 +167,7 @@ data class Booking(
     val bookedAt: String,
     val drinks: List<DrinkLine> = emptyList(),
     val drinkTotal: Long = 0,
+    val review: BookingReviewSummary? = null,
 )
 
 data class BookingCounts(
@@ -179,9 +197,13 @@ data class AppNotification(
 )
 
 data class Review(
+    val id: String,
     val facility: String,
+    val facilityId: String = "",
+    val bookingCode: String = "",
     val rating: Int,
     val text: String,
+    val createdAt: String = "",
 )
 
 data class Profile(
