@@ -55,7 +55,6 @@ data class FacilitySummaryDto(
 
 data class HomeDto(
     val sports: List<SportDto>,
-    val amenities: List<String>,
     val facilities: List<FacilitySummaryDto>,
 )
 
@@ -79,7 +78,6 @@ data class FacilityDetailDto(
     val sports: List<String>,
     val sportIds: List<String>,
     val image: String,
-    val amenities: List<String>,
     val images: List<String>,
     val courts: List<CourtDto>,
 )

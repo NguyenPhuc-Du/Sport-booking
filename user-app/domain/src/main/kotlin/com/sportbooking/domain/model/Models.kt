@@ -28,7 +28,6 @@ data class FacilitySummary(
 
 data class HomeContent(
     val sports: List<Sport>,
-    val amenities: List<String>,
     val facilities: List<FacilitySummary>,
 )
 
@@ -52,7 +51,6 @@ data class FacilityDetail(
     val sports: List<String>,
     val sportIds: List<String>,
     val image: String,
-    val amenities: List<String>,
     val images: List<String>,
     val courts: List<Court>,
 )

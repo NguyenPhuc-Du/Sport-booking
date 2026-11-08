@@ -30,13 +30,20 @@
     <!-- Facility Detail Screen -->
     <string name="facility_detail_title">Venue Detail</string>
     <string name="facility_about">About Venue</string>
-    <string name="facility_amenities">Amenities</string>
     <string name="facility_courts">Available Courts</string>
     <string name="facility_operating_hours">Hours</string>
     <string name="facility_phone">Hotline</string>
     <string name="facility_book_cta">Select Court &amp; Slot</string>
     <string name="facility_no_courts_cta">No courts available</string>
     <string name="facility_no_courts_desc">This venue currently has no courts configured for booking.</string>
+    <string name="facility_reviews_title">Player Reviews</string>
+    <string name="review_only_after_payment">Only guests who have paid and checked in can review, once per booking.</string>
+    <string name="review_sheet_title">Rate this venue</string>
+    <string name="review_comment_hint">Share your thoughts on court surface, lighting, service…</string>
+    <string name="review_submit_btn">Submit Review</string>
+    <string name="review_owner_reply_label">Owner Reply</string>
+    <string name="bookings_review_btn">Rate venue</string>
+    <string name="bookings_reviewed_label">Reviewed</string>
 
     <!-- Booking Screen -->
     <string name="booking_title">Select Court &amp; Time</string>
@@ -91,6 +98,13 @@
     <string name="profile_saving_btn">Saving…</string>
     <string name="profile_notifications">Notifications</string>
     <string name="profile_reviews">My Reviews</string>
+    <string name="profile_reviews_entry_subtitle">View and filter your submitted reviews</string>
+    <string name="profile_reviews_count">%1$d reviews</string>
+    <string name="my_reviews_empty_desc">You have not submitted any reviews yet. After checking in and completing a booking, you can rate the venue.</string>
+    <string name="my_reviews_filter_all">All</string>
+    <string name="my_reviews_filter_stars">%1$d stars</string>
+    <string name="my_reviews_filter_empty_title">No reviews</string>
+    <string name="my_reviews_filter_empty_desc">No reviews match the selected star rating.</string>
     <string name="profile_logout_btn">Log Out</string>
     <string name="profile_avatar">Profile photo</string>
     <string name="profile_change_avatar">Change profile photo</string>

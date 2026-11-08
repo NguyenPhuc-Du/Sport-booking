@@ -7,6 +7,7 @@ const bookingRoutes = require("./booking.route");
 const financeRoutes = require("./finance.route");
 const ownerProfileRoutes = require("./owner-profile.route");
 const drinkRoutes = require("./drink.route");
+const reviewRoutes = require("./review.route");
 
 const authMiddleware = require("../../middlewares/auth.middleware");
 const authRoutes = require("../owner/auth.route");
@@ -34,6 +35,7 @@ module.exports = (app) => {
   app.use(PATH + "/finance", financeRoutes);
   app.use(PATH + "/profile", ownerProfileRoutes);
   app.use(PATH + "/drinks", drinkRoutes);
+  app.use(PATH + "/reviews", reviewRoutes);
   app.use(PATH + "/refreshments", (req, res) => {
     const tail = req.url === "/" ? "" : req.url;
     res.redirect(PATH + "/drinks" + tail);

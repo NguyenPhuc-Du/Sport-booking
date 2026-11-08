@@ -1,0 +1,366 @@
+/* Trang Đánh giá & Phản hồi - Owner (SportZone PRO) */
+.rv-overview-grid {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 1199px) {
+  .rv-overview-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.rv-score-card {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  height: 100%;
+}
+
+.rv-score-left {
+  text-align: center;
+  min-width: 118px;
+  padding-right: 18px;
+  border-right: 1px solid var(--rf-border, #e3ece7);
+}
+
+.rv-score-num {
+  font-size: 44px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--rf-ink, #0f172a);
+  letter-spacing: -1px;
+}
+
+.rv-score-out {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--rf-muted, #64748b);
+  margin-top: 4px;
+}
+
+.rv-stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: #f59e0b;
+  font-size: 15px;
+}
+
+.rv-stars .bi-star {
+  color: #cbd5e1;
+}
+
+.rv-bars {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.rv-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--rf-ink, #0f172a);
+}
+
+.rv-bar-label {
+  width: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.rv-bar-label i {
+  color: #f59e0b;
+  font-size: 11px;
+}
+
+.rv-bar-track {
+  flex: 1;
+  height: 8px;
+  border-radius: 999px;
+  background: #eef4f1;
+  overflow: hidden;
+}
+
+.rv-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+
+.rv-bar-count {
+  width: 26px;
+  text-align: right;
+  color: var(--rf-muted, #64748b);
+  font-weight: 600;
+}
+
+/* Review item list */
+.rv-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.rv-item {
+  border: 1px solid var(--rf-border, #e3ece7);
+  border-radius: 20px;
+  padding: 20px 22px;
+  background: #fff;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.rv-item:hover {
+  border-color: #b7e4cf;
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.06);
+}
+
+.rv-item.is-hidden {
+  background: #f8fafc;
+  opacity: 0.78;
+}
+
+.rv-item-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.rv-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.rv-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+  color: #047857;
+  font-weight: 800;
+  font-size: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.rv-user-name {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--rf-ink, #0f172a);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.rv-booking-code {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.rv-meta {
+  font-size: 12.5px;
+  color: var(--rf-muted, #64748b);
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.rv-head-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rv-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.rv-badge.pending {
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.rv-badge.replied {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.rv-badge.hidden {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+.rv-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.rv-tag {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 11px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.rv-comment {
+  margin: 12px 0 0;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--rf-ink, #0f172a);
+}
+
+/* Owner reply box */
+.rv-reply-box {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #f3faf6;
+  border-left: 4px solid var(--rf-green, #10b981);
+}
+
+.rv-reply-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.rv-reply-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #047857;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rv-reply-date {
+  font-size: 12px;
+  color: var(--rf-muted, #64748b);
+}
+
+.rv-reply-text {
+  font-size: 13.5px;
+  color: var(--rf-ink, #0f172a);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.rv-actions {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--rf-border, #e3ece7);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.rv-court-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #334155;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 4px 10px;
+}
+
+.rv-btn-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rv-btn-sm {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--rf-border, #e3ece7);
+  background: #fff;
+  color: var(--rf-ink, #0f172a);
+  transition: all 0.15s;
+}
+
+.rv-btn-sm:hover {
+  border-color: var(--rf-green, #10b981);
+  color: var(--rf-green-dark, #059669);
+}
+
+.rv-btn-sm.primary {
+  background: linear-gradient(135deg, var(--rf-green, #10b981), var(--rf-green-dark, #059669));
+  border-color: transparent;
+  color: #fff;
+}
+
+.rv-btn-sm.primary:hover {
+  opacity: 0.94;
+  color: #fff;
+}
+
+/* Quick reply chips in modal */
+.rv-quick-Templates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.rv-template-chip {
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--rf-border, #e3ece7);
+  background: #f8fafc;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.rv-template-chip:hover {
+  border-color: var(--rf-green, #10b981);
+  background: #ecfdf5;
+  color: #047857;
+}

@@ -25,6 +25,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.rounded.Logout
 import androidx.compose.material.icons.rounded.CameraAlt
 import androidx.compose.material.icons.rounded.CheckCircle
@@ -34,7 +35,6 @@ import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.Phone
 import androidx.compose.material.icons.rounded.RateReview
 import androidx.compose.material.icons.rounded.Save
-import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -63,19 +63,15 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.sportbooking.domain.model.AppNotification
-import com.sportbooking.domain.model.Review
 import com.sportbooking.domain.model.User
 import com.sportbooking.user.R
 import com.sportbooking.user.ui.components.ErrorText
 import com.sportbooking.user.ui.components.LoadingScreen
 import com.sportbooking.user.ui.components.PrimaryButton
 import com.sportbooking.user.ui.components.SecondaryButton
-import com.sportbooking.user.ui.theme.PillShape
 import com.sportbooking.user.ui.theme.SportBookingTheme
-import com.sportbooking.user.ui.theme.extraColors
 import com.sportbooking.user.ui.theme.spacing
 import com.sportbooking.user.ui.util.PreviewData
-import com.sportbooking.user.ui.util.toVnd
 
 sealed interface ProfileUiEvent {
     data class ChangeFullName(val value: String) : ProfileUiEvent
@@ -90,6 +86,7 @@ sealed interface ProfileUiEvent {
 fun ProfileScreen(
     onUserUpdated: (User) -> Unit,
     onLogout: () -> Unit,
+    onOpenReviews: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ProfileViewModel = hiltViewModel(),
 ) {
@@ -114,6 +111,7 @@ fun ProfileScreen(
                 ProfileUiEvent.Logout -> onLogout()
             }
         },
+        onOpenReviews = onOpenReviews,
         modifier = modifier,
     )
 }
@@ -122,6 +120,7 @@ fun ProfileScreen(
 fun ProfileContent(
     state: ProfileUiState,
     onEvent: (ProfileUiEvent) -> Unit,
+    onOpenReviews: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (state.loading) {
@@ -346,19 +345,12 @@ fun ProfileContent(
             }
         }
 
-        // Reviews Section
-        if (state.reviews.isNotEmpty()) {
-            item(key = "profile_reviews_header") {
-                Text(
-                    text = stringResource(R.string.profile_reviews),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                )
-            }
-
-            items(state.reviews, key = { it.facility + it.rating }) { review ->
-                ReviewTile(review = review)
-            }
+        // Reviews entry — danh sách đầy đủ nằm ở trang riêng
+        item(key = "profile_reviews_entry") {
+            ReviewsEntryCard(
+                reviewCount = state.reviews.size,
+                onClick = onOpenReviews,
+            )
         }
 
         // Logout
@@ -426,50 +418,60 @@ private fun NotificationTile(
 }
 
 @Composable
-private fun ReviewTile(
-    review: Review,
+private fun ReviewsEntryCard(
+    reviewCount: Int,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Card(
         shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
     ) {
-        Column(
+        Row(
             modifier = Modifier.padding(MaterialTheme.spacing.medium),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.RateReview,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(22.dp),
+                )
+            }
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 Text(
-                    text = review.facility,
+                    text = stringResource(R.string.profile_reviews),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                 )
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(2.dp),
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Star,
-                        contentDescription = null,
-                        tint = MaterialTheme.extraColors.rating,
-                        modifier = Modifier.size(16.dp),
-                    )
-                    Text(
-                        text = "${review.rating}/5",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
+                Text(
+                    text = if (reviewCount > 0) {
+                        stringResource(R.string.profile_reviews_count, reviewCount)
+                    } else {
+                        stringResource(R.string.profile_reviews_entry_subtitle)
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
-            Text(
-                text = review.text,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            Icon(
+                imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -495,6 +497,7 @@ private fun ProfileContentSuccessPreview() {
                     reviews = PreviewData.reviews,
                 ),
                 onEvent = {},
+                onOpenReviews = {},
             )
         }
     }
@@ -508,6 +511,7 @@ private fun ProfileContentLoadingPreview() {
             ProfileContent(
                 state = ProfileUiState(loading = true),
                 onEvent = {},
+                onOpenReviews = {},
             )
         }
     }

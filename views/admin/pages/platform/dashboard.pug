@@ -6,11 +6,14 @@ block main
   header.pf-head
     div
       p.pf-kicker Quản trị hệ thống / Tổng quan sàn
-      h1.pf-title Bảng điều khiển Trung tâm
-      p.pf-sub Số liệu toàn sàn tại thời điểm này.
+      h1.pf-title Tổng quan sàn
+      p.pf-sub Theo dõi tài khoản và dòng tiền toàn nền tảng.
 
   if loadError
-    p.sz-empty= loadError
+    section.sz-card.sz-panel.pf-empty
+      strong Không đọc được số liệu.
+      p= loadError
+      a.sz-btn.sz-btn-green(href="/admin/dashboard") Thử lại
   else
     .pf-stats
       each card in cards
@@ -24,29 +27,74 @@ block main
       section.sz-card.sz-panel
         .pf-split-head
           div
-            h2.sz-panel-title Hoa hồng theo kỳ
+            h2.sz-panel-title Hoa hồng
             p.sz-panel-sub= chart.totalLabel
           nav.pf-tabs
             each item in charts
               a(href=`/admin/dashboard?range=${item.code}` class=chart.code === item.code ? "active" : undefined)= item.label
-        .pf-bars
-          each day in chart.buckets
-            .pf-bar
-              span.pf-bar-fill(style=`height:${day.height}%`)
-              small= day.label
-              strong= day.amountLabel
+        - const hasChart = chart.buckets && chart.buckets.some((day) => Number(day.amount) > 0)
+        if hasChart
+          .pf-bars
+            each day in chart.buckets
+              .pf-bar
+                span.pf-bar-fill(style=`height:${day.height}%` title=day.amountLabel)
+                small= day.label
+                strong= day.amountLabel
+        else
+          .pf-empty
+            strong Chưa có hoa hồng trong kỳ này.
+            p Đổi tab Ngày, Tuần hoặc Tháng để xem kỳ khác.
+
       section.sz-card.sz-panel
         .pf-split-head
-          h2.sz-panel-title Bút toán sổ cái mới nhất
-          a(href="/admin/ledger") Xem sổ cái
+          h2.sz-panel-title Bút toán mới nhất
+          a(href="/admin/ledger") Xem tất cả
         if recent.length
-          each item in recent
-            a.pf-order(href=`/admin/ledger?q=${item.code}`)
+          each item, index in recent
+            button.pf-order(type="button" data-open=`ledger-${index}`)
               div
                 strong= item.code
                 small.sz-muted #{item.typeLabel} · #{item.account}
               div
                 span= item.amountLabel
                 small.sz-muted= item.when
+            dialog.pf-dialog(id=`ledger-${index}`)
+              .pf-dialog-head
+                div
+                  p.pf-kicker Chi tiết bút toán
+                  h2= item.code
+                button(type="button" data-close aria-label="Đóng") ×
+              p
+                span.sz-muted Loại
+                br
+                strong= item.typeLabel
+              p
+                span.sz-muted Tài khoản
+                br
+                strong= item.account
+              p
+                span.sz-muted Thời gian
+                br
+                strong= item.when
+              p
+                span.sz-muted Số tiền
+                br
+                strong= item.amountLabel
+              p
+                span.sz-muted Số dư sau
+                br
+                strong= item.balanceLabel
+              p
+                span.sz-muted Ghi chú
+                br
+                = item.note || "—"
+              .pf-dialog-actions
+                a.sz-btn(href=`/admin/ledger?q=${encodeURIComponent(item.code)}`) Mở sổ cái
+                button.sz-btn.sz-btn-green(type="button" data-close) Đóng
         else
-          p.sz-empty Chưa có bút toán.
+          .pf-empty
+            strong Chưa có bút toán.
+            p Đơn đã thanh toán sẽ tự ghi vào sổ cái.
+
+block script
+  script(src="/admin/js/platform.js")

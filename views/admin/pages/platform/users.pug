@@ -51,6 +51,7 @@ block main
         each item in statuses
           option(value=item.code selected=status === item.code)= item.label
       button.sz-btn.sz-btn-dark(type="submit") Lọc
+      a.sz-btn(href="/admin/users") Xóa lọc
 
     section.sz-card.sz-panel
       if users.length
@@ -82,8 +83,7 @@ block main
                     div= u.email
                     small.sz-muted= u.phone
                   td
-                    span.sz-role(class=`role-${String(u.role || "user").toLowerCase()}`)= u.role
-                    small.sz-muted  #{roleItem ? roleItem.label : ""}
+                    span.sz-role(class=`role-${String(u.role || "user").toLowerCase()}`)= roleItem ? roleItem.label : u.role
                   td
                     if u.status === "active"
                       span.sz-badge.sz-badge-ok Hoạt động
@@ -141,8 +141,8 @@ block main
                       label.pf-choice
                         input(type="radio" name="role" value=item.code checked=u.role === item.code required)
                         span
-                          strong= item.code
-                          small= item.label
+                          strong= item.label
+                          small= item.code
                     .pf-dialog-actions
                       button.sz-btn(type="button" data-close) Hủy
                       button.sz-btn.sz-btn-green(type="submit") Lưu thay đổi
@@ -154,7 +154,9 @@ block main
           if page < pages
             a(href=`/admin/users?page=${page + 1}&q=${encodeURIComponent(q)}&role=${role}&status=${status}`) Sau
       else
-        p.sz-empty Không có tài khoản khớp bộ lọc.
+        .pf-empty
+          strong Không có tài khoản
+          p Không có tài khoản khớp bộ lọc.
 
     dialog.pf-dialog#dialog-create
       form(method="post" action="/admin/users")
@@ -169,10 +171,10 @@ block main
         input.sz-input(type="text" name="phone" required placeholder="0912345678")
         label Mật khẩu
         input.sz-input(type="password" name="password" required minlength="6" autocomplete="new-password")
-        label Chức danh
+        label Vai trò
         select.sz-select(name="role" required)
           each item in roles
-            option(value=item.code selected=item.code === "USER") #{item.code} · #{item.label}
+            option(value=item.code selected=item.code === "USER") #{item.label}
         .pf-dialog-actions
           button.sz-btn(type="button" data-close) Hủy
           button.sz-btn.sz-btn-green(type="submit") Tạo tài khoản

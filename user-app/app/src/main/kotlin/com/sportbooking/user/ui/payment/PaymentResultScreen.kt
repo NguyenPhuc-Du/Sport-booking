@@ -221,6 +221,7 @@ fun PaymentResultScreen(
                 )
             }
 
+            // Đánh giá chỉ hiện sau khi khách đã vào sân (đơn completed), không hiện ngay sau thanh toán.
             Spacer(Modifier.height(MaterialTheme.spacing.large))
 
             // Action Buttons

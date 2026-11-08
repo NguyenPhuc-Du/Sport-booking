@@ -11,9 +11,8 @@
   };
 
   activateGroup(document.getElementById("sportTabs"), ".sz-sport-tab");
-  activateGroup(document.getElementById("amenityList"), ".sz-amenity-chip");
   activateGroup(document.getElementById("dateRow"), ".sz-date-card");
-  activateGroup(document.getElementById("courtFilters"), ".sz-amenity-chip");
+  activateGroup(document.getElementById("courtFilters"), ".sz-filter-chip");
 
   const payList = document.getElementById("payList");
   if (payList) {

@@ -206,26 +206,13 @@
   box-shadow: var(--shadow-green);
 }
 
-.sz-amenity-block {
-  margin-bottom: 22px;
-}
-
-.sz-amenity-title {
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.6px;
-  color: #64748b;
-  margin: 0 0 10px;
-}
-
-.sz-amenity-list,
 .sz-court-filters {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
-.sz-amenity-chip {
+.sz-filter-chip {
   border: 1px solid var(--line);
   background: #fff;
   border-radius: 999px;
@@ -236,8 +223,8 @@
   transition: all 0.2s;
 }
 
-.sz-amenity-chip:hover,
-.sz-amenity-chip.active {
+.sz-filter-chip:hover,
+.sz-filter-chip.active {
   border-color: #a7f3d0;
   background: #ecfdf5;
   color: var(--green-dark);
@@ -434,26 +421,6 @@
   color: var(--muted);
   line-height: 1.7;
   margin-bottom: 18px;
-}
-
-.sz-amenity-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px 14px;
-  margin-bottom: 22px;
-}
-
-.sz-amenity-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 600;
-  color: #334155;
-  font-size: 13px;
-}
-
-.sz-amenity-item i {
-  color: var(--green-2);
 }
 
 .sz-detail-actions {
@@ -1207,7 +1174,6 @@ a.sz-bell {
   }
 
   .sz-facility-grid,
-  .sz-amenity-grid,
   .sz-detail-gallery {
     grid-template-columns: 1fr;
   }

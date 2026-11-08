@@ -19,9 +19,9 @@ block main
     .pf-split
       section.sz-card.sz-panel
         h2.sz-panel-title Tỷ lệ toàn sàn
-        form.pf-form(method="post" action="/admin/commissions/settings")
+        form.pf-form(method="post" action="/admin/commissions/settings" data-confirm="Lưu tỷ lệ và hạn mức mới? Đơn đã ghi giữ nguyên tỷ lệ cũ.")
           label.pf-field Tỷ lệ hoa hồng (%)
-          input.sz-input(type="number" name="ratePercent" min="0" max="100" step="0.1" value=setting.ratePercent required)
+            input.sz-input(type="number" name="ratePercent" min="0" max="100" step="0.1" value=setting.ratePercent required)
           p.sz-muted Đang áp dụng #{setting.rateLabel}
           span.pf-field Chu kỳ đối soát
           .pf-cycles
@@ -30,19 +30,19 @@ block main
                 input(type="radio" name="cycle" value=item.code checked=setting.payoutCycle === item.code)
                 |  #{item.label}
           label.pf-field Hạn mức chuyển tối thiểu (đ)
-          input.sz-input(type="number" name="minPayout" min="0" step="1000" value=setting.minPayout required)
+            input.sz-input(type="number" name="minPayout" min="0" step="1000" value=setting.minPayout required)
           button.sz-btn.sz-btn-green(type="submit") Lưu cấu hình
 
       section.sz-card.sz-panel
         h2.sz-panel-title Tỷ lệ riêng chủ sân
         form.pf-form(method="post" action="/admin/commissions/owner-rates")
           label.pf-field Chủ sân
-          select.sz-select(name="userId" required)
-            option(value="") Chọn chủ sân
-            each owner in owners
-              option(value=owner._id) #{owner.fullName} — #{owner.email}
+            select.sz-select(name="userId" required)
+              option(value="") Chọn chủ sân
+              each owner in owners
+                option(value=owner._id) #{owner.fullName} — #{owner.email}
           label.pf-field Tỷ lệ (%)
-          input.sz-input(type="number" name="ratePercent" min="0" max="100" step="0.1" required)
+            input.sz-input(type="number" name="ratePercent" min="0" max="100" step="0.1" required)
           button.sz-btn.sz-btn-dark(type="submit") Lưu tỷ lệ riêng
         if overrides.length
           table.sz-table.pf-table
@@ -70,6 +70,7 @@ block main
 
     section.sz-card.sz-panel
       if rows.length
+        p.sz-panel-sub #{rows.length} chủ sân có phát sinh từ #{period.fromInput} đến #{period.toInput}.
         .table-responsive
           table.sz-table.pf-table
             thead
@@ -100,7 +101,7 @@ block main
       else
         .pf-empty
           strong Chưa có hoa hồng trong kỳ
-          p Khi có đơn đã thanh toán, tải lại trang này.
+          p Khi có đơn đã thanh toán, chọn lại kỳ rồi tải lại trang.
 
 block script
   script(src="/admin/js/platform.js")
