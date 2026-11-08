@@ -119,7 +119,6 @@ async function loadDetail(id) {
     sports,
     sportIds,
     image: v.image_url || "",
-    amenities: [],
     images: v.image_url ? [v.image_url] : [],
     courts: courts.map((c) => ({
       id: String(c._id),

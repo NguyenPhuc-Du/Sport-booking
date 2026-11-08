@@ -82,7 +82,6 @@ object PreviewData {
         sports = listOf("Cầu lông", "Tennis", "Pickleball"),
         sportIds = listOf("badminton", "tennis", "pickleball"),
         image = "https://images.unsplash.com/photo-1546519638-68e109498ffc",
-        amenities = listOf("Wifi tốc độ cao", "Bãi xe ô tô & xe máy", "Phòng thay đồ & tắm nóng lạnh", "Quầy nước giải khát & phụ kiện", "Hệ thống đèn LED chống chói"),
         images = listOf(
             "https://images.unsplash.com/photo-1546519638-68e109498ffc",
             "https://images.unsplash.com/photo-1529900748604-07564a03e7a6",
@@ -233,6 +232,21 @@ object PreviewData {
             facility = "Sân Bóng Đá Chảo Lửa",
             rating = 4,
             text = "Mặt cỏ êm, thoát nước tốt ngay cả khi trời mưa.",
+        ),
+        Review(
+            facility = "Sân Tennis Quận 7",
+            rating = 3,
+            text = "Sân ổn nhưng phòng thay đồ hơi chật, cần cải thiện thêm.",
+        ),
+        Review(
+            facility = "Pickleball City Sports",
+            rating = 5,
+            text = "Không gian rộng, đặt lịch nhanh, sẽ quay lại.",
+        ),
+        Review(
+            facility = "Sân Cầu Lông Hòa Bình",
+            rating = 2,
+            text = "Đèn hơi tối ở góc sân, mặt sàn còn trơn khi đổ mồ hôi.",
         ),
     )
 }

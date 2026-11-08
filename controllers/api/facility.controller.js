@@ -10,7 +10,7 @@ module.exports.home = async (req, res) => {
         q: req.query.q || "",
       }),
     ]);
-    res.json({ sports, amenities: [], facilities });
+    res.json({ sports, facilities });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Không tải được danh sách sân" });

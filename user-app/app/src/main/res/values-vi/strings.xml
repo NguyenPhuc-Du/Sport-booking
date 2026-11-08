@@ -30,7 +30,6 @@
     <!-- Facility Detail Screen -->
     <string name="facility_detail_title">Chi tiết cơ sở</string>
     <string name="facility_about">Giới thiệu</string>
-    <string name="facility_amenities">Tiện ích sân</string>
     <string name="facility_courts">Danh sách sân con</string>
     <string name="facility_operating_hours">Giờ hoạt động</string>
     <string name="facility_phone">Hotline</string>
@@ -38,7 +37,7 @@
     <string name="facility_no_courts_cta">Chưa có sân khả dụng</string>
     <string name="facility_no_courts_desc">Cơ sở này hiện chưa có danh sách sân để đặt chỗ.</string>
     <string name="facility_reviews_title">Đánh giá từ người chơi</string>
-    <string name="review_only_after_payment">Chỉ khách đã thanh toán đơn đặt sân mới được đánh giá, mỗi đơn 1 lần.</string>
+    <string name="review_only_after_payment">Chỉ khách đã thanh toán và vào sân mới được đánh giá, mỗi đơn 1 lần.</string>
     <string name="review_sheet_title">Đánh giá cơ sở</string>
     <string name="review_comment_hint">Chia sẻ cảm nhận về mặt sân, ánh sáng, thái độ phục vụ…</string>
     <string name="review_submit_btn">Gửi đánh giá</string>
@@ -99,6 +98,13 @@
     <string name="profile_saving_btn">Đang lưu…</string>
     <string name="profile_notifications">Thông báo</string>
     <string name="profile_reviews">Đánh giá của tôi</string>
+    <string name="profile_reviews_entry_subtitle">Xem và lọc các đánh giá đã gửi</string>
+    <string name="profile_reviews_count">%1$d đánh giá</string>
+    <string name="my_reviews_empty_desc">Bạn chưa gửi đánh giá nào. Sau khi vào sân và hoàn thành đơn, bạn có thể đánh giá cơ sở.</string>
+    <string name="my_reviews_filter_all">Tất cả</string>
+    <string name="my_reviews_filter_stars">%1$d sao</string>
+    <string name="my_reviews_filter_empty_title">Không có đánh giá</string>
+    <string name="my_reviews_filter_empty_desc">Không có đánh giá nào với số sao đã chọn.</string>
     <string name="profile_logout_btn">Đăng xuất</string>
     <string name="profile_avatar">Ảnh đại diện</string>
     <string name="profile_change_avatar">Đổi ảnh đại diện</string>

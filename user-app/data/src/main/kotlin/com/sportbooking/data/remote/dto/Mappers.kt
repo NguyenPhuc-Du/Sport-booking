@@ -26,7 +26,6 @@ fun UserDto.toDomain() = User(id, fullName, email, phone, avatarUrl, status)
 
 fun HomeDto.toDomain() = HomeContent(
     sports = sports.map { Sport(it.id, it.label) },
-    amenities = amenities,
     facilities = facilities.map { it.toDomain() },
 )
 
@@ -47,7 +46,6 @@ fun FacilityDetailDto.toDomain() = FacilityDetail(
     sports = sports,
     sportIds = sportIds,
     image = image,
-    amenities = amenities,
     images = images,
     courts = courts.map { Court(it.id, it.name, it.surface, it.capacity) },
 )
