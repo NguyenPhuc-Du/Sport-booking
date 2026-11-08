@@ -6,8 +6,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -26,7 +24,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Call
-import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.EventAvailable
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.LocationOn
@@ -96,7 +93,7 @@ fun FacilityDetailScreen(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FacilityDetailContent(
     state: FacilityDetailUiState,
@@ -106,8 +103,8 @@ fun FacilityDetailContent(
 ) {
     val facility = state.facility
     val context = LocalContext.current
-    // Màn này chỉ ĐỌC đánh giá của cơ sở. Viết đánh giá chỉ làm được từ đơn đã thanh toán
-    // (màn kết quả thanh toán / lịch đặt) để tránh spam.
+    // Màn này chỉ ĐỌC đánh giá của cơ sở. Viết đánh giá chỉ làm được từ đơn đã vào sân
+    // (tab Hoàn thành trong lịch đặt) để tránh spam.
     // Chưa có API đánh giá nên danh sách để trống, không dùng dữ liệu giả.
     val reviews = emptyList<FacilityReviewUi>()
     var selectedReviewFilter by remember { mutableStateOf("all") }
@@ -364,53 +361,6 @@ fun FacilityDetailContent(
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
-                        }
-                    }
-
-                    // Amenities Section (chỉ hiện khi cơ sở có tiện ích)
-                    if (facility.amenities.isNotEmpty()) {
-                        item(key = "facility_amenities") {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = MaterialTheme.spacing.normal),
-                                verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.facility_amenities),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                )
-                                FlowRow(
-                                    horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
-                                    verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
-                                ) {
-                                    facility.amenities.forEach { amenity ->
-                                        Surface(
-                                            color = MaterialTheme.colorScheme.surfaceVariant,
-                                            shape = PillShape,
-                                        ) {
-                                            Row(
-                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Rounded.CheckCircle,
-                                                    contentDescription = null,
-                                                    tint = MaterialTheme.colorScheme.primary,
-                                                    modifier = Modifier.size(16.dp),
-                                                )
-                                                Text(
-                                                    text = amenity,
-                                                    style = MaterialTheme.typography.labelMedium,
-                                                    color = MaterialTheme.colorScheme.onSurface,
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
                         }
                     }
 

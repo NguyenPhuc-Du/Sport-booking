@@ -66,7 +66,7 @@ import com.sportbooking.user.ui.theme.spacing
 import java.util.Locale
 
 /**
- * Đánh giá luôn gắn với CƠ SỞ (không phải từng sân con) và với đúng 1 đơn đã thanh toán.
+ * Đánh giá luôn gắn với CƠ SỞ (không phải từng sân con) và với đúng 1 đơn đã vào sân (completed).
  * Tạm giữ trong bộ nhớ để dựng UI. Khi có API, trạng thái "đã đánh giá" phải lấy từ server
  * (mỗi mã đơn chỉ được đánh giá 1 lần) để chống spam thật sự.
  */
@@ -206,7 +206,7 @@ fun ReviewSummaryCard(
 }
 
 /**
- * Nút đánh giá cơ sở gắn với 1 đơn đã thanh toán. Mỗi mã đơn chỉ đánh giá được 1 lần:
+ * Nút đánh giá cơ sở gắn với 1 đơn đã vào sân (completed). Mỗi mã đơn chỉ đánh giá được 1 lần:
  * đã đánh giá thì chỉ hiện nhãn, không bấm lại được.
  */
 @Composable

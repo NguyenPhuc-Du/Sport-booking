@@ -350,8 +350,8 @@ fun BookingTicketCard(
                 }
             }
 
-            // Đơn đã thanh toán (sắp diễn ra / hoàn thành) mới được đánh giá cơ sở, mỗi đơn 1 lần.
-            if (booking.status == "upcoming" || booking.status == "completed") {
+            // Chỉ hiện nút đánh giá sau khi đã thanh toán và đã vào sân (completed / check-in).
+            if (booking.status == "completed") {
                 BookingReviewAction(
                     bookingCode = booking.code,
                     facilityName = booking.facilityName,

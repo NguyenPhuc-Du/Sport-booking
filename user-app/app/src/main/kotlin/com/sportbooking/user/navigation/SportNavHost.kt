@@ -44,6 +44,7 @@ import com.sportbooking.user.ui.components.MessageScreen
 import com.sportbooking.user.ui.components.defaultBottomNavTabs
 import com.sportbooking.user.ui.facility.FacilityDetailScreen
 import com.sportbooking.user.ui.home.HomeScreen
+import com.sportbooking.user.ui.profile.MyReviewsScreen
 import com.sportbooking.user.ui.profile.ProfileScreen
 import com.sportbooking.user.ui.payment.PaymentResultScreen
 import com.sportbooking.user.ui.session.SessionUiState
@@ -172,7 +173,14 @@ private fun MainNavHost(
                 BookingsScreen()
             }
             composable("account") {
-                ProfileScreen(onUserUpdated = onUserUpdated, onLogout = onLogout)
+                ProfileScreen(
+                    onUserUpdated = onUserUpdated,
+                    onLogout = onLogout,
+                    onOpenReviews = { navController.navigateOnce("my_reviews") },
+                )
+            }
+            composable("my_reviews") {
+                MyReviewsScreen(onBack = { navController.popOnce() })
             }
             composable(
                 route = "payment_result/{success}/{code}",
