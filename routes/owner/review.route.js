@@ -1,11 +1,9 @@
 const express = require("express");
 const router = express.Router();
+const controller = require("../../controllers/owner/review.controller");
 
-router.get("/", (req, res) => {
-  res.render("owner/pages/reviews/index", {
-    pageTitle: "Đánh giá & Phản hồi",
-    activeMenu: "reviews",
-  });
-});
+router.get("/", controller.index);
+router.post("/:id/reply", controller.reply);
+router.post("/:id/toggle-hide", controller.toggleHide);
 
 module.exports = router;

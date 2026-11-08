@@ -19,7 +19,7 @@
     <string name="label_no_reviews">No reviews yet</string>
 
     <!-- Home Screen -->
-    <string name="home_greeting">Hello athlete 👋</string>
+    <string name="home_greeting">Hello athlete</string>
     <string name="home_title">Find &amp; Book Courts</string>
     <string name="home_search_hint">Search venue, sport, location…</string>
     <string name="home_categories_title">Categories</string>
@@ -44,6 +44,8 @@
     <string name="review_owner_reply_label">Owner Reply</string>
     <string name="bookings_review_btn">Rate venue</string>
     <string name="bookings_reviewed_label">Reviewed</string>
+    <string name="bookings_edit_review_btn">Edit review (%1$d/5)</string>
+    <string name="my_reviews_edit_btn">Edit</string>
 
     <!-- Booking Screen -->
     <string name="booking_title">Select Court &amp; Time</string>

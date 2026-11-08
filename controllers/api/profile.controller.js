@@ -1,4 +1,5 @@
 const profileService = require("../../services/app/profile.service");
+const reviewService = require("../../services/app/review.service");
 const { toUser } = require("./user.mapper");
 
 function fail(res, error, fallback) {
@@ -10,7 +11,20 @@ function fail(res, error, fallback) {
 module.exports.index = async (req, res) => {
   try {
     const user = await profileService.getProfile(req.auth.userId);
-    return res.json({ user: toUser(user), notifications: [], reviews: [] });
+    const mine = await reviewService.listMine(req.auth.userId);
+    return res.json({
+      user: toUser(user),
+      notifications: [],
+      reviews: mine.map((r) => ({
+        id: r.id,
+        facility: r.facilityName,
+        facilityId: r.facilityId,
+        bookingCode: r.bookingCode,
+        rating: r.rating,
+        text: r.text,
+        createdAt: r.createdAt,
+      })),
+    });
   } catch (error) {
     return fail(res, error, "Không tải được hồ sơ");
   }

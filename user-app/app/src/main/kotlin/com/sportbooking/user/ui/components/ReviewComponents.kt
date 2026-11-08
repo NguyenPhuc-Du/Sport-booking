@@ -6,8 +6,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -21,7 +19,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.RateReview
 import androidx.compose.material.icons.rounded.Star
@@ -43,8 +40,6 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -65,33 +60,14 @@ import com.sportbooking.user.ui.theme.extraColors
 import com.sportbooking.user.ui.theme.spacing
 import java.util.Locale
 
-/**
- * Đánh giá luôn gắn với CƠ SỞ (không phải từng sân con) và với đúng 1 đơn đã vào sân (completed).
- * Tạm giữ trong bộ nhớ để dựng UI. Khi có API, trạng thái "đã đánh giá" phải lấy từ server
- * (mỗi mã đơn chỉ được đánh giá 1 lần) để chống spam thật sự.
- */
-object ReviewedBookingsStore {
-    val ratings = mutableStateMapOf<String, Int>()
-}
-
 data class FacilityReviewUi(
     val id: String,
     val author: String,
     val rating: Int,
     val date: String,
     val comment: String,
-    val tags: List<String> = emptyList(),
     val ownerReply: String? = null,
     val ownerReplyDate: String? = null,
-)
-
-val defaultQuickReviewTags = listOf(
-    "Mặt sân tốt",
-    "Đèn sáng chuẩn",
-    "Nhà vệ sinh sạch",
-    "Nhân viên nhiệt tình",
-    "Đúng giờ",
-    "Chỗ để xe rộng",
 )
 
 @Composable
@@ -206,19 +182,20 @@ fun ReviewSummaryCard(
 }
 
 /**
- * Nút đánh giá cơ sở gắn với 1 đơn đã vào sân (completed). Mỗi mã đơn chỉ đánh giá được 1 lần:
- * đã đánh giá thì chỉ hiện nhãn, không bấm lại được.
+ * Nút đánh giá / chỉnh sửa đánh giá gắn với 1 đơn completed.
  */
 @Composable
 fun BookingReviewAction(
-    bookingCode: String,
     facilityName: String,
+    existingRating: Int? = null,
+    existingText: String? = null,
+    submitting: Boolean = false,
+    onSubmit: (rating: Int, text: String) -> Unit,
     modifier: Modifier = Modifier,
     fullWidth: Boolean = false,
 ) {
-    val reviewedRating = ReviewedBookingsStore.ratings[bookingCode]
     var showSheet by remember { mutableStateOf(false) }
-    val reviewed = reviewedRating != null
+    val reviewed = existingRating != null
 
     Surface(
         color = if (reviewed) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.primary,
@@ -227,7 +204,7 @@ fun BookingReviewAction(
         modifier = modifier
             .then(if (fullWidth) Modifier.fillMaxWidth() else Modifier)
             .clip(PillShape)
-            .clickable(enabled = !reviewed) { showSheet = true },
+            .clickable(enabled = !submitting) { showSheet = true },
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 14.dp, vertical = if (fullWidth) 12.dp else 8.dp),
@@ -243,7 +220,7 @@ fun BookingReviewAction(
             Spacer(Modifier.width(6.dp))
             Text(
                 text = if (reviewed) {
-                    "${stringResource(R.string.bookings_reviewed_label)} ($reviewedRating/5)"
+                    stringResource(R.string.bookings_edit_review_btn, existingRating!!)
                 } else {
                     stringResource(R.string.bookings_review_btn)
                 },
@@ -253,12 +230,15 @@ fun BookingReviewAction(
         }
     }
 
-    if (showSheet && !reviewed) {
+    if (showSheet) {
         WriteReviewBottomSheet(
             facilityName = facilityName,
-            onDismiss = { showSheet = false },
-            onSubmit = { rating, _, _ ->
-                ReviewedBookingsStore.ratings[bookingCode] = rating
+            initialRating = existingRating ?: 5,
+            initialComment = existingText.orEmpty(),
+            submitting = submitting,
+            onDismiss = { if (!submitting) showSheet = false },
+            onSubmit = { rating, text ->
+                onSubmit(rating, text)
                 showSheet = false
             },
         )
@@ -322,7 +302,6 @@ fun ReviewFilterBar(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun FacilityReviewItemCard(
     review: FacilityReviewUi,
@@ -372,27 +351,6 @@ fun FacilityReviewItemCard(
                 }
 
                 StarRow(rating = review.rating, starSize = 16)
-            }
-
-            if (review.tags.isNotEmpty()) {
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    review.tags.forEach { tag ->
-                        Surface(
-                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
-                            shape = PillShape,
-                        ) {
-                            Text(
-                                text = tag,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                            )
-                        }
-                    }
-                }
             }
 
             Text(
@@ -470,18 +428,20 @@ fun StarRow(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WriteReviewBottomSheet(
     facilityName: String,
     onDismiss: () -> Unit,
-    onSubmit: (rating: Int, tags: List<String>, comment: String) -> Unit,
+    onSubmit: (rating: Int, comment: String) -> Unit,
     modifier: Modifier = Modifier,
+    initialRating: Int = 5,
+    initialComment: String = "",
+    submitting: Boolean = false,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    var rating by remember { mutableIntStateOf(5) }
-    var comment by remember { mutableStateOf("") }
-    val selectedTags = remember { mutableStateListOf("Mặt sân tốt", "Đèn sáng chuẩn") }
+    var rating by remember { mutableIntStateOf(initialRating.coerceIn(1, 5)) }
+    var comment by remember { mutableStateOf(initialComment) }
 
     val ratingLabel = when (rating) {
         5 -> "Tuyệt vời · Rất đáng trải nghiệm"
@@ -505,7 +465,6 @@ fun WriteReviewBottomSheet(
                 .padding(bottom = MaterialTheme.spacing.large),
             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
         ) {
-            // Tiêu đề & Tên cơ sở
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -524,7 +483,6 @@ fun WriteReviewBottomSheet(
                 )
             }
 
-            // Chọn số sao
             Surface(
                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
                 shape = MaterialTheme.shapes.large,
@@ -564,64 +522,13 @@ fun WriteReviewBottomSheet(
                 }
             }
 
-            // Các tag đánh giá nhanh
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    text = "Điểm bạn hài lòng",
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    defaultQuickReviewTags.forEach { tag ->
-                        val isSelected = tag in selectedTags
-                        Surface(
-                            color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
-                            contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
-                            shape = PillShape,
-                            border = BorderStroke(
-                                1.dp,
-                                if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
-                            ),
-                            modifier = Modifier
-                                .clip(PillShape)
-                                .clickable {
-                                    if (isSelected) selectedTags.remove(tag) else selectedTags.add(tag)
-                                },
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            ) {
-                                if (isSelected) {
-                                    Icon(
-                                        imageVector = Icons.Rounded.Check,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(14.dp),
-                                    )
-                                }
-                                Text(
-                                    text = tag,
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Ô nhập nội dung nhận xét
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text(
-                        text = "Nhận xét chi tiết",
+                        text = "Nhận xét",
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.SemiBold,
                     )
@@ -646,7 +553,6 @@ fun WriteReviewBottomSheet(
                 )
             }
 
-            // Nút hành động
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
@@ -654,17 +560,18 @@ fun WriteReviewBottomSheet(
                 SecondaryButton(
                     text = stringResource(R.string.btn_cancel),
                     onClick = onDismiss,
+                    enabled = !submitting,
                     modifier = Modifier.weight(1f),
                 )
                 PrimaryButton(
                     text = stringResource(R.string.review_submit_btn),
                     onClick = {
-                        val finalComment = comment.trim().ifBlank {
-                            if (selectedTags.isNotEmpty()) selectedTags.joinToString(", ")
-                            else "Sân chất lượng tốt, đáng trải nghiệm."
-                        }
-                        onSubmit(rating, selectedTags.toList(), finalComment)
+                        val text = comment.trim()
+                        if (text.isEmpty()) return@PrimaryButton
+                        onSubmit(rating, text)
                     },
+                    enabled = comment.trim().isNotEmpty() && !submitting,
+                    loading = submitting,
                     modifier = Modifier.weight(1f),
                 )
             }
@@ -680,7 +587,6 @@ private val previewReviews = listOf(
         rating = 5,
         date = "01/01/2026",
         comment = "Nội dung đánh giá mẫu cho preview.",
-        tags = listOf("Mặt sân tốt"),
         ownerReply = "Phản hồi mẫu của chủ sân.",
         ownerReplyDate = "02/01/2026",
     ),

@@ -103,13 +103,23 @@ fun FacilityDetailContent(
 ) {
     val facility = state.facility
     val context = LocalContext.current
-    // Màn này chỉ ĐỌC đánh giá của cơ sở. Viết đánh giá chỉ làm được từ đơn đã vào sân
-    // (tab Hoàn thành trong lịch đặt) để tránh spam.
-    // Chưa có API đánh giá nên danh sách để trống, không dùng dữ liệu giả.
-    val reviews = emptyList<FacilityReviewUi>()
+    // Chỉ ĐỌC đánh giá. Viết/sửa từ đơn completed trong lịch đặt.
+    val reviews = remember(facility) {
+        facility?.reviewList.orEmpty().map {
+            FacilityReviewUi(
+                id = it.id,
+                author = it.author,
+                rating = it.rating,
+                date = it.date,
+                comment = it.text,
+                ownerReply = it.ownerReply,
+                ownerReplyDate = it.ownerReplyDate,
+            )
+        }
+    }
     var selectedReviewFilter by remember { mutableStateOf("all") }
 
-    val filteredReviews = remember(selectedReviewFilter) {
+    val filteredReviews = remember(selectedReviewFilter, reviews) {
         when (selectedReviewFilter) {
             "5" -> reviews.filter { it.rating == 5 }
             "4" -> reviews.filter { it.rating == 4 }

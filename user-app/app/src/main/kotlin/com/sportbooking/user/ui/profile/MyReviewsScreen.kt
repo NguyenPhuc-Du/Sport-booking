@@ -23,6 +23,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.ExpandLess
 import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.Star
@@ -38,6 +39,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -60,10 +62,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.sportbooking.domain.common.DomainResult
 import com.sportbooking.domain.model.Review
-import com.sportbooking.domain.usecase.GetProfileUseCase
+import com.sportbooking.domain.usecase.GetMyReviewsUseCase
+import com.sportbooking.domain.usecase.UpdateReviewUseCase
 import com.sportbooking.user.R
 import com.sportbooking.user.ui.components.EmptyState
+import com.sportbooking.user.ui.components.ErrorText
 import com.sportbooking.user.ui.components.LoadingScreen
+import com.sportbooking.user.ui.components.WriteReviewBottomSheet
 import com.sportbooking.user.ui.theme.SportBookingTheme
 import com.sportbooking.user.ui.theme.extraColors
 import com.sportbooking.user.ui.theme.spacing
@@ -79,11 +84,13 @@ data class MyReviewsUiState(
     val loading: Boolean = true,
     val reviews: List<Review> = emptyList(),
     val error: String? = null,
+    val editingId: String? = null,
 )
 
 @HiltViewModel
 class MyReviewsViewModel @Inject constructor(
-    private val getProfile: GetProfileUseCase,
+    private val getMyReviews: GetMyReviewsUseCase,
+    private val updateReview: UpdateReviewUseCase,
 ) : ViewModel() {
     private val _state = MutableStateFlow(MyReviewsUiState())
     val state = _state.asStateFlow()
@@ -95,12 +102,25 @@ class MyReviewsViewModel @Inject constructor(
     fun refresh() {
         viewModelScope.launch {
             _state.update { it.copy(loading = true, error = null) }
-            when (val result = getProfile()) {
+            when (val result = getMyReviews()) {
                 is DomainResult.Success -> _state.update {
-                    it.copy(loading = false, reviews = result.data.reviews)
+                    it.copy(loading = false, reviews = result.data, editingId = null)
                 }
                 is DomainResult.Failure -> _state.update {
-                    it.copy(loading = false, error = result.message)
+                    it.copy(loading = false, error = result.message, editingId = null)
+                }
+            }
+        }
+    }
+
+    fun update(id: String, rating: Int, text: String) {
+        if (_state.value.editingId != null) return
+        _state.update { it.copy(editingId = id, error = null) }
+        viewModelScope.launch {
+            when (val result = updateReview(id, rating, text)) {
+                is DomainResult.Success -> refresh()
+                is DomainResult.Failure -> _state.update {
+                    it.copy(editingId = null, error = result.message)
                 }
             }
         }
@@ -118,6 +138,7 @@ fun MyReviewsScreen(
         state = state,
         onBack = onBack,
         onRetry = viewModel::refresh,
+        onEdit = viewModel::update,
         modifier = modifier,
     )
 }
@@ -128,10 +149,12 @@ fun MyReviewsContent(
     state: MyReviewsUiState,
     onBack: () -> Unit,
     onRetry: () -> Unit,
+    onEdit: (id: String, rating: Int, text: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var selectedStars by rememberSaveable { mutableIntStateOf(0) } // 0 = all
+    var selectedStars by rememberSaveable { mutableIntStateOf(0) }
     var expandedKey by rememberSaveable { mutableStateOf<String?>(null) }
+    var editingReview by remember { mutableStateOf<Review?>(null) }
 
     val filtered = remember(state.reviews, selectedStars) {
         if (selectedStars == 0) state.reviews
@@ -169,7 +192,7 @@ fun MyReviewsContent(
     ) { padding ->
         when {
             state.loading -> LoadingScreen(modifier = Modifier.padding(padding))
-            state.error != null -> EmptyState(
+            state.error != null && state.reviews.isEmpty() -> EmptyState(
                 title = stringResource(R.string.label_no_reviews),
                 message = state.error.orEmpty(),
                 actionLabel = stringResource(R.string.btn_back),
@@ -190,6 +213,12 @@ fun MyReviewsContent(
                     .padding(padding)
                     .fillMaxSize(),
             ) {
+                if (state.error != null) {
+                    ErrorText(
+                        message = state.error,
+                        modifier = Modifier.padding(horizontal = MaterialTheme.spacing.normal),
+                    )
+                }
                 RatingFilterRow(
                     selectedStars = selectedStars,
                     onSelected = {
@@ -216,17 +245,16 @@ fun MyReviewsContent(
                     ) {
                         itemsIndexed(
                             filtered,
-                            key = { index, review ->
-                                "${review.facility}_${review.rating}_${review.text.hashCode()}_$index"
-                            },
-                        ) { index, review ->
-                            val key = "${review.facility}_${review.rating}_${review.text.hashCode()}_$index"
+                            key = { _, review -> review.id.ifBlank { review.facility + review.text } },
+                        ) { _, review ->
+                            val key = review.id.ifBlank { review.facility + review.text }
                             MyReviewRow(
                                 review = review,
                                 expanded = expandedKey == key,
                                 onToggle = {
                                     expandedKey = if (expandedKey == key) null else key
                                 },
+                                onEdit = { editingReview = review },
                             )
                         }
                         item { Spacer(Modifier.height(MaterialTheme.spacing.large)) }
@@ -234,6 +262,23 @@ fun MyReviewsContent(
                 }
             }
         }
+    }
+
+    val currentEdit = editingReview
+    if (currentEdit != null) {
+        WriteReviewBottomSheet(
+            facilityName = currentEdit.facility,
+            initialRating = currentEdit.rating,
+            initialComment = currentEdit.text,
+            submitting = state.editingId == currentEdit.id,
+            onDismiss = {
+                if (state.editingId == null) editingReview = null
+            },
+            onSubmit = { rating, text ->
+                onEdit(currentEdit.id, rating, text)
+                editingReview = null
+            },
+        )
     }
 }
 
@@ -277,6 +322,7 @@ private fun MyReviewRow(
     review: Review,
     expanded: Boolean,
     onToggle: () -> Unit,
+    onEdit: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Card(
@@ -329,11 +375,22 @@ private fun MyReviewRow(
                 enter = fadeIn() + expandVertically(),
                 exit = fadeOut() + shrinkVertically(),
             ) {
-                Text(
-                    text = review.text,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)) {
+                    Text(
+                        text = review.text,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    TextButton(onClick = onEdit) {
+                        Icon(
+                            imageVector = Icons.Rounded.Edit,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                        )
+                        Spacer(Modifier.size(6.dp))
+                        Text(text = stringResource(R.string.my_reviews_edit_btn))
+                    }
+                }
             }
         }
     }
@@ -352,6 +409,7 @@ private fun MyReviewsContentPreview() {
                 ),
                 onBack = {},
                 onRetry = {},
+                onEdit = { _, _, _ -> },
             )
         }
     }
