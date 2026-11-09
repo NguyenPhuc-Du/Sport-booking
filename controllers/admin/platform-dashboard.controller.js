@@ -13,14 +13,15 @@ const index = asyncHandler(async (req, res) => {
       loadError: null,
     });
   } catch (error) {
+    console.error("dashboard", error);
     return res.render("admin/pages/platform/dashboard", {
       pageTitle: "Tổng quan sàn",
       activeMenu: "dashboard",
       cards: [],
       chart: { code: range, totalLabel: "0 ₫", buckets: [] },
       charts: [],
-      recent: [],
-      loadError: "Không đọc được số liệu. Kiểm tra kết nối MongoDB.",
+      topFees: [],
+      loadError: "Không đọc được số liệu. Thử lại sau giây lát.",
     });
   }
 });
