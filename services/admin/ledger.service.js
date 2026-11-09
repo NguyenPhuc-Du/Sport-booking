@@ -1,14 +1,11 @@
-const User = require("../../models/user.model");
 const Venue = require("../../models/facilities.model");
+const User = require("../../models/user.model");
 const Ledger = require("../../models/ledger-entry.model");
 const { ServiceError } = require("./auth.service");
-const audit = require("./audit.service");
 const rate = require("./rate.service");
 const { formatVnd, percentLabel } = require("./present");
 const {
   ROLES,
-  LEDGER_TYPES,
-  LEDGER_CODES,
   CHARTS,
   byCode,
   startOfDay,
@@ -17,15 +14,8 @@ const {
   addUnit,
 } = require("./catalog");
 
-const PAGE_SIZE = 12;
-
 function nextCode() {
   return `LG${Date.now()}${Math.floor(Math.random() * 900 + 100)}`;
-}
-
-function typeLabel(code) {
-  const found = byCode(LEDGER_TYPES, code);
-  return found ? found.label : code;
 }
 
 async function appendLine(input) {
@@ -74,7 +64,8 @@ async function recordPaidBooking(booking) {
     ? await Venue.findById(booking.facilityId).select("owner_id").lean()
     : null;
   const ownerId = venue ? venue.owner_id : null;
-  const share = await rate.resolveRate(ownerId);
+  const share = rate.resolveRate();
+
   const amount = Math.round(Number(booking.amount) || 0);
   const fee = Math.round(amount * share);
   const cash = booking.paymentMethod === "cash";
@@ -195,142 +186,6 @@ function commissionState(row, marks) {
   return "open";
 }
 
-function readQuery(query) {
-  const source = query || {};
-  const page = Math.max(parseInt(source.page, 10) || 1, 1);
-  const type = LEDGER_CODES.includes(source.type) ? source.type : "";
-  const q = String(source.q || "").trim();
-  const userId = source.userId || "";
-  const from = source.from ? new Date(source.from) : null;
-  const to = source.to ? new Date(source.to) : null;
-  if (to && !Number.isNaN(to.getTime())) to.setHours(23, 59, 59, 999);
-
-  const filter = {};
-  if (type) filter.type = type;
-  if (q) filter.code = q;
-  if (userId) filter.user_id = userId;
-  if (from || to) {
-    filter.created_at = {};
-    if (from && !Number.isNaN(from.getTime())) filter.created_at.$gte = from;
-    if (to && !Number.isNaN(to.getTime())) filter.created_at.$lte = to;
-  }
-
-  return {
-    filter,
-    page,
-    type,
-    q,
-    userId,
-    from: source.from || "",
-    to: source.to || "",
-  };
-}
-
-function presentRow(row) {
-  const account =
-    row.user_id && row.user_id.fullName ? row.user_id.fullName : "—";
-  return {
-    code: row.code,
-    when: row.created_at
-      ? new Date(row.created_at).toLocaleString("vi-VN")
-      : "—",
-    account,
-    type: row.type,
-    typeLabel: typeLabel(row.type),
-    amount: row.amount,
-    amountLabel: formatVnd(row.amount),
-    balanceLabel: formatVnd(row.balance_after),
-    note: row.note || row.booking_code || "",
-  };
-}
-
-async function list(query) {
-  const read = readQuery(query);
-  const [total, rows, accounts] = await Promise.all([
-    Ledger.countDocuments(read.filter),
-    Ledger.find(read.filter)
-      .populate("user_id", "fullName")
-      .sort({ created_at: -1 })
-      .skip((read.page - 1) * PAGE_SIZE)
-      .limit(PAGE_SIZE)
-      .lean(),
-    User.find().select("fullName role").sort({ fullName: 1 }).lean(),
-  ]);
-
-  return {
-    items: rows.map(presentRow),
-    total,
-    page: read.page,
-    pages: Math.max(Math.ceil(total / PAGE_SIZE), 1),
-    type: read.type,
-    q: read.q,
-    userId: read.userId,
-    from: read.from,
-    to: read.to,
-    accounts,
-    types: LEDGER_TYPES,
-  };
-}
-
-async function csv(query) {
-  const read = readQuery(query);
-  const rows = await Ledger.find(read.filter)
-    .populate("user_id", "fullName")
-    .sort({ created_at: -1 })
-    .lean();
-  const header = [
-    "Thời gian",
-    "Mã",
-    "Tài khoản",
-    "Loại",
-    "Số tiền",
-    "Số dư sau",
-    "Ghi chú",
-  ];
-  const body = rows.map((row) => {
-    const item = presentRow(row);
-    return [
-      item.when,
-      item.code,
-      item.account,
-      item.typeLabel,
-      item.amount,
-      row.balance_after,
-      item.note,
-    ];
-  });
-  const lines = [header, ...body].map((cols) =>
-    cols
-      .map((value) => {
-        const text = String(value ?? "");
-        return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
-      })
-      .join(","),
-  );
-  return `\uFEFF${lines.join("\n")}`;
-}
-
-async function adjust(actorId, body) {
-  const amount = Number(body.amount);
-  const note = String(body.note || "").trim();
-  if (!Number.isFinite(amount) || amount === 0) {
-    throw new ServiceError("Số tiền điều chỉnh phải khác 0");
-  }
-  if (!note) throw new ServiceError("Nhập lý do điều chỉnh");
-  const user = await User.findById(body.userId).lean();
-  if (!user) throw new ServiceError("Không có tài khoản này");
-
-  await appendLine({
-    type: "adjustment",
-    user_id: user._id,
-    owner_id: user.role === "OWNER" ? user._id : null,
-    amount,
-    effect: amount,
-    note,
-  });
-  await audit.write(actorId, "ledger.adjust", user._id, `${amount} · ${note}`);
-}
-
 async function ownerPosition(ownerId) {
   const lines = await Ledger.find({ owner_id: ownerId }).lean();
   const ids = lines.map((row) => row.booking_id).filter(Boolean);
@@ -362,6 +217,17 @@ async function ownerPosition(ownerId) {
   };
 }
 
+function presentTopFees(rows) {
+  const list = rows || [];
+  const peak = list.reduce((max, row) => Math.max(max, row.total), 0);
+  return list.map((row, index) => ({
+    rank: index + 1,
+    name: row.owner && row.owner[0] ? row.owner[0].fullName : "Chủ sân không còn",
+    amountLabel: formatVnd(row.total),
+    share: peak ? Math.max(6, Math.round((row.total / peak) * 100)) : 0,
+  }));
+}
+
 function countOf(list, field) {
   return list && list[0] && list[0][field] ? list[0][field] : 0;
 }
@@ -386,7 +252,7 @@ function chartBuckets(range) {
 }
 
 function paintBuckets(buckets, rows) {
-  rows.forEach((row) => {
+  (rows || []).forEach((row) => {
     const at = new Date(row.created_at).getTime();
     const bucket = buckets.find(
       (item) => at >= item.start.getTime() && at < item.end.getTime(),
@@ -442,8 +308,11 @@ async function dashboard(range) {
           monthFee: [
             {
               $match: {
-                type: "commission",
                 created_at: { $gte: monthStart },
+                $or: [
+                  { type: "commission" },
+                  { type: "adjustment", amount: { $lt: 0 } },
+                ],
               },
             },
             { $group: { _id: null, total: { $sum: "$amount" } } },
@@ -455,22 +324,35 @@ async function dashboard(range) {
           chart: [
             {
               $match: {
-                type: "commission",
                 created_at: { $gte: chartFrom, $lt: chartTo },
+                $or: [
+                  { type: "commission" },
+                  { type: "adjustment", amount: { $lt: 0 } },
+                ],
               },
             },
-            { $project: { amount: 1, created_at: 1 } },
+            { $project: { _id: 0, amount: 1, created_at: 1 } },
           ],
-          recent: [
-            { $sort: { created_at: -1 } },
-            { $limit: 8 },
+          topFees: [
+            {
+              $match: {
+                owner_id: { $ne: null },
+                $or: [
+                  { type: "commission" },
+                  { type: "adjustment", amount: { $lt: 0 } },
+                ],
+              },
+            },
+            { $group: { _id: "$owner_id", total: { $sum: "$amount" } } },
+            { $sort: { total: -1 } },
+            { $limit: 10 },
             {
               $lookup: {
                 from: "users",
-                localField: "user_id",
+                localField: "_id",
                 foreignField: "_id",
                 pipeline: [{ $project: { fullName: 1 } }],
-                as: "user",
+                as: "owner",
               },
             },
           ],
@@ -483,7 +365,7 @@ async function dashboard(range) {
   const books = ledgerFacet[0];
   const roleMap = new Map(users.byRole.map((row) => [row._id, row.count]));
   const totalUsers = users.byRole.reduce((sum, row) => sum + row.count, 0);
-  const painted = paintBuckets(buckets, books.chart);
+  const painted = paintBuckets(buckets, books.chart || []);
 
   return {
     cards: [
@@ -504,7 +386,6 @@ async function dashboard(range) {
         note: `Mới tuần này ${countOf(users.weekNew, "n")} · tháng này ${countOf(users.monthNew, "n")}`,
       },
       {
-        href: "/admin/ledger",
         icon: "bi-journal-text",
         label: "Tổng giao dịch",
         value: String(countOf(books.entries, "n")),
@@ -520,9 +401,7 @@ async function dashboard(range) {
     ],
     charts: CHARTS,
     chart: { code: spec.code, ...painted },
-    recent: books.recent.map((row) =>
-      presentRow({ ...row, user_id: row.user[0] || null }),
-    ),
+    topFees: presentTopFees(books.topFees),
   };
 }
 
@@ -542,9 +421,6 @@ module.exports = {
   isVoid,
   isSettled,
   commissionState,
-  list,
-  csv,
-  adjust,
   ownerPosition,
   dashboard,
   linesForOwner,

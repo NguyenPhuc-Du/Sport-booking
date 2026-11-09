@@ -15,13 +15,21 @@ block main
       p= loadError
       a.sz-btn.sz-btn-green(href="/admin/dashboard") Thử lại
   else
+    mixin stat(card)
+      i.bi(class=card.icon)
+      span.pf-stat-label= card.label
+      strong.pf-stat-value= card.value
+      span.pf-stat-note= card.note
+
     .pf-stats
       each card in cards
-        a.pf-stat(href=card.href)
-          i.bi(class=card.icon)
-          span.pf-stat-label= card.label
-          strong.pf-stat-value= card.value
-          span.pf-stat-note= card.note
+        if card.href
+          a.pf-stat(href=card.href)
+            +stat(card)
+        else
+          .pf-stat
+            +stat(card)
+
 
     .pf-split
       section.sz-card.sz-panel
@@ -47,54 +55,22 @@ block main
 
       section.sz-card.sz-panel
         .pf-split-head
-          h2.sz-panel-title Bút toán mới nhất
-          a(href="/admin/ledger") Xem tất cả
-        if recent.length
-          each item, index in recent
-            button.pf-order(type="button" data-open=`ledger-${index}`)
-              div
-                strong= item.code
-                small.sz-muted #{item.typeLabel} · #{item.account}
-              div
-                span= item.amountLabel
-                small.sz-muted= item.when
-            dialog.pf-dialog(id=`ledger-${index}`)
-              .pf-dialog-head
-                div
-                  p.pf-kicker Chi tiết bút toán
-                  h2= item.code
-                button(type="button" data-close aria-label="Đóng") ×
-              p
-                span.sz-muted Loại
-                br
-                strong= item.typeLabel
-              p
-                span.sz-muted Tài khoản
-                br
-                strong= item.account
-              p
-                span.sz-muted Thời gian
-                br
-                strong= item.when
-              p
-                span.sz-muted Số tiền
-                br
-                strong= item.amountLabel
-              p
-                span.sz-muted Số dư sau
-                br
-                strong= item.balanceLabel
-              p
-                span.sz-muted Ghi chú
-                br
-                = item.note || "—"
-              .pf-dialog-actions
-                a.sz-btn(href=`/admin/ledger?q=${encodeURIComponent(item.code)}`) Mở sổ cái
-                button.sz-btn.sz-btn-green(type="button" data-close) Đóng
+          div
+            h2.sz-panel-title Top 10 hoa hồng
+            p.sz-panel-sub= topFees.length ? `${topFees.length} chủ sân` : "Chưa có phát sinh"
+          a.pf-top-link(href="/admin/commissions") Xem đối soát
+        if topFees.length
+          ol.pf-rank
+            each item in topFees
+              li
+                span.pf-rank-no(class=`is-${item.rank}`)= item.rank
+                .pf-rank-body
+                  .pf-rank-line
+                    strong= item.name
+                    span= item.amountLabel
+                  span.pf-rank-track
+                    span.pf-rank-fill(style=`width:${item.share}%`)
         else
           .pf-empty
-            strong Chưa có bút toán.
-            p Đơn đã thanh toán sẽ tự ghi vào sổ cái.
-
-block script
-  script(src="/admin/js/platform.js")
+            strong Chưa có hoa hồng.
+            p Đơn đã thanh toán sẽ hiện chủ sân ở đây.

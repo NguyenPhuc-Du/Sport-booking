@@ -38,12 +38,6 @@ const ADMIN_MENU = [
   },
   { href: "/admin/users", key: "users", icon: "bi-people", text: "Tài khoản" },
   {
-    href: "/admin/ledger",
-    key: "ledger",
-    icon: "bi-journal-text",
-    text: "Sổ cái",
-  },
-  {
     href: "/admin/commissions",
     key: "commissions",
     icon: "bi-percent",
