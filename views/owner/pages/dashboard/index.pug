@@ -44,7 +44,7 @@ block main
           div
             h2.sz-panel-title Sân có doanh thu cao nhất
             p.sz-panel-sub= `Top sân theo doanh thu ${rangeLabel}`
-          a.sz-link(href=`${prefixOwner}/facilities`) Quản lý sân →
+          a.sz-link(href=`${prefixOwner}/dashboard/courts?range=${range}`) Xem thống kê →
         if topCourts.length
           ul.sz-rank-list
             each c in topCourts
