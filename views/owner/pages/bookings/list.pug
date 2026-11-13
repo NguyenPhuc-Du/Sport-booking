@@ -1,0 +1,224 @@
+extends ../../layouts/default.pug
+include ../../../mixins/alert.pug
+
+block head
+  link(rel="stylesheet" href="/admin/css/bookings.css")
+
+block main
+  +alert-success(5000)
+  +alert-error(5000)
+  - const list = typeof bookings !== "undefined" ? bookings : []
+  - const f = typeof filter !== "undefined" ? filter : {}
+  - const pg = typeof pagination !== "undefined" ? pagination : { currentPage: 1, totalPage: 1 }
+  - const totalCount = typeof total !== "undefined" ? total : list.length
+  - const qs = (o) => { const p = Object.assign({}, f, o); return Object.keys(p).filter((k) => p[k]).map((k) => k + "=" + encodeURIComponent(p[k])).join("&"); }
+
+  .d-flex.justify-content-between.align-items-start.flex-wrap.gap-3.mb-4
+    div
+      h1.sz-title Danh sách đặt sân
+      p.sz-subtitle Toàn bộ đơn của các cơ sở, mới nhất xếp trước.
+    a.sz-btn.sz-btn-detail(href=`${prefixOwner}/bookings`)
+      i.bi.bi-calendar3
+      | Sơ đồ timeline
+
+  .sz-card.sz-panel.bk-day-list
+    .d-flex.justify-content-between.align-items-end.flex-wrap.gap-3.mb-3
+      div
+        h2.sz-panel-title Tất cả lịch đặt
+        p.bk-day-sub Gồm mọi ngày và mọi trạng thái.
+      form.bk-filter(method="GET" action=`${prefixOwner}/bookings/list`)
+        select.sz-input.bk-filter-select(name="venueId" onchange="this.form.submit()")
+          option(value="") Tất cả cơ sở
+          each venue in (typeof venues !== "undefined" ? venues : [])
+            option(value=venue._id selected=(String(f.venueId) === String(venue._id)))= venue.name
+        label.bk-range
+          span Từ
+          input.sz-input.bk-filter-date(type="date" name="dateFrom" value=f.dateFrom)
+        label.bk-range
+          span Đến
+          input.sz-input.bk-filter-date(type="date" name="dateTo" value=f.dateTo)
+        select.sz-input.bk-filter-select(name="status")
+          option(value="") Mọi trạng thái
+          option(value="pending_payment" selected=(f.status === "pending_payment")) Chờ thanh toán
+          option(value="upcoming" selected=(f.status === "upcoming")) Đã đặt lịch
+          option(value="completed" selected=(f.status === "completed")) Đã check-in
+          option(value="cancelled" selected=(f.status === "cancelled")) Đã hủy
+        input.sz-input.bk-filter-search(type="search" name="keyword" placeholder="Mã, tên, SĐT, sân..." value=f.keyword)
+        button.sz-btn.sz-btn-green(type="submit") Lọc
+        a.sz-btn.sz-btn-detail(href=`${prefixOwner}/bookings/list`) Xóa lọc
+    .bk-day-count.mb-3= totalCount + " đơn"
+
+    if list.length
+      .bk-day-wrap
+        table.bk-day-table.bk-list-table#bk-list-table
+          thead
+            tr
+              th NGÀY
+              th MỐC GIỜ
+              th SÂN
+              th.bk-col-fold CƠ SỞ
+              th KHÁCH
+              th.bk-col-fold TRẠNG THÁI
+              th.bk-col-fold TIỀN
+              th.bk-col-action.text-end
+              th.bk-detail-head CHI TIẾT
+          tbody
+            each booking, index in list
+              tr.bk-row(data-code=booking.code tabindex="0")
+                td= booking.date
+                td
+                  strong.bk-day-time= booking.time
+                td= booking.court
+                td.bk-col-fold.bk-day-muted= booking.venue || "—"
+                td
+                  div= booking.name || "—"
+                  if booking.phone
+                    .bk-day-muted= booking.phone
+                td.bk-col-fold
+                  span.bk-day-status(class=`is-${booking.status}`)= booking.statusLabel
+                td.bk-col-fold
+                  strong= booking.amount
+                td.bk-col-action.text-end
+                  span.bk-icon-btn(title="Xem đơn")
+                    i.bi.bi-receipt
+                if index === 0
+                  td.bk-detail-cell(rowspan=list.length)
+                    .bk-bill-slot
+
+      if pg.totalPage > 1
+        nav.bk-pagination(aria-label="Phân trang đơn đặt sân")
+          if pg.currentPage > 1
+            a.bk-page(href=`?${qs({ page: pg.currentPage - 1 })}`)
+              i.bi.bi-chevron-left
+          - for (let i = 1; i <= pg.totalPage; i++)
+            a.bk-page(href=`?${qs({ page: i })}` class=(i === pg.currentPage ? "active" : undefined))= i
+          if pg.currentPage < pg.totalPage
+            a.bk-page(href=`?${qs({ page: pg.currentPage + 1 })}`)
+              i.bi.bi-chevron-right
+    else
+      p.bk-day-empty Không có đơn phù hợp.
+
+block script
+  -
+    const bookingsPayload = JSON.stringify(typeof bookings !== "undefined" ? bookings : []).replace(/</g, "\\u003c")
+  script#bk-list-data(type="application/json")!= bookingsPayload
+  script.
+    (function () {
+      const table = document.getElementById("bk-list-table");
+      const dataNode = document.getElementById("bk-list-data");
+      if (!table || !dataNode) return;
+
+      const bookings = JSON.parse(dataNode.textContent || "[]");
+      const rows = Array.from(table.querySelectorAll(".bk-row"));
+      const BILL_ROWS = 8;
+      let openCode = null;
+
+      function el(tag, className, text) {
+        const node = document.createElement(tag);
+        if (className) node.className = className;
+        if (text != null) node.textContent = text;
+        return node;
+      }
+
+      function meta(parent, label, value) {
+        const row = el("div", "bk-meta-row");
+        row.append(el("span", null, label), el("strong", null, value || "—"));
+        parent.appendChild(row);
+      }
+
+      function clearBills() {
+        table.querySelectorAll(".bk-bill-slot").forEach((slot) => slot.replaceChildren());
+      }
+
+      function sizeBill() {
+        const row = table.querySelector(".bk-row");
+        const slot = table.querySelector(".bk-bill-slot");
+        const wrap = table.closest(".bk-day-wrap");
+        if (!row || !slot || !wrap) return;
+        const rowH = row.getBoundingClientRect().height;
+        const bodyH = table.tBodies[0].getBoundingClientRect().height;
+        const billH = rowH * BILL_ROWS;
+        slot.style.height = billH + "px";
+        const extra = Math.max(0, billH - bodyH);
+        wrap.style.paddingBottom = extra ? extra + "px" : "";
+      }
+
+      function resetBillSize() {
+        const slot = table.querySelector(".bk-bill-slot");
+        const wrap = table.closest(".bk-day-wrap");
+        if (slot) slot.style.height = "";
+        if (wrap) wrap.style.paddingBottom = "";
+      }
+
+      function closePanel() {
+        openCode = null;
+        table.classList.remove("is-open");
+        clearBills();
+        resetBillSize();
+      }
+
+      function render(booking) {
+        const root = el("div", "bk-side-bill");
+        const head = el("div", "bk-side-head");
+        const titles = el("div");
+        titles.append(
+          el("div", "bk-side-code", booking.code),
+          el("div", "bk-day-muted", booking.venue || "Cơ sở"),
+          el("div", "bk-day-muted", booking.date + " · " + booking.time)
+        );
+        const close = el("button", "bk-side-close");
+        close.type = "button";
+        close.setAttribute("aria-label", "Đóng chi tiết");
+        close.innerHTML = '<i class="bi bi-x-lg"></i>';
+        close.addEventListener("click", function (event) {
+          event.stopPropagation();
+          closePanel();
+        });
+        head.append(titles, close);
+        root.appendChild(head);
+
+        meta(root, "Khách hàng", booking.name);
+        meta(root, "Số điện thoại", booking.phone);
+        meta(root, "Sân", booking.court);
+        meta(root, "Trạng thái", booking.statusLabel);
+        const total = el("div", "bk-side-total");
+        total.append(el("span", null, "Tổng tiền"), el("strong", null, booking.amount));
+        root.appendChild(total);
+        return root;
+      }
+
+      function openPanel(code) {
+        const booking = bookings.find((item) => item.code === code);
+        const slot = table.querySelector(".bk-bill-slot");
+        if (!booking || !slot) return;
+        openCode = code;
+        table.classList.add("is-open");
+        clearBills();
+        slot.appendChild(render(booking));
+        sizeBill();
+      }
+
+      rows.forEach((row) => {
+        row.addEventListener("click", function () {
+          if (openCode === row.dataset.code) closePanel();
+          else openPanel(row.dataset.code);
+        });
+        row.addEventListener("keydown", function (event) {
+          if (event.key !== "Enter" && event.key !== " ") return;
+          event.preventDefault();
+          if (openCode === row.dataset.code) closePanel();
+          else openPanel(row.dataset.code);
+        });
+      });
+
+      const detailCell = table.querySelector(".bk-detail-cell");
+      if (detailCell) {
+        detailCell.addEventListener("click", function (event) {
+          event.stopPropagation();
+        });
+      }
+
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape") closePanel();
+      });
+    })();

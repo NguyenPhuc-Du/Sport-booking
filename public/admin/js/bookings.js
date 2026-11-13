@@ -407,7 +407,7 @@
     if (pickHint) pickHint.textContent = pickBar.dataset.reason || "Không thể đặt sân cho ngày này.";
   }
 
-  document.querySelectorAll(".sz-slot").forEach(function (slot) {
+  document.querySelectorAll(".sz-slot, .bk-manage").forEach(function (slot) {
     slot.addEventListener("click", function () { openModal(slot); });
   });
 
