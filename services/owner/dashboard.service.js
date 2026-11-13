@@ -267,13 +267,15 @@ function buildStats({ bookings, previous, todayBookings, fillPct, goldenPct, new
       },
     ];
   }
-  function buildTopCourts(courts, bookings, dayCount) {
+  function collectCourtStats(courts, bookings, dayCount) {
     const capacity = Math.max(1, HOURS.length * Math.max(1, dayCount));
     const byCourt = new Map();
     for (const court of courts) {
+      const venue = court.venue_id && court.venue_id.name ? court.venue_id : null;
       byCourt.set(String(court._id), {
         name: court.name,
         sport: court.court_type_id?.name || "Khác",
+        venue: venue?.name || "Cơ sở",
         bookings: 0,
         revenue: 0,
         hours: 0,
@@ -285,6 +287,7 @@ function buildStats({ bookings, previous, todayBookings, fillPct, goldenPct, new
         byCourt.set(key, {
           name: booking.courtName || "Sân",
           sport: "Khác",
+          venue: booking.facilityName || "Cơ sở",
           bookings: 0,
           revenue: 0,
           hours: 0,
@@ -296,8 +299,15 @@ function buildStats({ bookings, previous, todayBookings, fillPct, goldenPct, new
       if (isPaid(booking)) row.revenue += Number(booking.amount || 0);
     }
     return [...byCourt.values()]
+      .sort((a, b) => b.revenue - a.revenue || b.bookings - a.bookings || a.name.localeCompare(b.name, "vi"))
+      .map((row) => ({
+        ...row,
+        fill: Math.min(100, Math.round((row.hours / capacity) * 100)),
+      }));
+  }
+  function buildTopCourts(courts, bookings, dayCount) {
+    return collectCourtStats(courts, bookings, dayCount)
       .filter((row) => row.bookings > 0 || row.revenue > 0)
-      .sort((a, b) => b.revenue - a.revenue || b.bookings - a.bookings)
       .slice(0, 4)
       .map((row, index) => ({
         rank: index + 1,
@@ -305,7 +315,7 @@ function buildStats({ bookings, previous, todayBookings, fillPct, goldenPct, new
         sport: row.sport,
         bookings: row.bookings,
         revenue: formatMoney(row.revenue),
-        fill: Math.min(100, Math.round((row.hours / capacity) * 100)),
+        fill: row.fill,
       }));
   }
   function buildLatestBookings(bookings) {
@@ -503,4 +513,59 @@ async function listAllBookings(ownerId, query = {}) {
   };
 }
 
-module.exports = { getOverview, listAllBookings };
+async function listCourtRevenue(ownerId, query = {}) {
+  const { range, from, to, label } = resolveRange(query.range);
+  const venues = await facilityService.getAllVenueByOwnerId(ownerId);
+  const venueIds = asObjectIds(venues.map((venue) => venue._id));
+  const venueId = String(query.venueId || "");
+  const selectedVenue = venueId && venueIds.some((id) => String(id) === venueId) ? venueId : "";
+  const keyword = String(query.q || "").trim();
+  const scopedIds = selectedVenue ? asObjectIds([selectedVenue]) : venueIds;
+  const dayCount = eachDate(from, to).length;
+
+  const [courts, bookings] = await Promise.all([
+    scopedIds.length
+      ? Court.find({
+          venue_id: facilityMatch(scopedIds),
+          deleted: { $ne: true },
+        })
+          .populate("court_type_id", "name")
+          .populate("venue_id", "name")
+          .lean()
+      : [],
+    loadBookings(scopedIds, from, to),
+  ]);
+
+  const needle = keyword.toLowerCase();
+  const ranked = collectCourtStats(courts, bookings, dayCount).filter((row) => {
+    if (!needle) return true;
+    return `${row.name} ${row.sport} ${row.venue}`.toLowerCase().includes(needle);
+  });
+  const pagination = paginationHelper({ limitPage: 12 }, query, ranked.length);
+  const pageRows = ranked.slice(pagination.skipPage, pagination.skipPage + pagination.limitPage);
+  const totalRevenue = ranked.reduce((total, row) => total + row.revenue, 0);
+  const totalBookings = ranked.reduce((total, row) => total + row.bookings, 0);
+
+  return {
+    courts: pageRows.map((row, index) => ({
+      rank: pagination.skipPage + index + 1,
+      name: row.name,
+      sport: row.sport,
+      venue: row.venue,
+      bookings: row.bookings,
+      revenue: formatMoney(row.revenue),
+      fill: row.fill,
+    })),
+    summary: {
+      courtCount: ranked.length,
+      bookings: totalBookings,
+      revenue: formatMoney(totalRevenue),
+    },
+    pagination,
+    filter: { range, q: keyword, venueId: selectedVenue },
+    rangeLabel: label,
+    venues: venues.map((venue) => ({ _id: String(venue._id), name: venue.name })),
+  };
+}
+
+module.exports = { getOverview, listAllBookings, listCourtRevenue };

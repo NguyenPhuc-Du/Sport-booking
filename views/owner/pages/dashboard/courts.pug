@@ -1,0 +1,91 @@
+extends ../../layouts/default.pug
+
+block head
+  link(rel="stylesheet" href="/admin/css/drinks.css")
+  link(rel="stylesheet" href="/admin/css/drink-index.css")
+
+block main
+  - const f = typeof filter !== "undefined" ? filter : { range: "7d", q: "", venueId: "" }
+  - const list = typeof courts !== "undefined" ? courts : []
+  - const pg = typeof pagination !== "undefined" ? pagination : { currentPage: 1, totalPage: 1 }
+  - const s = typeof summary !== "undefined" ? summary : { courtCount: 0, bookings: 0, revenue: "0đ" }
+  - const qs = (o) => { const p = Object.assign({}, f, o); return Object.keys(p).filter((k) => p[k] !== undefined && p[k] !== "").map((k) => k + "=" + encodeURIComponent(p[k])).join("&"); }
+
+  .d-flex.justify-content-between.align-items-start.flex-wrap.gap-3.mb-4
+    div
+      h1.sz-title Thống kê sân theo doanh thu
+      p.sz-subtitle Xếp hạng sân theo doanh thu đã thanh toán #{rangeLabel}.
+    a.sz-link(href=`${prefixOwner}/dashboard?range=${f.range}`) ← Về tổng quan
+
+  .sz-tabs.mb-3
+    a.sz-tab(href=`${prefixOwner}/dashboard/courts?${qs({ range: "7d", page: 1 })}` class=(f.range === "7d" ? "active" : undefined)) 7 ngày qua
+    a.sz-tab(href=`${prefixOwner}/dashboard/courts?${qs({ range: "month", page: 1 })}` class=(f.range === "month" ? "active" : undefined)) Tháng này
+    a.sz-tab(href=`${prefixOwner}/dashboard/courts?${qs({ range: "quarter", page: 1 })}` class=(f.range === "quarter" ? "active" : undefined)) Quý này
+
+  .row.g-3.mb-3
+    .col-12.col-md-4
+      .sz-card.sz-stat
+        span.sz-stat-label Sân trong bảng
+        .sz-stat-value= s.courtCount
+    .col-12.col-md-4
+      .sz-card.sz-stat
+        span.sz-stat-label Lượt đặt
+        .sz-stat-value= s.bookings
+    .col-12.col-md-4
+      .sz-card.sz-stat
+        span.sz-stat-label Doanh thu
+        .sz-stat-value= s.revenue
+
+  .sz-card.sz-panel
+    form.sz-filter.mb-3(method="GET" action=`${prefixOwner}/dashboard/courts`)
+      input(type="hidden" name="range" value=f.range)
+      select.sz-input.sz-filter-select(name="venueId")
+        option(value="") Tất cả cơ sở
+        each v in (typeof venues !== "undefined" ? venues : [])
+          option(value=v._id selected=(String(f.venueId) === String(v._id)))= v.name
+      .sz-search
+        i.bi.bi-search
+        input.sz-input(type="search" name="q" placeholder="Tên sân, môn, cơ sở..." value=f.q)
+      button.sz-btn.sz-btn-dark(type="submit") Lọc
+      a.sz-link(href=`${prefixOwner}/dashboard/courts?range=${f.range}`) Xóa lọc
+
+    if list.length
+      .sz-table-wrap
+        table.sz-table
+          thead
+            tr
+              th Hạng
+              th Sân
+              th Cơ sở
+              th Lượt đặt
+              th Lấp đầy
+              th Doanh thu
+          tbody
+            each c in list
+              tr
+                td
+                  strong= c.rank
+                td
+                  div= c.name
+                  .sz-muted= c.sport
+                td= c.venue
+                td= c.bookings
+                td #{c.fill}%
+                td
+                  strong= c.revenue
+
+      if pg.totalPage > 1
+        nav.sz-pagination(aria-label="Phân trang thống kê sân")
+          if pg.currentPage > 1
+            a.sz-page(href=`?${qs({ page: pg.currentPage - 1 })}`)
+              i.bi.bi-chevron-left
+          - for (let i = 1; i <= pg.totalPage; i++)
+            a.sz-page(href=`?${qs({ page: i })}` class=(i === pg.currentPage ? "active" : undefined))= i
+          if pg.currentPage < pg.totalPage
+            a.sz-page(href=`?${qs({ page: pg.currentPage + 1 })}`)
+              i.bi.bi-chevron-right
+    else
+      .sz-empty
+        i.bi.bi-bar-chart
+        h3 Chưa có sân để thống kê
+        p Không tìm thấy sân nào khớp bộ lọc hiện tại.
