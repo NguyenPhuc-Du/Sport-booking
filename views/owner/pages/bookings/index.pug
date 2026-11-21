@@ -12,6 +12,9 @@ block main
       h1.sz-title Quản lý Đặt sân & Lịch thi đấu
       p.sz-subtitle Đặt tại chỗ ngay trên sơ đồ: chọn các ô giờ liền nhau của cùng một sân.
     .d-flex.gap-2.flex-wrap
+      a.sz-btn.sz-btn-detail(href=`${prefixOwner}/bookings/list`)
+        i.bi.bi-list-ul
+        | Danh sách đơn
       button#openWalkIn.sz-btn.sz-btn-dark(type="button" disabled=!walkIn.allowed)
         i.bi.bi-plus-lg
         | Đặt tại chỗ

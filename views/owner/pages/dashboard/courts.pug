@@ -3,6 +3,7 @@ extends ../../layouts/default.pug
 block head
   link(rel="stylesheet" href="/admin/css/drinks.css")
   link(rel="stylesheet" href="/admin/css/drink-index.css")
+  link(rel="stylesheet" href="/admin/css/dashboard-bookings.css")
 
 block main
   - const f = typeof filter !== "undefined" ? filter : { range: "7d", q: "", venueId: "" }
@@ -51,28 +52,37 @@ block main
 
     if list.length
       .sz-table-wrap
-        table.sz-table
+        table.sz-table.db-bookings-table#db-courts-table(data-range=rangeLabel)
           thead
             tr
               th Hạng
               th Sân
-              th Cơ sở
-              th Lượt đặt
-              th Lấp đầy
+              th.db-col-fold Cơ sở
+              th.db-col-fold Lượt đặt
+              th.db-col-fold Lấp đầy
               th Doanh thu
+              th.db-col-action.text-end
+              th.db-detail-head Đơn của sân
           tbody
-            each c in list
-              tr
+            each c, index in list
+              tr.db-row(data-court-id=c.id tabindex="0")
                 td
                   strong= c.rank
                 td
                   div= c.name
                   .sz-muted= c.sport
-                td= c.venue
-                td= c.bookings
-                td #{c.fill}%
+                td.db-col-fold= c.venue
+                td.db-col-fold= c.bookings
+                td.db-col-fold #{c.fill}%
                 td
-                  strong= c.revenue
+                  strong.sz-price= c.revenue
+                td.db-col-action.text-end
+                  button.db-view-btn(type="button" title="Xem đơn" aria-label="Xem đơn")
+                    i.bi.bi-receipt
+                    span Xem đơn
+                if index === 0
+                  td.db-detail-cell(rowspan=list.length)
+                    .db-bill-slot
 
       if pg.totalPage > 1
         nav.sz-pagination(aria-label="Phân trang thống kê sân")
@@ -89,3 +99,176 @@ block main
         i.bi.bi-bar-chart
         h3 Chưa có sân để thống kê
         p Không tìm thấy sân nào khớp bộ lọc hiện tại.
+
+block script
+  -
+    const courtsPayload = JSON.stringify(typeof courts !== "undefined" ? courts : []).replace(/</g, "\\u003c")
+  script#db-courts-data(type="application/json")!= courtsPayload
+  script.
+    (function () {
+      const table = document.getElementById("db-courts-table");
+      const dataNode = document.getElementById("db-courts-data");
+      if (!table || !dataNode) return;
+
+      const courts = JSON.parse(dataNode.textContent || "[]");
+      const rows = Array.from(table.querySelectorAll(".db-row"));
+      const rangeLabel = table.dataset.range || "";
+      const BILL_ROWS = 8;
+      let openId = null;
+
+      function el(tag, className, text) {
+        const node = document.createElement(tag);
+        if (className) node.className = className;
+        if (text != null) node.textContent = text;
+        return node;
+      }
+
+      function clearBills() {
+        table.querySelectorAll(".db-bill-slot").forEach((slot) => slot.replaceChildren());
+      }
+
+      function sizeBill() {
+        const row = table.querySelector(".db-row");
+        const slot = table.querySelector(".db-bill-slot");
+        const wrap = table.closest(".sz-table-wrap");
+        if (!row || !slot || !wrap) return;
+        const rowH = row.getBoundingClientRect().height;
+        const bodyH = table.tBodies[0].getBoundingClientRect().height;
+        const billH = rowH * BILL_ROWS;
+        slot.style.height = billH + "px";
+        const extra = Math.max(0, billH - bodyH);
+        wrap.style.paddingBottom = extra ? extra + "px" : "";
+      }
+
+      function resetBillSize() {
+        const slot = table.querySelector(".db-bill-slot");
+        const wrap = table.closest(".sz-table-wrap");
+        if (slot) slot.style.height = "";
+        if (wrap) wrap.style.paddingBottom = "";
+      }
+
+      function closePanel() {
+        openId = null;
+        table.classList.remove("is-open");
+        rows.forEach((row) => row.classList.remove("is-active"));
+        clearBills();
+        resetBillSize();
+      }
+
+      function orderLine(order) {
+        const row = el("div", "db-order");
+        const left = el("div");
+        const who = [order.customer, order.phone].filter(Boolean).join(" · ");
+        left.append(
+          el("div", "db-code", order.code),
+          el("div", "db-side-line-meta", who || "Khách"),
+          el("div", "db-side-line-meta", order.time)
+        );
+        const right = el("div", "db-order-side");
+        right.append(el("strong", "sz-price", order.amount));
+        right.append(el("span", "sz-status is-" + order.status, order.statusLabel));
+        row.append(left, right);
+        return row;
+      }
+
+      function group(title, note, items) {
+        const block = el("div", "db-group");
+        const head = el("div", "db-group-head");
+        head.append(el("strong", null, title), el("span", null, items.length + " đơn"));
+        block.appendChild(head);
+        if (note) block.appendChild(el("p", "db-group-note", note));
+        if (!items.length) {
+          block.appendChild(el("p", "db-group-empty", "Không có đơn."));
+          return block;
+        }
+        items.forEach((order) => block.appendChild(orderLine(order)));
+        return block;
+      }
+
+      function render(court) {
+        const orders = court.orders || [];
+        const paid = orders.filter((order) => order.paid);
+        const pending = orders.filter((order) => !order.paid);
+        const root = el("div", "db-side-bill");
+        const head = el("div", "db-side-bill-head");
+        const titles = el("div");
+        titles.append(
+          el("div", "db-bill-kicker", "Đơn của sân"),
+          el("div", "db-court-name", court.name),
+          el("div", "sz-muted", [court.sport, court.venue].filter(Boolean).join(" · ")),
+          el("div", "sz-muted", rangeLabel)
+        );
+        const close = el("button", "db-bill-close");
+        close.type = "button";
+        close.setAttribute("aria-label", "Đóng danh sách đơn");
+        close.innerHTML = '<i class="bi bi-x-lg"></i>';
+        close.addEventListener("click", function (event) {
+          event.stopPropagation();
+          closePanel();
+        });
+        head.append(titles, close);
+        root.appendChild(head);
+
+        if (!orders.length) {
+          root.appendChild(el("p", "db-group-empty", "Sân này chưa có đơn trong kỳ đang xem."));
+        } else {
+          if (paid.length) {
+            root.appendChild(group(
+              "Đã tính doanh thu",
+              "Đơn đã thanh toán. Tổng nhóm này là doanh thu của sân.",
+              paid
+            ));
+          } else {
+            root.appendChild(el("p", "db-group-empty", "Chưa có đơn đã thanh toán trong kỳ này."));
+          }
+          if (pending.length) {
+            root.appendChild(group(
+              "Chưa tính doanh thu",
+              "Đơn chờ thanh toán vẫn nằm trong lượt đặt, chưa cộng vào doanh thu.",
+              pending
+            ));
+          }
+        }
+
+        const total = el("div", "db-total");
+        total.append(el("span", null, "Doanh thu kỳ này"), el("strong", null, court.revenue));
+        root.appendChild(total);
+        return root;
+      }
+
+      function openPanel(id) {
+        const court = courts.find((item) => item.id === id);
+        const slot = table.querySelector(".db-bill-slot");
+        if (!court || !slot) return;
+        openId = id;
+        table.classList.add("is-open");
+        rows.forEach((row) => row.classList.toggle("is-active", row.dataset.courtId === id));
+        clearBills();
+        slot.appendChild(render(court));
+        sizeBill();
+      }
+
+      rows.forEach((row) => {
+        row.addEventListener("click", function () {
+          if (openId === row.dataset.courtId) closePanel();
+          else openPanel(row.dataset.courtId);
+        });
+        row.addEventListener("keydown", function (event) {
+          if (event.key !== "Enter" && event.key !== " ") return;
+          event.preventDefault();
+          if (openId === row.dataset.courtId) closePanel();
+          else openPanel(row.dataset.courtId);
+        });
+      });
+
+      const detailCell = table.querySelector(".db-detail-cell");
+      if (detailCell) {
+        detailCell.addEventListener("click", function (event) {
+          event.stopPropagation();
+        });
+      }
+
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape") closePanel();
+      });
+    })();

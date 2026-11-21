@@ -84,17 +84,33 @@ function customerPhone(booking) {
 }
 function mapBookingRow(booking) {
   const view = STATUS_VIEW[booking.status] || STATUS_VIEW.pending_payment;
+  const drinks = (booking.drinks || []).map((line) => ({
+    name: line.name || "",
+    price: Number(line.price || 0),
+    qty: Number(line.qty || 0),
+    lineTotal: Number(line.price || 0) * Number(line.qty || 0),
+  }));
   return {
     code: booking.code,
     pay: String(booking.paymentMethod || "vnpay").toUpperCase(),
+    paymentMethod: booking.paymentMethod || "vnpay",
     customer: customerName(booking),
     phone: customerPhone(booking),
     venue: booking.facilityName || "Cơ sở",
     court: booking.courtName || "Sân",
     time: formatBookingTime(booking),
     date: booking.date || "",
+    timeStart: booking.timeStart || "",
+    timeEnd: booking.timeEnd || "",
     slot: `${booking.timeStart || ""}-${booking.timeEnd || ""}`,
+    courtPrice: Number(booking.courtPrice || 0),
+    discount: Number(booking.discount || 0),
+    drinkTotal: Number(booking.drinkTotal || 0),
+    voucherCode: booking.voucherCode || "",
+    drinks,
     amount: formatMoney(booking.amount),
+    paidAt: booking.paidAt || null,
+    createdAt: booking.createdAt || null,
     status: view.status,
     statusLabel: view.statusLabel,
   };
@@ -296,30 +312,50 @@ function buildStats({ bookings, previous, todayBookings, fillPct, goldenPct, new
     for (const court of courts) {
       const venue = court.venue_id && court.venue_id.name ? court.venue_id : null;
       byCourt.set(String(court._id), {
+        id: String(court._id),
         name: court.name,
         sport: court.court_type_id?.name || "Khác",
         venue: venue?.name || "Cơ sở",
         bookings: 0,
         revenue: 0,
         hours: 0,
+        orders: [],
       });
     }
     for (const booking of bookings) {
       const key = String(booking.courtId);
       if (!byCourt.has(key)) {
         byCourt.set(key, {
+          id: key,
           name: booking.courtName || "Sân",
           sport: "Khác",
           venue: booking.facilityName || "Cơ sở",
           bookings: 0,
           revenue: 0,
           hours: 0,
+          orders: [],
         });
       }
       const row = byCourt.get(key);
+      const view = STATUS_VIEW[booking.status] || STATUS_VIEW.pending_payment;
+      const paid = isPaid(booking);
       row.bookings += 1;
       row.hours += bookingHours(booking);
-      if (isPaid(booking)) row.revenue += Number(booking.amount || 0);
+      if (paid) row.revenue += Number(booking.amount || 0);
+      row.orders.push({
+        code: booking.code,
+        customer: customerName(booking),
+        phone: customerPhone(booking),
+        time: formatBookingTime(booking),
+        sort: `${booking.date || ""} ${booking.timeStart || ""}`,
+        amount: formatMoney(booking.amount),
+        status: view.status,
+        statusLabel: view.statusLabel,
+        paid,
+      });
+    }
+    for (const row of byCourt.values()) {
+      row.orders.sort((a, b) => String(b.sort).localeCompare(String(a.sort)));
     }
     return [...byCourt.values()]
       .sort((a, b) => b.revenue - a.revenue || b.bookings - a.bookings || a.name.localeCompare(b.name, "vi"))
@@ -595,6 +631,7 @@ async function listCourtRevenue(ownerId, query = {}) {
 
   return {
     courts: pageRows.map((row, index) => ({
+      id: row.id,
       rank: pagination.skipPage + index + 1,
       name: row.name,
       sport: row.sport,
@@ -602,6 +639,7 @@ async function listCourtRevenue(ownerId, query = {}) {
       bookings: row.bookings,
       revenue: formatMoney(row.revenue),
       fill: row.fill,
+      orders: (row.orders || []).map(({ sort, ...order }) => order),
     })),
     summary: {
       courtCount: ranked.length,

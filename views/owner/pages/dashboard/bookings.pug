@@ -3,6 +3,7 @@ extends ../../layouts/default.pug
 block head
   link(rel="stylesheet" href="/admin/css/drinks.css")
   link(rel="stylesheet" href="/admin/css/drink-index.css")
+  link(rel="stylesheet" href="/admin/css/dashboard-bookings.css")
 
 block main
   - const f = typeof filter !== "undefined" ? filter : { status: "", q: "", venueId: "" }
@@ -40,36 +41,37 @@ block main
 
     if list.length
       .sz-table-wrap
-        table.sz-table
+        table.sz-table.db-bookings-table#db-bookings-table
           thead
             tr
               th Mã đơn
               th Khách
-              th Cơ sở / Sân
               th Ngày giờ
-              th Thanh toán
-              th Số tiền
-              th Trạng thái
+              th.db-col-fold Số tiền
+              th.db-col-fold Trạng thái
+              th.db-col-action.text-end
+              th.db-detail-head Chi tiết
           tbody
-            each b in list
-              tr
+            each b, index in list
+              tr.db-row(data-code=b.code tabindex="0")
                 td
-                  strong= b.code
-                  .sz-muted= b.pay
+                  strong.db-code= b.code
                 td
                   div= b.customer
                   if b.phone
                     .sz-muted= b.phone
-                td
-                  div= b.court
-                  .sz-muted= b.venue
-                td
-                  div= b.time
-                td= b.pay
-                td
-                  strong= b.amount
-                td
+                td= b.time
+                td.db-col-fold
+                  strong.sz-price= b.amount
+                td.db-col-fold
                   span.sz-status(class=`is-${b.status}`)= b.statusLabel
+                td.db-col-action.text-end
+                  button.db-view-btn(type="button" title="Xem chi tiết" aria-label="Xem chi tiết")
+                    i.bi.bi-receipt
+                    span Xem chi tiết
+                if index === 0
+                  td.db-detail-cell(rowspan=list.length)
+                    .db-bill-slot
 
       if pg.totalPage > 1
         nav.sz-pagination(aria-label="Phân trang đơn đặt sân")
@@ -86,3 +88,186 @@ block main
         i.bi.bi-calendar-x
         h3 Chưa có đơn đặt sân
         p Không tìm thấy đơn nào khớp bộ lọc hiện tại.
+
+block script
+  -
+    const bookingsPayload = JSON.stringify(typeof bookings !== "undefined" ? bookings : []).replace(/</g, "\\u003c")
+  script#db-bookings-data(type="application/json")!= bookingsPayload
+  script.
+    (function () {
+      const table = document.getElementById("db-bookings-table");
+      const dataNode = document.getElementById("db-bookings-data");
+      if (!table || !dataNode) return;
+
+      const bookings = JSON.parse(dataNode.textContent || "[]");
+      const rows = Array.from(table.querySelectorAll(".db-row"));
+      const payLabel = { cash: "Tiền mặt", vnpay: "VNPAY" };
+      const BILL_ROWS = 8;
+      let openCode = null;
+
+      const money = (n) => Number(n || 0).toLocaleString("vi-VN") + "đ";
+      const when = (d) => (d ? new Date(d).toLocaleString("vi-VN") : "");
+
+      function dateLabel(iso) {
+        const parts = String(iso || "").split("-");
+        if (parts.length !== 3) return iso || "—";
+        return parts[2] + "/" + parts[1] + "/" + parts[0];
+      }
+
+      function durationLabel(start, end) {
+        const toMin = (value) => {
+          const bits = String(value || "").split(":");
+          const hour = Number(bits[0]);
+          const minute = Number(bits[1] || 0);
+          if (!Number.isFinite(hour) || !Number.isFinite(minute)) return NaN;
+          return hour * 60 + minute;
+        };
+        const mins = toMin(end) - toMin(start);
+        if (!Number.isFinite(mins) || mins <= 0) return "";
+        if (mins % 60 === 0) return mins / 60 + " tiếng";
+        const hours = Math.floor(mins / 60);
+        return hours ? hours + " tiếng " + (mins % 60) + " phút" : mins + " phút";
+      }
+
+      function el(tag, className, text) {
+        const node = document.createElement(tag);
+        if (className) node.className = className;
+        if (text != null) node.textContent = text;
+        return node;
+      }
+
+      function meta(parent, label, value) {
+        if (!value) return;
+        const row = el("div", "db-meta-row");
+        row.append(el("span", null, label), el("strong", null, value));
+        parent.appendChild(row);
+      }
+
+      function clearBills() {
+        table.querySelectorAll(".db-bill-slot").forEach((slot) => slot.replaceChildren());
+      }
+
+      function sizeBill() {
+        const row = table.querySelector(".db-row");
+        const slot = table.querySelector(".db-bill-slot");
+        const wrap = table.closest(".sz-table-wrap");
+        if (!row || !slot || !wrap) return;
+        const rowH = row.getBoundingClientRect().height;
+        const bodyH = table.tBodies[0].getBoundingClientRect().height;
+        const billH = rowH * BILL_ROWS;
+        slot.style.height = billH + "px";
+        const extra = Math.max(0, billH - bodyH);
+        wrap.style.paddingBottom = extra ? extra + "px" : "";
+      }
+
+      function resetBillSize() {
+        const slot = table.querySelector(".db-bill-slot");
+        const wrap = table.closest(".sz-table-wrap");
+        if (slot) slot.style.height = "";
+        if (wrap) wrap.style.paddingBottom = "";
+      }
+
+      function closePanel() {
+        openCode = null;
+        table.classList.remove("is-open");
+        rows.forEach((row) => row.classList.remove("is-active"));
+        clearBills();
+        resetBillSize();
+      }
+
+      function line(parent, name, metaText, total, extraClass) {
+        const row = el("div", "db-side-line" + (extraClass ? " " + extraClass : ""));
+        const left = el("div");
+        left.append(el("div", "db-side-line-name", name));
+        if (metaText) left.append(el("div", "db-side-line-meta", metaText));
+        row.append(left, el("strong", extraClass === "is-discount" ? "db-discount" : "sz-price", total));
+        parent.appendChild(row);
+      }
+
+      function render(booking) {
+        const root = el("div", "db-side-bill");
+        const head = el("div", "db-side-bill-head");
+        const titles = el("div");
+        const slot = [booking.timeStart, booking.timeEnd].filter(Boolean).join(" – ");
+        const duration = durationLabel(booking.timeStart, booking.timeEnd);
+        titles.append(
+          el("div", "db-bill-kicker", "Phiếu đặt sân"),
+          el("div", "db-code", booking.code),
+          el("div", "sz-muted", booking.venue || "Cơ sở"),
+          el("div", "sz-muted", dateLabel(booking.date) + (slot ? " · " + slot : ""))
+        );
+        const close = el("button", "db-bill-close");
+        close.type = "button";
+        close.setAttribute("aria-label", "Đóng chi tiết");
+        close.innerHTML = '<i class="bi bi-x-lg"></i>';
+        close.addEventListener("click", function (event) {
+          event.stopPropagation();
+          closePanel();
+        });
+        head.append(titles, close);
+        root.appendChild(head);
+
+        meta(root, "Khách hàng", booking.customer);
+        meta(root, "Số điện thoại", booking.phone);
+        meta(root, "Sân", booking.court);
+        meta(root, "Khung giờ", duration ? slot + " (" + duration + ")" : slot);
+        meta(root, "Thanh toán", payLabel[booking.paymentMethod] || booking.pay);
+        meta(root, "Trạng thái", booking.statusLabel);
+        meta(root, "Voucher", booking.voucherCode);
+        meta(root, "Đặt lúc", when(booking.createdAt));
+        meta(root, "Thanh toán lúc", when(booking.paidAt));
+
+        const lines = el("div", "db-side-lines");
+        if (booking.courtPrice) {
+          line(lines, "Tiền sân", booking.court, money(booking.courtPrice));
+        }
+        (booking.drinks || []).forEach((item) => {
+          line(lines, item.name, money(item.price) + " × " + item.qty, money(item.lineTotal));
+        });
+        if (booking.discount) {
+          line(lines, "Giảm giá", booking.voucherCode || "", "−" + money(booking.discount), "is-discount");
+        }
+        if (lines.childNodes.length) root.appendChild(lines);
+
+        const total = el("div", "db-total");
+        total.append(el("span", null, "Tổng tiền"), el("strong", null, booking.amount));
+        root.appendChild(total);
+        return root;
+      }
+
+      function openPanel(code) {
+        const booking = bookings.find((item) => item.code === code);
+        const slot = table.querySelector(".db-bill-slot");
+        if (!booking || !slot) return;
+        openCode = code;
+        table.classList.add("is-open");
+        rows.forEach((row) => row.classList.toggle("is-active", row.dataset.code === code));
+        clearBills();
+        slot.appendChild(render(booking));
+        sizeBill();
+      }
+
+      rows.forEach((row) => {
+        row.addEventListener("click", function () {
+          if (openCode === row.dataset.code) closePanel();
+          else openPanel(row.dataset.code);
+        });
+        row.addEventListener("keydown", function (event) {
+          if (event.key !== "Enter" && event.key !== " ") return;
+          event.preventDefault();
+          if (openCode === row.dataset.code) closePanel();
+          else openPanel(row.dataset.code);
+        });
+      });
+
+      const detailCell = table.querySelector(".db-detail-cell");
+      if (detailCell) {
+        detailCell.addEventListener("click", function (event) {
+          event.stopPropagation();
+        });
+      }
+
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape") closePanel();
+      });
+    })();

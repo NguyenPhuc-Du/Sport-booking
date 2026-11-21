@@ -10,6 +10,31 @@ function postedDate(body) {
   return /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : "";
 }
 
+function listPath(body) {
+  const params = new URLSearchParams();
+  const keyword = String(body.keyword || "").trim().slice(0, 80);
+  const venueId = String(body.venueId || "").trim();
+  const status = String(body.status || "").trim();
+  const dateFrom = String(body.dateFrom || "").trim();
+  const dateTo = String(body.dateTo || "").trim();
+  const page = String(body.page || "").trim();
+  if (keyword) params.set("keyword", keyword);
+  if (/^[a-f0-9]{24}$/i.test(venueId)) params.set("venueId", venueId);
+  if (["pending_payment", "upcoming", "completed", "cancelled"].includes(status)) {
+    params.set("status", status);
+  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateFrom)) params.set("dateFrom", dateFrom);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateTo)) params.set("dateTo", dateTo);
+  if (/^\d+$/.test(page) && Number(page) > 1) params.set("page", String(Number(page)));
+  const qs = params.toString();
+  return `${systemConfig.prefixOwner}/bookings/list${qs ? `?${qs}` : ""}`;
+}
+
+function afterAction(req, res) {
+  if (req.body.next === "list") return res.redirect(listPath(req.body));
+  return res.redirect(timelinePath(postedDate(req.body)));
+}
+
 module.exports.index = async (req, res) => {
   const { date, dateMin, dateMax } = bookingService.resolveDate(req.query.date);
   if (req.query.date && req.query.date !== date) {
@@ -48,14 +73,23 @@ module.exports.create = async (req, res) => {
   return res.redirect(timelinePath(date));
 };
 
+module.exports.list = async (req, res) => {
+  const data = await bookingService.listAllBookings(res.locals.user.id, req.query);
+  res.render("owner/pages/bookings/list", {
+    pageTitle: "Danh sách đặt sân",
+    activeMenu: "booking-list",
+    ...data,
+  });
+};
+
 module.exports.checkIn = async (req, res) => {
   const code = String(req.body.code || "").trim();
   await bookingService.checkIn(res.locals.user.id, code);
-  return res.redirect(timelinePath(postedDate(req.body)));
+  return afterAction(req, res);
 };
 
 module.exports.cancel = async (req, res) => {
   const code = String(req.body.code || "").trim();
   await bookingService.cancel(res.locals.user.id, code);
-  return res.redirect(timelinePath(postedDate(req.body)));
+  return afterAction(req, res);
 };

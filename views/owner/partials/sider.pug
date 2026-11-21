@@ -36,6 +36,9 @@ aside.sz-sidebar
       a.sz-menu-item(href=`${prefixAdmin}/bookings` class={ active: activeMenu === "bookings" })
         i.bi.bi-calendar-check
         span.sz-menu-text Lịch đặt & Sơ đồ Timeline
+      a.sz-menu-item(href=`${prefixAdmin}/bookings/list` class={ active: activeMenu === "booking-list" })
+        i.bi.bi-list-ul
+        span.sz-menu-text Danh sách đặt sân
       a.sz-menu-item(href=`${prefixAdmin}/finance` class={ active: activeMenu === "finance" })
         i.bi.bi-credit-card-2-front
         span.sz-menu-text Tài chính & Khuyến mãi
