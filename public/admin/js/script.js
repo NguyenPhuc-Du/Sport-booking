@@ -28,8 +28,7 @@
     });
   };
 
-  const chart = document.getElementById("barChart");
-  if (chart) {
+  const renderChart = (chart) => {
     const weekData = readJson(chart, "chart");
     const max = Math.max(0.01, ...weekData.map((d) => Number(d.value) || 0));
     const monthGroups = [];
@@ -62,7 +61,9 @@
     chart.innerHTML = weekData.length
       ? `<div class="sz-chart-bars">${bars}</div>${monthRow}`
       : `<p class="sz-panel-sub mb-0">Chưa có doanh thu trong kỳ này.</p>`;
-  }
+  };
+
+  document.querySelectorAll(".sz-chart[data-chart]").forEach(renderChart);
 
   const peakList = document.getElementById("peakList");
   if (peakList) {

@@ -780,6 +780,57 @@ select:focus-visible {
   color: var(--muted);
 }
 
+.sz-drink-total {
+  margin-top: 14px;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.4px;
+  color: #0f172a;
+}
+
+.sz-drink-meta {
+  margin: 2px 0 0;
+  color: #d97706;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.sz-chart-mini {
+  height: 148px;
+  margin-top: 12px;
+  padding: 10px 0 0;
+  gap: 4px;
+}
+
+.sz-chart-mini .sz-chart-bars,
+.sz-chart-mini .sz-chart-months {
+  gap: 6px;
+}
+
+.sz-chart-mini .sz-bar-track {
+  max-width: 16px;
+  border-radius: 6px 6px 0 0;
+}
+
+.sz-chart-mini .sz-bar {
+  border-radius: 6px 6px 0 0;
+  background: linear-gradient(180deg, #fbbf24, #d97706);
+  box-shadow: 0 -3px 8px rgba(217, 119, 6, 0.22);
+}
+
+.sz-chart-mini .sz-bar-day {
+  margin-top: 6px;
+  font-size: 10px;
+}
+
+.sz-chart-mini.is-dense .sz-bar-day {
+  display: none;
+}
+
+.sz-chart-mini.is-dense .sz-chart-bars {
+  gap: 3px;
+}
+
 .sz-peak {
   margin-top: 14px;
 }

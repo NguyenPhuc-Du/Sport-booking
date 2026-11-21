@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const Booking = require("../../models/booking.model");
 const Court = require("../../models/court.model");
+const Sale = require("../../models/sale.model");
 const User = require("../../models/user.model");
 const facilityService = require("./facility.service");
 const paginationHelper = require("../../helpers/pagination");
@@ -60,6 +61,14 @@ function weekdayLabel(dateStr) {
 }
 function formatMoney(amount) {
   return `${Number(amount || 0).toLocaleString("vi-VN")}đ`;
+}
+function vietnamDateKey(value) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Ho_Chi_Minh",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(value));
 }
 function customerName(booking) {
   const user = booking.userId || {};
@@ -198,6 +207,20 @@ async function loadBookings(venueIds, from, to) {
     .sort({ createdAt: -1 })
     .lean();
 }
+async function loadDrinkSales(venueIds, from, to) {
+  const ids = asObjectIds(venueIds);
+  if (!ids.length) return [];
+  return Sale.find({
+    venueId: facilityMatch(ids),
+    status: "paid",
+    paidAt: {
+      $gte: new Date(`${from}T00:00:00+07:00`),
+      $lte: new Date(`${to}T23:59:59.999+07:00`),
+    },
+  })
+    .select("amount paidAt")
+    .lean();
+}
 function buildStats({ bookings, previous, todayBookings, fillPct, goldenPct, newCustomers, returnRate, statLabel }) {
 const revenue = sumPaid(bookings);
 const previousRevenue = sumPaid(previous);
@@ -327,17 +350,16 @@ function nextMonthKey(monthKey) {
   return `${year}-${String(month + 1).padStart(2, "0")}`;
 }
 
-function buildChartData(bookings, from, to, range) {
+function buildAmountSeries(entries, from, to, range) {
   if (range === "quarter") {
     const months = [];
     for (let cursor = from.slice(0, 7); cursor <= to.slice(0, 7); cursor = nextMonthKey(cursor)) {
       months.push(cursor);
     }
     const paid = new Map(months.map((month) => [month, 0]));
-    for (const booking of bookings) {
-      if (!isPaid(booking)) continue;
-      const key = String(booking.date || "").slice(0, 7);
-      if (paid.has(key)) paid.set(key, paid.get(key) + Number(booking.amount || 0));
+    for (const entry of entries) {
+      const key = String(entry.date || "").slice(0, 7);
+      if (paid.has(key)) paid.set(key, paid.get(key) + Number(entry.amount || 0));
     }
     return months.map((month) => ({
       day: `T${Number(month.slice(5, 7))}`,
@@ -347,15 +369,38 @@ function buildChartData(bookings, from, to, range) {
 
   const dates = eachDate(from, to);
   const paidByDate = new Map(dates.map((date) => [date, 0]));
-  for (const booking of bookings) {
-    if (!isPaid(booking) || !paidByDate.has(booking.date)) continue;
-    paidByDate.set(booking.date, paidByDate.get(booking.date) + Number(booking.amount || 0));
+  for (const entry of entries) {
+    if (!paidByDate.has(entry.date)) continue;
+    paidByDate.set(entry.date, paidByDate.get(entry.date) + Number(entry.amount || 0));
   }
   return dates.map((date) => ({
     day: range === "month" ? String(Number(date.slice(8, 10))) : weekdayLabel(date),
     month: range === "month" ? Number(date.slice(5, 7)) : 0,
     value: Number((paidByDate.get(date) / 1_000_000).toFixed(2)),
   }));
+}
+function buildChartData(bookings, from, to, range) {
+  return buildAmountSeries(
+    bookings.filter(isPaid).map((booking) => ({
+      date: booking.date,
+      amount: Number(booking.amount || 0),
+    })),
+    from,
+    to,
+    range,
+  );
+}
+function buildDrinkChart(sales, from, to, range) {
+  const entries = sales.map((sale) => ({
+    date: vietnamDateKey(sale.paidAt),
+    amount: Number(sale.amount || 0),
+  }));
+  const total = entries.reduce((sum, entry) => sum + entry.amount, 0);
+  return {
+    total: formatMoney(total),
+    orders: sales.length,
+    chartData: buildAmountSeries(entries, from, to, range),
+  };
 }
   
 function peakFill(bookings, peak, activeCourts, dayCount) {
@@ -413,9 +458,10 @@ function peakFill(bookings, peak, activeCourts, dayCount) {
           .lean()
       : [];
     const activeCourts = courts.filter((court) => court.status === "active").length;
-    const [bookings, previous] = await Promise.all([
+    const [bookings, previous, drinkSales] = await Promise.all([
       loadBookings(venueIds, from, to),
       loadBookings(venueIds, prev.from, prev.to),
+      loadDrinkSales(venueIds, from, to),
     ]);
     const fillPct = peakFill(
       bookings,
@@ -449,6 +495,7 @@ function peakFill(bookings, peak, activeCourts, dayCount) {
       topCourts: buildTopCourts(courts, bookings, dayCount),
       latestBookings: buildLatestBookings(bookings),
       chartData: buildChartData(bookings, from, to, range),
+      drinkChart: buildDrinkChart(drinkSales, from, to, range),
     };
   }
 

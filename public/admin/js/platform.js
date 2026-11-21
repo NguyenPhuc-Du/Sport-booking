@@ -1,10 +1,26 @@
+function openDialog(id) {
+  const dialog = document.getElementById(id);
+  if (!dialog || dialog.open) return;
+  if (dialog.parentElement !== document.body) document.body.appendChild(dialog);
+  dialog.showModal();
+}
+
 document.addEventListener("click", (event) => {
   const openButton = event.target.closest("[data-open]");
   if (openButton) {
-    const dialog = document.getElementById(
-      openButton.getAttribute("data-open"),
-    );
-    if (dialog) dialog.showModal();
+    openDialog(openButton.getAttribute("data-open"));
+    return;
+  }
+
+  if (event.target instanceof HTMLDialogElement) {
+    const rect = event.target.getBoundingClientRect();
+    const outside =
+      event.clientX < rect.left ||
+      event.clientX > rect.right ||
+      event.clientY < rect.top ||
+      event.clientY > rect.bottom;
+    if (outside) event.target.close();
+    return;
   }
 
   const closeButton = event.target.closest("[data-close]");

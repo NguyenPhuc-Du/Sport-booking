@@ -44,5 +44,6 @@ schema.index(
 schema.index({ created_at: -1 });
 schema.index({ user_id: 1, created_at: -1 });
 schema.index({ owner_id: 1, created_at: -1 });
+schema.index({ type: 1, owner_id: 1 });
 
 module.exports = mongoose.model("LedgerEntry", schema, "ledger_entries");
