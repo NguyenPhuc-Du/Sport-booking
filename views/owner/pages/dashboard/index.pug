@@ -26,7 +26,7 @@ block main
           .sz-stat-note(class=s.noteClass)= s.note
 
   .row.g-3.mb-3
-    .col-12
+    .col-12.col-xl-8
       .sz-card.sz-panel
         .d-flex.justify-content-between.align-items-start.flex-wrap.gap-2
           div
@@ -36,6 +36,16 @@ block main
             span.sz-legend-dot
             |  Doanh thu ngày
         #barChart.sz-chart(class=(range === "month" ? "is-dense" : undefined) data-chart=JSON.stringify(chartData) aria-label="Biểu đồ doanh thu")
+    .col-12.col-xl-4
+      .sz-card.sz-panel
+        .d-flex.justify-content-between.align-items-start.gap-2
+          div
+            h2.sz-panel-title Dịch vụ giải khát
+            p.sz-panel-sub= `Doanh thu nước ${rangeLabel}`
+          a.sz-link(href=`${prefixOwner}/drinks/sales`) Phiếu bán →
+        .sz-drink-total= drinkChart.total
+        p.sz-drink-meta= `${drinkChart.orders} phiếu bán`
+        #drinkChart.sz-chart.sz-chart-mini(class=(range === "month" ? "is-dense" : undefined) data-chart=JSON.stringify(drinkChart.chartData) aria-label="Biểu đồ doanh thu giải khát")
 
   .row.g-3
     .col-12.col-xl-6

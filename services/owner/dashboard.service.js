@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const Booking = require("../../models/booking.model");
 const Court = require("../../models/court.model");
+const Sale = require("../../models/sale.model");
 const User = require("../../models/user.model");
 const facilityService = require("./facility.service");
 const paginationHelper = require("../../helpers/pagination");
@@ -61,6 +62,14 @@ function weekdayLabel(dateStr) {
 function formatMoney(amount) {
   return `${Number(amount || 0).toLocaleString("vi-VN")}đ`;
 }
+function vietnamDateKey(value) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Ho_Chi_Minh",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(value));
+}
 function customerName(booking) {
   const user = booking.userId || {};
   const guest = String(booking.guestName || "").trim();
@@ -75,17 +84,33 @@ function customerPhone(booking) {
 }
 function mapBookingRow(booking) {
   const view = STATUS_VIEW[booking.status] || STATUS_VIEW.pending_payment;
+  const drinks = (booking.drinks || []).map((line) => ({
+    name: line.name || "",
+    price: Number(line.price || 0),
+    qty: Number(line.qty || 0),
+    lineTotal: Number(line.price || 0) * Number(line.qty || 0),
+  }));
   return {
     code: booking.code,
     pay: String(booking.paymentMethod || "vnpay").toUpperCase(),
+    paymentMethod: booking.paymentMethod || "vnpay",
     customer: customerName(booking),
     phone: customerPhone(booking),
     venue: booking.facilityName || "Cơ sở",
     court: booking.courtName || "Sân",
     time: formatBookingTime(booking),
     date: booking.date || "",
+    timeStart: booking.timeStart || "",
+    timeEnd: booking.timeEnd || "",
     slot: `${booking.timeStart || ""}-${booking.timeEnd || ""}`,
+    courtPrice: Number(booking.courtPrice || 0),
+    discount: Number(booking.discount || 0),
+    drinkTotal: Number(booking.drinkTotal || 0),
+    voucherCode: booking.voucherCode || "",
+    drinks,
     amount: formatMoney(booking.amount),
+    paidAt: booking.paidAt || null,
+    createdAt: booking.createdAt || null,
     status: view.status,
     statusLabel: view.statusLabel,
   };
@@ -198,6 +223,20 @@ async function loadBookings(venueIds, from, to) {
     .sort({ createdAt: -1 })
     .lean();
 }
+async function loadDrinkSales(venueIds, from, to) {
+  const ids = asObjectIds(venueIds);
+  if (!ids.length) return [];
+  return Sale.find({
+    venueId: facilityMatch(ids),
+    status: "paid",
+    paidAt: {
+      $gte: new Date(`${from}T00:00:00+07:00`),
+      $lte: new Date(`${to}T23:59:59.999+07:00`),
+    },
+  })
+    .select("amount paidAt")
+    .lean();
+}
 function buildStats({ bookings, previous, todayBookings, fillPct, goldenPct, newCustomers, returnRate, statLabel }) {
 const revenue = sumPaid(bookings);
 const previousRevenue = sumPaid(previous);
@@ -273,30 +312,50 @@ function buildStats({ bookings, previous, todayBookings, fillPct, goldenPct, new
     for (const court of courts) {
       const venue = court.venue_id && court.venue_id.name ? court.venue_id : null;
       byCourt.set(String(court._id), {
+        id: String(court._id),
         name: court.name,
         sport: court.court_type_id?.name || "Khác",
         venue: venue?.name || "Cơ sở",
         bookings: 0,
         revenue: 0,
         hours: 0,
+        orders: [],
       });
     }
     for (const booking of bookings) {
       const key = String(booking.courtId);
       if (!byCourt.has(key)) {
         byCourt.set(key, {
+          id: key,
           name: booking.courtName || "Sân",
           sport: "Khác",
           venue: booking.facilityName || "Cơ sở",
           bookings: 0,
           revenue: 0,
           hours: 0,
+          orders: [],
         });
       }
       const row = byCourt.get(key);
+      const view = STATUS_VIEW[booking.status] || STATUS_VIEW.pending_payment;
+      const paid = isPaid(booking);
       row.bookings += 1;
       row.hours += bookingHours(booking);
-      if (isPaid(booking)) row.revenue += Number(booking.amount || 0);
+      if (paid) row.revenue += Number(booking.amount || 0);
+      row.orders.push({
+        code: booking.code,
+        customer: customerName(booking),
+        phone: customerPhone(booking),
+        time: formatBookingTime(booking),
+        sort: `${booking.date || ""} ${booking.timeStart || ""}`,
+        amount: formatMoney(booking.amount),
+        status: view.status,
+        statusLabel: view.statusLabel,
+        paid,
+      });
+    }
+    for (const row of byCourt.values()) {
+      row.orders.sort((a, b) => String(b.sort).localeCompare(String(a.sort)));
     }
     return [...byCourt.values()]
       .sort((a, b) => b.revenue - a.revenue || b.bookings - a.bookings || a.name.localeCompare(b.name, "vi"))
@@ -327,17 +386,16 @@ function nextMonthKey(monthKey) {
   return `${year}-${String(month + 1).padStart(2, "0")}`;
 }
 
-function buildChartData(bookings, from, to, range) {
+function buildAmountSeries(entries, from, to, range) {
   if (range === "quarter") {
     const months = [];
     for (let cursor = from.slice(0, 7); cursor <= to.slice(0, 7); cursor = nextMonthKey(cursor)) {
       months.push(cursor);
     }
     const paid = new Map(months.map((month) => [month, 0]));
-    for (const booking of bookings) {
-      if (!isPaid(booking)) continue;
-      const key = String(booking.date || "").slice(0, 7);
-      if (paid.has(key)) paid.set(key, paid.get(key) + Number(booking.amount || 0));
+    for (const entry of entries) {
+      const key = String(entry.date || "").slice(0, 7);
+      if (paid.has(key)) paid.set(key, paid.get(key) + Number(entry.amount || 0));
     }
     return months.map((month) => ({
       day: `T${Number(month.slice(5, 7))}`,
@@ -347,15 +405,38 @@ function buildChartData(bookings, from, to, range) {
 
   const dates = eachDate(from, to);
   const paidByDate = new Map(dates.map((date) => [date, 0]));
-  for (const booking of bookings) {
-    if (!isPaid(booking) || !paidByDate.has(booking.date)) continue;
-    paidByDate.set(booking.date, paidByDate.get(booking.date) + Number(booking.amount || 0));
+  for (const entry of entries) {
+    if (!paidByDate.has(entry.date)) continue;
+    paidByDate.set(entry.date, paidByDate.get(entry.date) + Number(entry.amount || 0));
   }
   return dates.map((date) => ({
     day: range === "month" ? String(Number(date.slice(8, 10))) : weekdayLabel(date),
     month: range === "month" ? Number(date.slice(5, 7)) : 0,
     value: Number((paidByDate.get(date) / 1_000_000).toFixed(2)),
   }));
+}
+function buildChartData(bookings, from, to, range) {
+  return buildAmountSeries(
+    bookings.filter(isPaid).map((booking) => ({
+      date: booking.date,
+      amount: Number(booking.amount || 0),
+    })),
+    from,
+    to,
+    range,
+  );
+}
+function buildDrinkChart(sales, from, to, range) {
+  const entries = sales.map((sale) => ({
+    date: vietnamDateKey(sale.paidAt),
+    amount: Number(sale.amount || 0),
+  }));
+  const total = entries.reduce((sum, entry) => sum + entry.amount, 0);
+  return {
+    total: formatMoney(total),
+    orders: sales.length,
+    chartData: buildAmountSeries(entries, from, to, range),
+  };
 }
   
 function peakFill(bookings, peak, activeCourts, dayCount) {
@@ -413,9 +494,10 @@ function peakFill(bookings, peak, activeCourts, dayCount) {
           .lean()
       : [];
     const activeCourts = courts.filter((court) => court.status === "active").length;
-    const [bookings, previous] = await Promise.all([
+    const [bookings, previous, drinkSales] = await Promise.all([
       loadBookings(venueIds, from, to),
       loadBookings(venueIds, prev.from, prev.to),
+      loadDrinkSales(venueIds, from, to),
     ]);
     const fillPct = peakFill(
       bookings,
@@ -449,6 +531,7 @@ function peakFill(bookings, peak, activeCourts, dayCount) {
       topCourts: buildTopCourts(courts, bookings, dayCount),
       latestBookings: buildLatestBookings(bookings),
       chartData: buildChartData(bookings, from, to, range),
+      drinkChart: buildDrinkChart(drinkSales, from, to, range),
     };
   }
 
@@ -548,6 +631,7 @@ async function listCourtRevenue(ownerId, query = {}) {
 
   return {
     courts: pageRows.map((row, index) => ({
+      id: row.id,
       rank: pagination.skipPage + index + 1,
       name: row.name,
       sport: row.sport,
@@ -555,6 +639,7 @@ async function listCourtRevenue(ownerId, query = {}) {
       bookings: row.bookings,
       revenue: formatMoney(row.revenue),
       fill: row.fill,
+      orders: (row.orders || []).map(({ sort, ...order }) => order),
     })),
     summary: {
       courtCount: ranked.length,
