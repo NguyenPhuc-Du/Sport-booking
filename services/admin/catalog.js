@@ -1,4 +1,5 @@
 const ROLES = [
+  { code: "SUPER_ADMIN", label: "Quản trị cao nhất" },
   { code: "ADMIN", label: "Quản trị" },
   { code: "OWNER", label: "Chủ sân" },
   { code: "USER", label: "Khách hàng" },
@@ -31,19 +32,105 @@ const CHARTS = [
 
 const ADMIN_MENU = [
   {
-    href: "/admin/dashboard",
-    key: "dashboard",
-    icon: "bi-grid",
-    text: "Tổng quan sàn",
+    title: "PHÂN HỆ QUẢN TRỊ",
+    items: [
+      {
+        href: "/admin/dashboard",
+        key: "dashboard",
+        icon: "bi-grid",
+        text: "Tổng quan sàn",
+        permission: "dashboard:view",
+      },
+      {
+        href: "/admin/users",
+        key: "users",
+        icon: "bi-people",
+        text: "Tất cả tài khoản",
+        permission: "user:view",
+      },
+      {
+        href: "/admin/users?role=OWNER",
+        key: "users-owner",
+        icon: "bi-building",
+        text: "Chủ sân",
+        permission: "user:view",
+      },
+      {
+        href: "/admin/users?role=USER",
+        key: "users-user",
+        icon: "bi-person",
+        text: "Khách hàng",
+        permission: "user:view",
+      },
+      {
+        href: "/admin/roles",
+        key: "roles",
+        icon: "bi-shield-lock",
+        text: "Vai trò & Phân quyền",
+        permission: "role:manage",
+      },
+      {
+        href: "/admin/audit",
+        key: "audit",
+        icon: "bi-journal-text",
+        text: "Nhật ký thao tác",
+        permission: "audit_log:view",
+      },
+    ],
   },
-  { href: "/admin/users", key: "users", icon: "bi-people", text: "Tài khoản" },
   {
-    href: "/admin/commissions",
-    key: "commissions",
-    icon: "bi-percent",
-    text: "Hoa hồng",
+    title: "TÀI CHÍNH SÀN",
+    items: [
+      {
+        href: "/admin/commissions",
+        key: "commissions",
+        icon: "bi-percent",
+        text: "Hoa hồng",
+        permission: "commission:view",
+      },
+      {
+        href: "/admin/ledger",
+        key: "ledger",
+        icon: "bi-journal-bookmark",
+        text: "Sổ cái",
+        permission: "ledger:view",
+      },
+    ],
   },
 ];
+
+const PERMISSION_GROUPS = {
+  dashboard: "Tổng quan",
+  user: "Tài khoản",
+  role: "Vai trò",
+  commission: "Hoa hồng",
+  ledger: "Sổ cái",
+  audit_log: "Nhật ký thao tác",
+};
+
+const ADMIN_PERMISSION_CODES = [
+  "dashboard:view",
+  "user:view",
+  "user:create",
+  "user:update",
+  "user:lock",
+  "user:reset_password",
+  "user:change_role",
+  "role:manage",
+  "system:override",
+  "commission:view",
+  "commission:update",
+  "ledger:view",
+  "ledger:adjust",
+  "audit_log:view",
+];
+
+function visibleMenu(can) {
+  return ADMIN_MENU.map((group) => ({
+    title: group.title,
+    items: group.items.filter((item) => can(item.permission)),
+  })).filter((group) => group.items.length > 0);
+}
 
 const AUDIT_ACTIONS = [
   { code: "user.create", label: "Tạo tài khoản" },
@@ -51,6 +138,12 @@ const AUDIT_ACTIONS = [
   { code: "user.role", label: "Đổi vai trò" },
   { code: "user.status", label: "Khóa hoặc mở khóa" },
   { code: "user.password", label: "Đặt lại mật khẩu" },
+  { code: "auth.login", label: "Đăng nhập admin" },
+  { code: "role.create", label: "Tạo vai trò" },
+  { code: "role.update", label: "Sửa vai trò" },
+  { code: "role.delete", label: "Xóa vai trò" },
+  { code: "role.permissions", label: "Đổi quyền của vai trò" },
+
   { code: "commission.rate", label: "Đổi tỷ lệ sàn" },
   { code: "commission.ownerRate", label: "Đổi tỷ lệ chủ sân" },
   { code: "commission.close", label: "Chốt kỳ đối soát" },
@@ -121,4 +214,7 @@ module.exports = {
   startOfWeek,
   startOfMonth,
   addUnit,
+  ADMIN_PERMISSION_CODES,
+  PERMISSION_GROUPS,
+  visibleMenu,
 };

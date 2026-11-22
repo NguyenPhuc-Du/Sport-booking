@@ -1,18 +1,24 @@
+const mongoose = require("mongoose");
 const Venue = require("../../models/facilities.model");
 const User = require("../../models/user.model");
 const Ledger = require("../../models/ledger-entry.model");
 const { ServiceError } = require("./auth.service");
 const rate = require("./rate.service");
+const audit = require("./audit.service");
 const { formatVnd, percentLabel } = require("./present");
 const {
   ROLES,
   CHARTS,
+  LEDGER_TYPES,
+  LEDGER_CODES,
   byCode,
   startOfDay,
   startOfWeek,
   startOfMonth,
   addUnit,
 } = require("./catalog");
+
+const PAGE_SIZE = 8;
 
 function nextCode() {
   return `LG${Date.now()}${Math.floor(Math.random() * 900 + 100)}`;
@@ -413,6 +419,152 @@ async function linesForOwner(ownerId, from, to) {
   }).lean();
 }
 
+function readQuery(query) {
+  const source = query || {};
+  return {
+    q: String(source.q || "").trim(),
+    userId: String(source.userId || "").trim(),
+    type: String(source.type || "").trim(),
+    from: String(source.from || "").trim(),
+    to: String(source.to || "").trim(),
+    page: Math.max(parseInt(source.page, 10) || 1, 1),
+  };
+}
+
+function dayOrNull(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date;
+}
+
+function buildFilter(input) {
+  if (input.userId && !mongoose.Types.ObjectId.isValid(input.userId)) return null;
+  const parts = [];
+  if (input.q) {
+    const safe = input.q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const like = new RegExp(safe, "i");
+    parts.push({ $or: [{ code: like }, { booking_code: like }, { note: like }] });
+  }
+  if (input.userId) {
+    parts.push({ $or: [{ user_id: input.userId }, { owner_id: input.userId }] });
+  }
+  if (input.type && LEDGER_CODES.includes(input.type)) parts.push({ type: input.type });
+  if (input.from || input.to) {
+    const range = {};
+    const from = dayOrNull(input.from);
+    const to = dayOrNull(input.to);
+    if (from) range.$gte = from;
+    if (to) {
+      to.setHours(23, 59, 59, 999);
+      range.$lte = to;
+    }
+    if (Object.keys(range).length) parts.push({ created_at: range });
+  }
+  if (!parts.length) return {};
+  if (parts.length === 1) return parts[0];
+  return { $and: parts };
+}
+
+function presentLine(row) {
+  const kind = byCode(LEDGER_TYPES, row.type);
+  const account = row.user_id && row.user_id.fullName ? row.user_id.fullName : "—";
+  return {
+    when: row.created_at ? new Date(row.created_at).toLocaleString("vi-VN") : "—",
+    code: row.code,
+    account,
+    type: row.type,
+    typeLabel: kind ? kind.label : row.type,
+    amountLabel: formatVnd(row.amount),
+    balanceLabel: formatVnd(row.balance_after),
+    note: row.note || "",
+  };
+}
+
+async function loadLines(filter) {
+  return Ledger.find(filter)
+    .populate("user_id", "fullName")
+    .sort({ created_at: -1, _id: -1 })
+    .lean();
+}
+
+async function list(query) {
+  const input = readQuery(query);
+  const accounts = await User.find().select("fullName").sort({ fullName: 1 }).lean();
+  const type = LEDGER_CODES.includes(input.type) ? input.type : "";
+  const view = {
+    accounts,
+    types: LEDGER_TYPES,
+    q: input.q,
+    userId: input.userId,
+    type,
+    from: input.from,
+    to: input.to,
+  };
+  const filter = buildFilter(input);
+  if (!filter) return { ...view, items: [], page: 1, pages: 1, total: 0 };
+
+  const total = await Ledger.countDocuments(filter);
+  const pages = Math.max(Math.ceil(total / PAGE_SIZE), 1);
+  const page = Math.min(input.page, pages);
+  const rows = await Ledger.find(filter)
+    .populate("user_id", "fullName")
+    .sort({ created_at: -1, _id: -1 })
+    .skip((page - 1) * PAGE_SIZE)
+    .limit(PAGE_SIZE)
+    .lean();
+
+  return { ...view, items: rows.map(presentLine), page, pages, total };
+}
+
+function csvCell(value) {
+  let text = String(value == null ? "" : value);
+  if (/^[=+\-@]/.test(text)) text = `'${text}`;
+  if (/[",\n\r]/.test(text)) return `"${text.replace(/"/g, '""')}"`;
+  return text;
+}
+
+async function csv(query) {
+  const input = readQuery(query);
+  const filter = buildFilter(input);
+  const rows = filter ? await loadLines(filter) : [];
+  const header = ["Thời gian", "Mã", "Tài khoản", "Loại", "Số tiền", "Số dư sau", "Ghi chú"];
+  const lines = rows.map((row) => {
+    const item = presentLine(row);
+    return [item.when, item.code, item.account, item.typeLabel, row.amount, row.balance_after, item.note]
+      .map(csvCell)
+      .join(",");
+  });
+  return `\uFEFF${[header.join(","), ...lines].join("\n")}`;
+}
+
+async function adjust(actorId, body, ip) {
+  const amount = Number(body.amount);
+  const note = String(body.note || "").trim();
+  if (!mongoose.Types.ObjectId.isValid(body.userId)) throw new ServiceError("Chọn tài khoản");
+  if (!Number.isFinite(amount) || amount === 0) {
+    throw new ServiceError("Số tiền điều chỉnh phải khác 0");
+  }
+  if (!note) throw new ServiceError("Nhập lý do điều chỉnh");
+
+  const user = await User.findById(body.userId).select("fullName role").lean();
+  if (!user) throw new ServiceError("Không có tài khoản này");
+
+  await appendLine({
+    type: "adjustment",
+    user_id: user._id,
+    owner_id: user.role === "OWNER" ? user._id : null,
+    amount,
+    effect: amount,
+    note,
+  });
+  await audit.write(actorId, "ledger.adjust", user._id, `${user.fullName} · ${amount} · ${note}`, {
+    ip,
+    targetType: "ledger",
+    after: { amount, note },
+  });
+}
+
 module.exports = {
   appendLine,
   recordPaidBooking,
@@ -424,4 +576,7 @@ module.exports = {
   ownerPosition,
   dashboard,
   linesForOwner,
+  list,
+  csv,
+  adjust,
 };

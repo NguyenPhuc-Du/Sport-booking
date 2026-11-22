@@ -20,7 +20,7 @@ const exportCsv = asyncHandler(async (req, res) => {
 
 const adjust = asyncHandler(async (req, res) => {
   try {
-    await ledger.adjust(req.user._id, req.body);
+    await ledger.adjust(req.user._id, req.body, req.ip);
     req.flash("success", "Đã ghi bút toán điều chỉnh");
   } catch (error) {
     const message =

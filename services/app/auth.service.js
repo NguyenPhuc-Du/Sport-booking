@@ -10,7 +10,8 @@ const OTP_TTL_MS = 5 * 60 * 1000;
 const OTP_RESEND_MS = 60 * 1000;
 const MAX_ATTEMPTS = 5;
 const PURPOSES = ["register", "reset_password"];
-const STAFF_ROLES = ["OWNER", "ADMIN"];
+const STAFF_ROLES = ["OWNER", "ADMIN", "SUPER_ADMIN"]; // dùng nhờ bên app
+
 const CUSTOMER = { role: { $nin: STAFF_ROLES } };
 
 function httpError(status, message) {
@@ -25,7 +26,10 @@ function genOtp() {
 
 async function createAndSendOtp({ email, purpose, payload }) {
   const last = await Otp.findOne({ email, purpose });
-  if (last && last.expiresAt.getTime() - OTP_TTL_MS > Date.now() - OTP_RESEND_MS) {
+  if (
+    last &&
+    last.expiresAt.getTime() - OTP_TTL_MS > Date.now() - OTP_RESEND_MS
+  ) {
     throw httpError(429, "Vui lòng đợi 60 giây trước khi gửi lại mã");
   }
 
@@ -71,12 +75,14 @@ async function register(body) {
   if (!PHONE_PATTERN.test(phone)) {
     throw httpError(400, "Số điện thoại phải gồm 10 số và bắt đầu bằng 0");
   }
-  if (!EMAIL_PATTERN.test(email)) throw httpError(400, "Email không đúng định dạng");
+  if (!EMAIL_PATTERN.test(email))
+    throw httpError(400, "Email không đúng định dạng");
   if (password.length < 6) throw httpError(400, "Mật khẩu cần ít nhất 6 ký tự");
 
   const existed = await User.findOne({ $or: [{ email }, { phone }] });
   if (existed) {
-    if (existed.email === email) throw httpError(409, "Email này đã được đăng ký");
+    if (existed.email === email)
+      throw httpError(409, "Email này đã được đăng ký");
     throw httpError(409, "Số điện thoại này đã được đăng ký");
   }
 
@@ -114,10 +120,12 @@ async function registerVerify(body) {
 async function resendOtp(body) {
   const email = (body.email || "").trim().toLowerCase();
   const purpose = body.purpose;
-  if (!email || !PURPOSES.includes(purpose)) throw httpError(400, "Yêu cầu không hợp lệ");
+  if (!email || !PURPOSES.includes(purpose))
+    throw httpError(400, "Yêu cầu không hợp lệ");
 
   const otp = await Otp.findOne({ email, purpose });
-  if (!otp) throw httpError(400, "Phiên xác minh đã hết hạn, hãy thực hiện lại");
+  if (!otp)
+    throw httpError(400, "Phiên xác minh đã hết hạn, hãy thực hiện lại");
 
   await createAndSendOtp({ email, purpose, payload: otp.payload });
   return "Đã gửi lại mã xác minh";
@@ -125,7 +133,8 @@ async function resendOtp(body) {
 
 async function forgotPassword(body) {
   const email = (body.email || "").trim().toLowerCase();
-  if (!EMAIL_PATTERN.test(email)) throw httpError(400, "Email không đúng định dạng");
+  if (!EMAIL_PATTERN.test(email))
+    throw httpError(400, "Email không đúng định dạng");
 
   const user = await User.findOne({ email, ...CUSTOMER });
   if (!user) throw httpError(404, "Email chưa được đăng ký");
@@ -150,7 +159,8 @@ async function resetPassword(body) {
   const newPassword = (body.newPassword || "").trim();
 
   if (!email || !code) throw httpError(400, "Thiếu email hoặc mã OTP");
-  if (newPassword.length < 6) throw httpError(400, "Mật khẩu cần ít nhất 6 ký tự");
+  if (newPassword.length < 6)
+    throw httpError(400, "Mật khẩu cần ít nhất 6 ký tự");
 
   await checkOtp(email, "reset_password", code);
   const user = await User.findOne({ email, ...CUSTOMER });
@@ -165,7 +175,8 @@ async function resetPassword(body) {
 async function login(body) {
   const email = (body.email || "").trim().toLowerCase();
   const password = (body.password || "").trim();
-  if (!email || !password) throw httpError(400, "Email và mật khẩu không được để trống");
+  if (!email || !password)
+    throw httpError(400, "Email và mật khẩu không được để trống");
 
   const user = await User.findOne({ email, ...CUSTOMER });
   if (!user) throw httpError(400, "Email đăng nhập không chính xác");
