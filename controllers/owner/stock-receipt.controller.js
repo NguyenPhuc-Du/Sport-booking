@@ -44,34 +44,20 @@ module.exports.createPost = async (req, res) => {
   try {
     const receipt = await receiptService.createReceipt(res.locals.user.id, req.body);
     req.flash("success", `Đã nhập kho phiếu ${receipt.code}`);
-    return res.redirect(receiptsPath(`/${receipt._id}`));
+    return res.redirect(receiptsPath());
   } catch (error) {
     req.flash("error", error.message || "Nhập kho thất bại");
     return res.redirect(receiptsPath("/create"));
   }
 };
 
-module.exports.detail = async (req, res) => {
-  const receipt = await receiptService.getReceiptForOwner(res.locals.user.id, req.params.id);
-  if (!receipt) {
-    req.flash("error", "Không tìm thấy phiếu nhập");
-    return res.redirect(receiptsPath());
-  }
-
-  res.render("owner/pages/drinks/receipt-detail", {
-    pageTitle: `Phiếu ${receipt.code}`,
-    activeMenu: "drinks",
-    receipt,
-  });
-};
-
 module.exports.cancel = async (req, res) => {
   try {
     const receipt = await receiptService.cancelReceipt(res.locals.user.id, req.params.id);
     req.flash("success", `Đã hủy phiếu ${receipt.code} và trừ lại tồn kho`);
-    return res.redirect(receiptsPath(`/${receipt._id}`));
+    return res.redirect(receiptsPath());
   } catch (error) {
     req.flash("error", error.message || "Hủy phiếu nhập thất bại");
-    return res.redirect(receiptsPath(`/${req.params.id}`));
+    return res.redirect(receiptsPath());
   }
 };

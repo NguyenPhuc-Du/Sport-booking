@@ -53,36 +53,40 @@ block main
 
     if list.length
       .sz-table-wrap
-        table.sz-table
+        table.sz-table.sl-split-table#sl-receipts-table(data-cancel-base=`${prefixOwner}/drinks/receipts/`)
           thead
             tr
               th MÃ PHIẾU
               th NHÀ CUNG CẤP
               th CƠ SỞ
-              th MÓN
+              th.sl-col-fold MÓN
               th TỔNG NHẬP
-              th TRẠNG THÁI
-              th THỜI GIAN
-              th.text-end
+              th.sl-col-fold TRẠNG THÁI
+              th.sl-col-fold THỜI GIAN
+              th.sl-col-action.text-end
+              th.sl-detail-head CHI TIẾT
           tbody
-            each bill in list
-              tr
+            each bill, index in list
+              tr.sl-row(data-receipt-id=String(bill._id) tabindex="0")
                 td
                   strong.sl-code= bill.code
                 td= bill.supplierName
                 td.sz-muted= bill.venueName || "—"
-                td= bill.items.length + " món"
+                td.sl-col-fold= bill.items.length + " món"
                 td
                   strong.sz-price= fmt(bill.amount)
-                td
+                td.sl-col-fold
                   if bill.status === "cancelled"
                     span.sz-tag.off Đã hủy
                   else
                     span.sz-tag Đã nhập
-                td.sz-muted= when(bill.receivedAt || bill.createdAt)
-                td.text-end
-                  a.sz-icon-btn(href=`${prefixOwner}/drinks/receipts/${bill._id}` title="Xem phiếu")
+                td.sl-col-fold.sz-muted= when(bill.receivedAt || bill.createdAt)
+                td.sl-col-action.text-end
+                  span.sz-icon-btn(title="Xem phiếu")
                     i.bi.bi-box-arrow-in-down
+                if index === 0
+                  td.sl-detail-cell(rowspan=list.length)
+                    .sl-bill-slot
 
       if pg.totalPage > 1
         nav.sz-pagination(aria-label="Phân trang")
@@ -102,3 +106,179 @@ block main
         a.sz-btn-primary(href=`${prefixOwner}/drinks/receipts/create`)
           i.bi.bi-plus-lg
           |  Tạo phiếu nhập
+
+block script
+  -
+    const receiptsPayload = JSON.stringify((typeof receipts !== "undefined" ? receipts : []).map((bill) => ({
+      id: String(bill._id),
+      code: bill.code || "",
+      supplierName: bill.supplierName || "",
+      venueName: bill.venueName || "",
+      status: bill.status || "",
+      note: bill.note || "",
+      amount: bill.amount || 0,
+      receivedAt: bill.receivedAt || bill.createdAt || null,
+      cancelledAt: bill.cancelledAt || null,
+      items: (bill.items || []).map((line) => ({
+        name: line.name || "",
+        costPrice: line.costPrice || 0,
+        qty: line.qty || 0,
+        lineTotal: line.lineTotal || 0,
+      })),
+    }))).replace(/</g, "\\u003c")
+  script#sl-receipts-data(type="application/json")!= receiptsPayload
+  script.
+    (function () {
+      const table = document.getElementById("sl-receipts-table");
+      const dataNode = document.getElementById("sl-receipts-data");
+      if (!table || !dataNode) return;
+
+      const receipts = JSON.parse(dataNode.textContent || "[]");
+      const rows = Array.from(table.querySelectorAll(".sl-row"));
+      const cancelBase = table.getAttribute("data-cancel-base") || "";
+      let openId = null;
+
+      const money = (n) => Number(n || 0).toLocaleString("vi-VN") + "đ";
+      const when = (d) => (d ? new Date(d).toLocaleString("vi-VN") : "—");
+      const statusLabel = (status) => {
+        if (status === "received") return "Đã nhập";
+        if (status === "cancelled") return "Đã hủy";
+        return status || "—";
+      };
+
+      function el(tag, className, text) {
+        const node = document.createElement(tag);
+        if (className) node.className = className;
+        if (text != null) node.textContent = text;
+        return node;
+      }
+
+      function meta(parent, label, value) {
+        const row = el("div", "sl-meta-row");
+        row.append(el("span", null, label), el("strong", null, value || "—"));
+        parent.appendChild(row);
+      }
+
+      const BILL_ROWS = 8;
+
+      function clearBills() {
+        table.querySelectorAll(".sl-bill-slot").forEach((slot) => slot.replaceChildren());
+      }
+
+      function sizeBill() {
+        const row = table.querySelector(".sl-row");
+        const slot = table.querySelector(".sl-bill-slot");
+        const wrap = table.closest(".sz-table-wrap");
+        if (!row || !slot || !wrap) return;
+        const rowH = row.getBoundingClientRect().height;
+        const bodyH = table.tBodies[0].getBoundingClientRect().height;
+        const billH = rowH * BILL_ROWS;
+        slot.style.height = billH + "px";
+        const extra = Math.max(0, billH - bodyH);
+        wrap.style.paddingBottom = extra ? extra + "px" : "";
+      }
+
+      function resetBillSize() {
+        const slot = table.querySelector(".sl-bill-slot");
+        const wrap = table.closest(".sz-table-wrap");
+        if (slot) slot.style.height = "";
+        if (wrap) wrap.style.paddingBottom = "";
+      }
+
+      function closePanel() {
+        openId = null;
+        table.classList.remove("is-open");
+        clearBills();
+        resetBillSize();
+      }
+
+      function render(receipt) {
+        const root = el("div", "sl-side-bill");
+        const head = el("div", "sl-side-bill-head");
+        const titles = el("div");
+        titles.append(
+          el("div", "sl-code", receipt.code),
+          el("div", "sz-muted", receipt.venueName || "Cơ sở"),
+          el("div", "sz-muted", when(receipt.receivedAt))
+        );
+        const close = el("button", "sl-bill-close");
+        close.type = "button";
+        close.setAttribute("aria-label", "Đóng chi tiết");
+        close.innerHTML = '<i class="bi bi-x-lg"></i>';
+        close.addEventListener("click", function (event) {
+          event.stopPropagation();
+          closePanel();
+        });
+        head.append(titles, close);
+        root.appendChild(head);
+
+        meta(root, "Nhà cung cấp", receipt.supplierName);
+        meta(root, "Trạng thái", statusLabel(receipt.status));
+        if (receipt.status === "cancelled") meta(root, "Hủy lúc", when(receipt.cancelledAt));
+        if (receipt.note) meta(root, "Ghi chú", receipt.note);
+
+        const lines = el("div", "sl-side-lines");
+        (receipt.items || []).forEach((line) => {
+          const row = el("div", "sl-side-line");
+          const left = el("div");
+          left.append(
+            el("div", "sl-side-line-name", line.name),
+            el("div", "sl-side-line-meta", money(line.costPrice) + " × " + line.qty)
+          );
+          row.append(left, el("strong", "sz-price", money(line.lineTotal)));
+          lines.appendChild(row);
+        });
+        root.appendChild(lines);
+
+        const total = el("div", "sl-total");
+        total.append(el("span", null, "Tổng nhập"), el("strong", null, money(receipt.amount)));
+        root.appendChild(total);
+
+        if (receipt.status === "received") {
+          const form = el("form", "sz-form-actions");
+          form.method = "POST";
+          form.action = cancelBase + receipt.id + "/cancel";
+          form.addEventListener("submit", function (event) {
+            const ok = window.confirm("Hủy phiếu sẽ trừ lại số lượng đã nhập. Chỉ hủy được khi từng món còn đủ tồn. Tiếp tục?");
+            if (!ok) event.preventDefault();
+          });
+          const button = el("button", "sz-btn-outline", "Hủy phiếu nhập");
+          button.type = "submit";
+          form.appendChild(button);
+          root.appendChild(form);
+        }
+
+        return root;
+      }
+
+      function openPanel(id) {
+        const receipt = receipts.find((item) => item.id === id);
+        const slot = table.querySelector(".sl-bill-slot");
+        if (!receipt || !slot) return;
+        openId = id;
+        table.classList.add("is-open");
+        clearBills();
+        slot.appendChild(render(receipt));
+        sizeBill();
+      }
+
+      rows.forEach((row) => {
+        row.addEventListener("click", function () {
+          if (openId === row.dataset.receiptId) closePanel();
+          else openPanel(row.dataset.receiptId);
+        });
+        row.addEventListener("keydown", function (event) {
+          if (event.key !== "Enter" && event.key !== " ") return;
+          event.preventDefault();
+          if (openId === row.dataset.receiptId) closePanel();
+          else openPanel(row.dataset.receiptId);
+        });
+      });
+
+      const detailCell = table.querySelector(".sl-detail-cell");
+      if (detailCell) {
+        detailCell.addEventListener("click", function (event) {
+          event.stopPropagation();
+        });
+      }
+    })();

@@ -122,15 +122,6 @@ module.exports.countReceipts = async (find) => {
   return await StockReceipt.countDocuments(find);
 };
 
-module.exports.getReceiptForOwner = async (ownerId, receiptId) => {
-  const venues = await facilityService.getAllVenueByOwnerId(ownerId);
-  const venueIds = venues.map((item) => item._id);
-  return await StockReceipt.findOne({
-    _id: receiptId,
-    venueId: { $in: venueIds },
-  }).lean();
-};
-
 module.exports.cancelReceipt = async (ownerId, receiptId) => {
   const venues = await facilityService.getAllVenueByOwnerId(ownerId);
   const venueIds = venues.map((item) => item._id);
