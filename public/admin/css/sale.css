@@ -266,19 +266,6 @@
     color: var(--rf-green-dark);
 }
 
-.sl-receipt {
-    max-width: 720px;
-    margin: 0 auto;
-}
-
-.sl-receipt-head {
-    display: flex;
-    justify-content: space-between;
-    gap: 16px;
-    flex-wrap: wrap;
-    margin-bottom: 20px;
-}
-
 .sl-code {
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     font-weight: 800;
@@ -298,37 +285,37 @@
     color: var(--rf-muted);
 }
 
-.sl-sales-table .sl-row {
+.sl-split-table .sl-row {
     cursor: pointer;
 }
 
-.sl-sales-table .sl-detail-head,
-.sl-sales-table .sl-detail-cell {
+.sl-split-table .sl-detail-head,
+.sl-split-table .sl-detail-cell {
     display: none;
 }
 
-.sl-sales-table:not(.is-open) thead th.sl-col-action {
+.sl-split-table:not(.is-open) thead th.sl-col-action {
     border-radius: 0 14px 14px 0;
 }
 
-.sl-sales-table.is-open {
+.sl-split-table.is-open {
     min-width: 980px;
 }
 
-.sl-sales-table.is-open .sl-col-fold {
+.sl-split-table.is-open .sl-col-fold {
     display: none;
 }
 
-.sl-sales-table.is-open .sl-detail-head,
-.sl-sales-table.is-open .sl-detail-cell {
+.sl-split-table.is-open .sl-detail-head,
+.sl-split-table.is-open .sl-detail-cell {
     display: table-cell;
 }
 
-.sl-sales-table.is-open .sl-detail-head {
+.sl-split-table.is-open .sl-detail-head {
     min-width: 300px;
 }
 
-.sl-sales-table.is-open .sl-detail-cell {
+.sl-split-table.is-open .sl-detail-cell {
     position: relative;
     width: 340px;
     min-width: 300px;
@@ -339,11 +326,11 @@
     border-bottom: 0;
 }
 
-.sl-sales-table tbody tr:hover td.sl-detail-cell {
+.sl-split-table tbody tr:hover td.sl-detail-cell {
     background: #fff;
 }
 
-.sz-table-wrap:has(.sl-sales-table.is-open) {
+.sz-table-wrap:has(.sl-split-table.is-open) {
     overflow: visible;
 }
 
@@ -420,6 +407,30 @@
 
 .sl-side-bill .sl-total strong {
     font-size: 20px;
+}
+
+.sl-side-bill .sl-meta-row {
+    align-items: flex-start;
+}
+
+.sl-side-bill .sl-meta-row span {
+    flex: 0 0 auto;
+}
+
+.sl-side-bill .sl-meta-row strong {
+    text-align: right;
+    overflow-wrap: anywhere;
+}
+
+.sl-side-bill .sz-form-actions {
+    margin-top: 16px;
+    padding-bottom: 0;
+}
+
+.sl-side-bill .sz-btn-outline {
+    width: 100%;
+    height: 40px;
+    justify-content: center;
 }
 
 @media (max-width: 991px) {

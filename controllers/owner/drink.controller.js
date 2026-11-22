@@ -141,24 +141,9 @@ module.exports.createSalePost = async (req, res) => {
     try {
         const sale = await saleService.createWalkInSale(res.locals.user.id, req.body);
         req.flash("success", `Đã tạo phiếu ${sale.code}`);
-        return res.redirect(salesPath(`/${sale._id}`));
+        return res.redirect(salesPath());
     } catch (error) {
         req.flash("error", error.message || "Tạo phiếu bán thất bại");
         return res.redirect(salesPath("/create"));
     }
-};
-
-//[GET] /owner/drinks/sales/:id
-module.exports.saleDetail = async (req, res) => {
-    const sale = await saleService.getSaleForOwner(res.locals.user.id, req.params.id);
-    if (!sale) {
-        req.flash("error", "Không tìm thấy phiếu bán");
-        return res.redirect(salesPath());
-    }
-
-    res.render("owner/pages/drinks/sale-detail", {
-        pageTitle: `Phiếu ${sale.code}`,
-        activeMenu: "drinks",
-        sale,
-    });
 };

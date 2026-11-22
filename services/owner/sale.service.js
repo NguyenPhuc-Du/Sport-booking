@@ -99,12 +99,3 @@ module.exports.listSales = async (find, pagination) => {
 module.exports.countSales = async (find) => {
   return await Sale.countDocuments(find);
 };
-
-module.exports.getSaleForOwner = async (ownerId, saleId) => {
-  const venues = await facilityService.getAllVenueByOwnerId(ownerId);
-  const venueIds = venues.map((item) => item._id);
-  return await Sale.findOne({
-    _id: saleId,
-    venueId: { $in: venueIds },
-  }).lean();
-};

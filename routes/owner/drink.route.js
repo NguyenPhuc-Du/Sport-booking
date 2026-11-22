@@ -29,15 +29,12 @@ router.get("/receipts", receiptController.index);
 router.get("/receipts/create", receiptController.create);
 router.post("/receipts/create", receiptValidate.createPost, receiptController.createPost);
 router.post("/receipts/:id/cancel", receiptController.cancel);
-router.get("/receipts/:id", receiptController.detail);
 
 router.get("/sales", controller.sales);
 
 router.get("/sales/create", controller.createSale);
 
 router.post("/sales/create", saleValidate.createPost, controller.createSalePost);
-
-router.get("/sales/:id", controller.saleDetail);
 
 router.get("/edit/:id", controller.edit);
 
