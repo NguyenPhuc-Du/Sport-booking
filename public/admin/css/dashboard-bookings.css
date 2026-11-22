@@ -1,0 +1,264 @@
+.sz-table.db-bookings-table {
+    min-width: 720px;
+}
+
+.db-bookings-table .db-row {
+    cursor: pointer;
+}
+
+.db-code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-weight: 800;
+    color: var(--rf-green-dark);
+}
+
+.db-view-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 34px;
+    padding: 0 12px;
+    border: 1px solid var(--rf-border);
+    border-radius: 10px;
+    background: #fff;
+    color: var(--rf-ink);
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.db-view-btn:hover,
+.db-bookings-table .db-row.is-active .db-view-btn {
+    border-color: var(--rf-green);
+    color: var(--rf-green-dark);
+    background: rgba(16, 185, 129, 0.08);
+}
+
+.sz-table.db-bookings-table tbody tr.is-active td,
+.sz-table.db-bookings-table tbody tr.is-active:hover td {
+    background: #f3fbf7;
+}
+
+.db-bookings-table .db-detail-head,
+.db-bookings-table .db-detail-cell {
+    display: none;
+}
+
+.db-bookings-table:not(.is-open) thead th.db-col-action {
+    border-radius: 0 14px 14px 0;
+}
+
+.db-bookings-table.is-open {
+    min-width: 980px;
+}
+
+.db-bookings-table.is-open .db-col-fold {
+    display: none;
+}
+
+.db-bookings-table.is-open .db-view-btn span {
+    display: none;
+}
+
+.db-bookings-table.is-open .db-view-btn {
+    width: 36px;
+    padding: 0;
+    justify-content: center;
+}
+
+.db-bookings-table.is-open .db-detail-head,
+.db-bookings-table.is-open .db-detail-cell {
+    display: table-cell;
+}
+
+.db-bookings-table.is-open .db-detail-head {
+    min-width: 320px;
+}
+
+.db-bookings-table.is-open .db-detail-cell {
+    position: relative;
+    width: 360px;
+    min-width: 320px;
+    height: 0;
+    padding: 0;
+    vertical-align: top;
+    background: #fff;
+    border-bottom: 0;
+}
+
+.sz-table.db-bookings-table tbody tr:hover td.db-detail-cell,
+.sz-table.db-bookings-table tbody tr.is-active td.db-detail-cell,
+.sz-table.db-bookings-table tbody tr.is-active:hover td.db-detail-cell {
+    background: #fff;
+}
+
+.sz-table-wrap:has(.db-bookings-table.is-open) {
+    overflow: visible;
+}
+
+.db-bill-slot {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    overflow: auto;
+    box-sizing: border-box;
+    padding: 14px 16px 16px;
+    background: #fff;
+    border-left: 1px solid var(--rf-border);
+    border-bottom: 1px solid var(--rf-border);
+}
+
+.db-side-bill {
+    min-width: 280px;
+}
+
+.db-side-bill-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.db-bill-kicker {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: var(--rf-muted);
+}
+
+.db-bill-close {
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    border: 1px solid var(--rf-border);
+    border-radius: 10px;
+    background: #fff;
+    color: var(--rf-ink);
+    cursor: pointer;
+}
+
+.db-bill-close:hover {
+    border-color: var(--rf-green);
+    color: var(--rf-green-dark);
+}
+
+.db-meta-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 8px 0;
+    border-bottom: 1px solid #eef3f0;
+    font-size: 14px;
+}
+
+.db-meta-row span {
+    color: var(--rf-muted);
+    flex: 0 0 auto;
+}
+
+.db-meta-row strong {
+    text-align: right;
+}
+
+.db-side-lines {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.db-side-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eef3f0;
+}
+
+.db-side-line-name {
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.db-side-line-meta {
+    margin-top: 2px;
+    font-size: 12px;
+    color: var(--rf-muted);
+}
+
+.db-discount {
+    color: var(--rf-red);
+    font-weight: 800;
+}
+
+.db-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding-top: 14px;
+    margin-top: 14px;
+    border-top: 1px dashed var(--rf-border);
+}
+
+.db-total strong {
+    font-size: 22px;
+    color: var(--rf-green-dark);
+}
+
+.db-court-name {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--rf-ink);
+}
+
+.db-group {
+    margin-top: 16px;
+}
+
+.db-group-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: baseline;
+    font-size: 13px;
+}
+
+.db-group-head span,
+.db-group-note,
+.db-group-empty {
+    color: var(--rf-muted);
+    font-size: 12px;
+}
+
+.db-group-note,
+.db-group-empty {
+    margin: 6px 0 0;
+}
+
+.db-order {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid #eef3f0;
+}
+
+.db-order-side {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+}
+
+.db-order .sz-price {
+    white-space: nowrap;
+}

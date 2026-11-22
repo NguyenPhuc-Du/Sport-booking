@@ -66,17 +66,18 @@ block main
           strong Chưa có dòng sổ
           p Không có bút toán khớp bộ lọc, hoặc chưa có thanh toán nào.
 
-    section.sz-card.sz-panel
-      h2.sz-panel-title Bút toán điều chỉnh
-      p.sz-panel-sub Số dương là tiền vào. Số âm là tiền ra. Dòng đã ghi không sửa được.
-      form.pf-form(method="post" action="/admin/ledger/adjustments" data-confirm="Ghi bút toán điều chỉnh này? Dòng đã ghi không xóa được.")
-        label.pf-field Tài khoản
-          select.sz-select(name="userId" required)
-            option(value="") Chọn tài khoản
-            each account in accounts
-              option(value=account._id)= account.fullName
-        label.pf-field Số tiền
-          input.sz-input(type="number" name="amount" step="1000" required placeholder="Ví dụ: 50000 hoặc -50000")
-        label.pf-field Lý do
-          input.sz-input(type="text" name="note" required placeholder="Lý do điều chỉnh")
-        button.sz-btn.sz-btn-green(type="submit") Ghi điều chỉnh
+    if can("ledger:adjust")
+      section.sz-card.sz-panel
+        h2.sz-panel-title Bút toán điều chỉnh
+        p.sz-panel-sub Số dương là tiền vào. Số âm là tiền ra. Dòng đã ghi không sửa được.
+        form.pf-form(method="post" action="/admin/ledger/adjustments" data-confirm="Ghi bút toán điều chỉnh này? Dòng đã ghi không xóa được.")
+          label.pf-field Tài khoản
+            select.sz-select(name="userId" required)
+              option(value="") Chọn tài khoản
+              each account in accounts
+                option(value=account._id)= account.fullName
+          label.pf-field Số tiền
+            input.sz-input(type="number" name="amount" step="1000" required placeholder="Ví dụ: 50000 hoặc -50000")
+          label.pf-field Lý do
+            input.sz-input(type="text" name="note" required placeholder="Lý do điều chỉnh")
+          button.sz-btn.sz-btn-green(type="submit") Ghi điều chỉnh

@@ -9,7 +9,7 @@ block main
     div
       p.pf-kicker Quản trị hệ thống / Tài khoản
       h1.pf-title Quản lý Người dùng & Tài khoản
-    if tab === "users"
+    if tab === "users" && can("user:create")
       button.sz-btn.sz-btn-green(type="button" data-open="dialog-create") Thêm tài khoản mới
 
   nav.pf-tabs
@@ -27,6 +27,9 @@ block main
                 th Người thực hiện
                 th Việc
                 th Chi tiết
+                th IP
+                th Trước
+                th Sau
             tbody
               each row in audits
                 tr
@@ -34,6 +37,9 @@ block main
                   td= row.actorName
                   td= row.actionLabel
                   td= row.detail
+                  td= row.ip
+                  td= row.beforeText
+                  td= row.afterText
       else
         .pf-empty
           strong Chưa có thao tác
@@ -91,13 +97,17 @@ block main
                   td
                     .pf-actions
                       a.sz-btn.sz-btn-sm(href=`/admin/users/${u._id}`) Xem
-                      button.sz-btn.sz-btn-sm(type="button" data-open=`edit-${u._id}`) Sửa
-                      button.sz-btn.sz-btn-sm(type="button" data-open=`role-${u._id}`) Đổi vai trò
-                      button.sz-btn.sz-btn-sm(type="button" data-open=`pass-${u._id}`) Mật khẩu
-                      form(method="post" action=`/admin/users/${u._id}/status` data-confirm=u.status === "active" ? `Khóa đăng nhập của ${u.fullName}?` : `Mở khóa ${u.fullName}?`)
-                        input(type="hidden" name="status" value=nextStatus)
-                        button.sz-btn.sz-btn-sm(type="submit" class=u.status === "active" ? "sz-btn-outline-danger" : "sz-btn-green")
-                          = u.status === "active" ? "Khóa" : "Mở khóa"
+                      if can("user:update")
+                        button.sz-btn.sz-btn-sm(type="button" data-open=`edit-${u._id}`) Sửa
+                      if can("user:change_role")
+                        button.sz-btn.sz-btn-sm(type="button" data-open=`role-${u._id}`) Đổi vai trò
+                      if can("user:reset_password")
+                        button.sz-btn.sz-btn-sm(type="button" data-open=`pass-${u._id}`) Mật khẩu
+                      if can("user:lock")
+                        form(method="post" action=`/admin/users/${u._id}/status` data-confirm=u.status === "active" ? `Khóa đăng nhập của ${u.fullName}?` : `Mở khóa ${u.fullName}?`)
+                          input(type="hidden" name="status" value=nextStatus)
+                          button.sz-btn.sz-btn-sm(type="submit" class=u.status === "active" ? "sz-btn-outline-danger" : "sz-btn-green")
+                            = u.status === "active" ? "Khóa" : "Mở khóa"
 
         nav.pf-pager
           if page > 1
@@ -112,6 +122,7 @@ block main
 
     if users.length
       each u in users
+        - const currentRole = roles.find((item) => item.code === u.role)
         dialog.pf-dialog(id=`edit-${u._id}`)
           form(method="post" action=`/admin/users/${u._id}`)
             .pf-dialog-head
@@ -122,13 +133,13 @@ block main
             label Email
             input.sz-input(type="email" name="email" value=u.email required)
             label Số điện thoại
-            input.sz-input(type="text" name="phone" value=u.phone required)
+            input.sz-input(type="tel" name="phone" value=u.phone required inputmode="numeric" pattern="0[35789][0-9]{8}" title="10 số, đầu 03, 05, 07, 08 hoặc 09")
             .pf-dialog-actions
               button.sz-btn(type="button" data-close) Hủy
               button.sz-btn.sz-btn-green(type="submit") Lưu
 
         dialog.pf-dialog(id=`pass-${u._id}`)
-          form(method="post" action=`/admin/users/${u._id}/password`)
+          form(method="post" action=`/admin/users/${u._id}/password` data-confirm=`Đặt lại mật khẩu của ${u.fullName}? Phiên đăng nhập admin của họ sẽ hết hạn.`)
             .pf-dialog-head
               h2 Đặt lại mật khẩu
               button(type="button" data-close aria-label="Đóng") ×
@@ -140,7 +151,7 @@ block main
               button.sz-btn.sz-btn-green(type="submit") Lưu mật khẩu
 
         dialog.pf-dialog(id=`role-${u._id}`)
-          form(method="post" action=`/admin/users/${u._id}/roles`)
+          form(method="post" action=`/admin/users/${u._id}/roles` data-confirm="Đổi vai trò sẽ đăng xuất mọi phiên admin của tài khoản này.")
             .pf-dialog-head
               h2 Thay đổi vai trò
               button(type="button" data-close aria-label="Đóng") ×
@@ -148,12 +159,18 @@ block main
               strong= u.fullName
               br
               span.sz-muted #{u.email} · #{u.phone}
-            each item in roles
+            p.sz-muted Vai trò hiện tại: #{currentRole ? currentRole.label : u.role}
+            each item in assignableRoles
               label.pf-choice
                 input(type="radio" name="role" value=item.code checked=u.role === item.code required)
                 span
                   strong= item.label
                   small= item.code
+            label Lý do
+            textarea.sz-input(name="reason" maxlength="300" placeholder="Không bắt buộc")
+            label.pf-check
+              input(type="checkbox" name="confirm" value="yes" required)
+              span Tôi xác nhận đổi vai trò
             .pf-dialog-actions
               button.sz-btn(type="button" data-close) Hủy
               button.sz-btn.sz-btn-green(type="submit") Lưu thay đổi
@@ -166,14 +183,14 @@ block main
         label Họ và tên
         input.sz-input(type="text" name="fullName" required placeholder="Ví dụ: Lê Hoàng Long")
         label Email
-        input.sz-input(type="email" name="email" required placeholder="ten@email.com")
+        input.sz-input(type="email" name="email" required maxlength="120" placeholder="ten@email.com")
         label Số điện thoại
-        input.sz-input(type="text" name="phone" required placeholder="0912345678")
+        input.sz-input(type="tel" name="phone" required inputmode="numeric" placeholder="0912345678" pattern="0[35789][0-9]{8}" title="10 số, đầu 03, 05, 07, 08 hoặc 09")
         label Mật khẩu
         input.sz-input(type="password" name="password" required minlength="6" autocomplete="new-password")
         label Vai trò
         select.sz-select(name="role" required)
-          each item in roles
+          each item in assignableRoles
             option(value=item.code selected=item.code === "USER") #{item.label}
         .pf-dialog-actions
           button.sz-btn(type="button" data-close) Hủy

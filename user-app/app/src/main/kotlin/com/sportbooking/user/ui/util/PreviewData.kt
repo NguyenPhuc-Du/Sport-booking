@@ -224,29 +224,49 @@ object PreviewData {
 
     val reviews = listOf(
         Review(
+            id = "r1",
             facility = "CLB Thể Thao Kỳ Hòa",
+            facilityId = "fac_1",
+            bookingCode = "BK001",
             rating = 5,
             text = "Sân thảm mới, đèn sáng không chói mắt, nhân viên nhiệt tình hỗ trợ nước uống và vợt tập.",
+            createdAt = "01/11/2026",
         ),
         Review(
+            id = "r2",
             facility = "Sân Bóng Đá Chảo Lửa",
+            facilityId = "fac_2",
+            bookingCode = "BK002",
             rating = 4,
             text = "Mặt cỏ êm, thoát nước tốt ngay cả khi trời mưa.",
+            createdAt = "02/11/2026",
         ),
         Review(
+            id = "r3",
             facility = "Sân Tennis Quận 7",
+            facilityId = "fac_3",
+            bookingCode = "BK003",
             rating = 3,
             text = "Sân ổn nhưng phòng thay đồ hơi chật, cần cải thiện thêm.",
+            createdAt = "03/11/2026",
         ),
         Review(
+            id = "r4",
             facility = "Pickleball City Sports",
+            facilityId = "fac_4",
+            bookingCode = "BK004",
             rating = 5,
             text = "Không gian rộng, đặt lịch nhanh, sẽ quay lại.",
+            createdAt = "04/11/2026",
         ),
         Review(
+            id = "r5",
             facility = "Sân Cầu Lông Hòa Bình",
+            facilityId = "fac_5",
+            bookingCode = "BK005",
             rating = 2,
             text = "Đèn hơi tối ở góc sân, mặt sàn còn trơn khi đổ mồ hôi.",
+            createdAt = "05/11/2026",
         ),
     )
 }

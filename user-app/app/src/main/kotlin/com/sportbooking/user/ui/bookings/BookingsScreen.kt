@@ -74,6 +74,7 @@ sealed interface BookingsUiEvent {
     data class SelectFilter(val filterId: String) : BookingsUiEvent
     data object Refresh : BookingsUiEvent
     data class CancelBooking(val code: String) : BookingsUiEvent
+    data class SubmitReview(val code: String, val rating: Int, val text: String) : BookingsUiEvent
 }
 
 @Composable
@@ -99,6 +100,7 @@ fun BookingsScreen(
                 is BookingsUiEvent.SelectFilter -> viewModel.onFilterSelected(event.filterId)
                 BookingsUiEvent.Refresh -> viewModel.refresh()
                 is BookingsUiEvent.CancelBooking -> viewModel.cancel(event.code)
+                is BookingsUiEvent.SubmitReview -> viewModel.submitReview(event.code, event.rating, event.text)
             }
         },
         modifier = modifier,
@@ -208,7 +210,11 @@ fun BookingsContent(
                             BookingTicketCard(
                                 booking = booking,
                                 cancelling = state.workingCode == booking.code,
+                                reviewing = state.reviewingCode == booking.code,
                                 onCancelClick = { pendingCancelBooking = booking },
+                                onSubmitReview = { rating, text ->
+                                    onEvent(BookingsUiEvent.SubmitReview(booking.code, rating, text))
+                                },
                             )
                         }
 
@@ -245,6 +251,8 @@ fun BookingTicketCard(
     cancelling: Boolean,
     onCancelClick: () -> Unit,
     modifier: Modifier = Modifier,
+    reviewing: Boolean = false,
+    onSubmitReview: (rating: Int, text: String) -> Unit = { _, _ -> },
 ) {
     Card(
         shape = MaterialTheme.shapes.large,
@@ -353,8 +361,11 @@ fun BookingTicketCard(
             // Chỉ hiện nút đánh giá sau khi đã thanh toán và đã vào sân (completed / check-in).
             if (booking.status == "completed") {
                 BookingReviewAction(
-                    bookingCode = booking.code,
                     facilityName = booking.facilityName,
+                    existingRating = booking.review?.rating,
+                    existingText = booking.review?.text,
+                    submitting = reviewing,
+                    onSubmit = onSubmitReview,
                     fullWidth = true,
                 )
             }

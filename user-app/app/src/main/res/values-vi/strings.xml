@@ -44,6 +44,8 @@
     <string name="review_owner_reply_label">Phản hồi từ chủ sân</string>
     <string name="bookings_review_btn">Đánh giá cơ sở</string>
     <string name="bookings_reviewed_label">Đã đánh giá</string>
+    <string name="bookings_edit_review_btn">Sửa đánh giá (%1$d/5)</string>
+    <string name="my_reviews_edit_btn">Sửa</string>
 
     <!-- Booking Screen -->
     <string name="booking_title">Chọn sân &amp; giờ</string>

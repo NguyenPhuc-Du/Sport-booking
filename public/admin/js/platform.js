@@ -36,3 +36,22 @@ document.addEventListener("submit", (event) => {
   if (!message) return;
   if (!window.confirm(message)) event.preventDefault();
 });
+
+document.addEventListener("submit", (event) => {
+  const form = event.target;
+  if (!(form instanceof HTMLFormElement) || event.defaultPrevented) return;
+  const button = form.querySelector("button[type='submit']");
+  if (!button) return;
+  button.disabled = true;
+  button.textContent = "Đang lưu...";
+});
+
+document.addEventListener("change", (event) => {
+  const box = event.target;
+  if (!(box instanceof HTMLInputElement)) return;
+  const group = box.getAttribute("data-check-group");
+  if (!group) return;
+  document.querySelectorAll(`input[data-group="${group}"]`).forEach((item) => {
+    if (!item.disabled) item.checked = box.checked;
+  });
+});

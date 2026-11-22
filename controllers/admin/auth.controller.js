@@ -31,6 +31,18 @@ const login = asyncHandler(async (req, res) => {
       result.accessToken,
       cookieOptions(req.body.remember === "on"),
     );
+    const audit = require("../../services/admin/audit.service");
+    await audit.write(
+      result.userId,
+      "auth.login",
+      result.userId,
+      "Đăng nhập admin",
+      {
+        ip: req.ip,
+        targetType: "user",
+      },
+    );
+
     return res.redirect("/admin/dashboard");
   } catch (error) {
     const message =

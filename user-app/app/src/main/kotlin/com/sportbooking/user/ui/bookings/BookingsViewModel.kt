@@ -6,7 +6,9 @@ import com.sportbooking.domain.common.DomainResult
 import com.sportbooking.domain.model.Booking
 import com.sportbooking.domain.model.BookingCounts
 import com.sportbooking.domain.usecase.CancelBookingUseCase
+import com.sportbooking.domain.usecase.CreateReviewUseCase
 import com.sportbooking.domain.usecase.GetBookingsUseCase
+import com.sportbooking.domain.usecase.UpdateReviewUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,12 +23,15 @@ data class BookingsUiState(
     val bookings: List<Booking> = emptyList(),
     val error: String? = null,
     val workingCode: String? = null,
+    val reviewingCode: String? = null,
 )
 
 @HiltViewModel
 class BookingsViewModel @Inject constructor(
     private val getBookings: GetBookingsUseCase,
     private val cancelBooking: CancelBookingUseCase,
+    private val createReview: CreateReviewUseCase,
+    private val updateReview: UpdateReviewUseCase,
 ) : ViewModel() {
     private val _state = MutableStateFlow(BookingsUiState())
     val state = _state.asStateFlow()
@@ -50,6 +55,26 @@ class BookingsViewModel @Inject constructor(
         }
     }
 
+    fun submitReview(code: String, rating: Int, text: String) {
+        if (_state.value.reviewingCode != null) return
+        val booking = _state.value.bookings.firstOrNull { it.code == code } ?: return
+        val existing = booking.review
+        _state.update { it.copy(reviewingCode = code, error = null) }
+        viewModelScope.launch {
+            val result = if (existing != null) {
+                updateReview(existing.id, rating, text)
+            } else {
+                createReview(code, rating, text)
+            }
+            when (result) {
+                is DomainResult.Success -> load(_state.value.filter)
+                is DomainResult.Failure -> _state.update {
+                    it.copy(reviewingCode = null, error = result.message)
+                }
+            }
+        }
+    }
+
     private fun load(filter: String) {
         viewModelScope.launch {
             _state.update {
@@ -65,11 +90,14 @@ class BookingsViewModel @Inject constructor(
                     it.copy(
                         loading = false,
                         workingCode = null,
+                        reviewingCode = null,
                         counts = result.data.counts,
                         bookings = result.data.bookings,
                     )
                 }
-                is DomainResult.Failure -> _state.update { it.copy(loading = false, workingCode = null, error = result.message) }
+                is DomainResult.Failure -> _state.update {
+                    it.copy(loading = false, workingCode = null, reviewingCode = null, error = result.message)
+                }
             }
         }
     }

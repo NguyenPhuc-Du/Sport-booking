@@ -17,3 +17,12 @@ module.exports.bookings = async (req, res) => {
     ...data,
   });
 };
+
+module.exports.courts = async (req, res) => {
+  const data = await dashboardService.listCourtRevenue(res.locals.user.id, req.query);
+
+  res.render("owner/pages/dashboard/courts", {
+    pageTitle: "Thống kê sân theo doanh thu",
+    ...data,
+  });
+};

@@ -4,6 +4,7 @@ const Court = require("../../models/court.model");
 const CourtType = require("../../models/court-types.model");
 const Voucher = require("../../models/finance.model");
 const drinkService = require("./drink.service");
+const reviewService = require("./review.service");
 const cache = require("../../helpers/memory-cache");
 
 const TTL = 60 * 1000;
@@ -72,14 +73,16 @@ async function loadHome({ sport = "all", q = "" } = {}) {
     byVenue.get(k).push(c);
   }
 
+  const stats = await reviewService.aggregatesForFacilities(venues.map((v) => v._id));
   let facilities = venues.map((v) => {
     const { sports, sportIds } = sportsOf(byVenue.get(String(v._id)) || [], typeNames);
+    const agg = stats.get(String(v._id)) || { count: 0, avg: 0 };
     return {
       id: String(v._id),
       name: v.name,
       location: locationOf(v),
-      rating: 0,
-      reviews: 0,
+      rating: agg.avg,
+      reviews: agg.count,
       badge: v.is_featured ? "Nổi bật" : null,
       sports,
       sportIds,
@@ -105,6 +108,11 @@ async function loadDetail(id) {
   const courts = await Court.find({ ...ACTIVE_COURT, venue_id: v._id }).lean();
   const typeNames = await courtTypeMap();
   const { sports, sportIds } = sportsOf(courts, typeNames);
+  const [stats, reviewList] = await Promise.all([
+    reviewService.aggregatesForFacilities([v._id]),
+    reviewService.listForFacility(v._id),
+  ]);
+  const agg = stats.get(String(v._id)) || { count: 0, avg: 0 };
 
   return {
     id: String(v._id),
@@ -112,8 +120,8 @@ async function loadDetail(id) {
     location: locationOf(v),
     hours: hoursOf(v),
     phone: v.phone || "",
-    rating: 0,
-    reviews: 0,
+    rating: agg.avg,
+    reviews: agg.count,
     badge: v.is_featured ? "Nổi bật" : null,
     description: v.description || "",
     sports,
@@ -125,6 +133,15 @@ async function loadDetail(id) {
       name: c.name,
       surface: c.surface || "",
       capacity: c.capacity || "",
+    })),
+    reviewList: reviewList.map((r) => ({
+      id: r.id,
+      author: r.author,
+      rating: r.rating,
+      date: r.createdAt,
+      text: r.text,
+      ownerReply: r.ownerReply,
+      ownerReplyDate: r.ownerReplyAt,
     })),
   };
 }

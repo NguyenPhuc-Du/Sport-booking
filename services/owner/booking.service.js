@@ -7,6 +7,7 @@ const facilityService = require("./facility.service");
 const { nowInVietnam } = require("../app/slot.service");
 const cache = require("../../helpers/memory-cache");
 const ledger = require("../admin/ledger.service");
+const paginationHelper = require("../../helpers/pagination");
 
 const PRICE_TTL = 60 * 1000;
 
@@ -193,6 +194,120 @@ async function getTimelineRows(ownerId, date) {
   });
 
   return rows;
+}
+
+const BOOKING_STATUS_LABEL = {
+  pending_payment: "Chờ thanh toán",
+  upcoming: "Đã đặt lịch",
+  completed: "Đã check-in",
+  cancelled: "Đã hủy",
+};
+
+function labelDate(date) {
+  const [year, month, day] = String(date || "").split("-");
+  return day && month && year ? `${day}/${month}/${year}` : "";
+}
+
+function escapeRegex(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function bookingListQuery(venues, query) {
+  const venueIds = venues.map((venue) => venue._id);
+  const find = { facilityId: { $in: venueIds } };
+  const filter = { keyword: "", venueId: "", status: "", dateFrom: "", dateTo: "" };
+
+  const keyword = String(query.keyword || "").trim();
+  if (keyword) filter.keyword = keyword.slice(0, 80);
+
+  const venueId = String(query.venueId || "");
+  if (venueIds.some((id) => String(id) === venueId)) {
+    find.facilityId = venueId;
+    filter.venueId = venueId;
+  }
+
+  const status = String(query.status || "");
+  if (Object.prototype.hasOwnProperty.call(BOOKING_STATUS_LABEL, status)) {
+    find.status = status;
+    filter.status = status;
+  }
+
+  let dateFrom = /^\d{4}-\d{2}-\d{2}$/.test(String(query.dateFrom || "")) ? String(query.dateFrom) : "";
+  let dateTo = /^\d{4}-\d{2}-\d{2}$/.test(String(query.dateTo || "")) ? String(query.dateTo) : "";
+  if (dateFrom && dateTo && dateFrom > dateTo) {
+    const swap = dateFrom;
+    dateFrom = dateTo;
+    dateTo = swap;
+  }
+  if (dateFrom && dateTo) find.date = { $gte: dateFrom, $lte: dateTo };
+  else if (dateFrom) find.date = { $gte: dateFrom };
+  else if (dateTo) find.date = { $lte: dateTo };
+  filter.dateFrom = dateFrom;
+  filter.dateTo = dateTo;
+
+  return { find, filter };
+}
+
+async function applyKeyword(find, keyword) {
+  if (!keyword) return;
+  const regex = new RegExp(escapeRegex(keyword), "i");
+  const digits = keyword.replace(/\D/g, "");
+  const or = [
+    { code: regex },
+    { guestName: regex },
+    { courtName: regex },
+    { facilityName: regex },
+  ];
+  if (digits) or.push({ guestPhone: new RegExp(escapeRegex(digits)) });
+
+  const userOr = [{ fullName: regex }];
+  if (digits) userOr.push({ phone: new RegExp(escapeRegex(digits)) });
+  const users = await User.find({ $or: userOr }).select("_id").limit(50).lean();
+  if (users.length) or.push({ userId: { $in: users.map((user) => user._id) } });
+  find.$or = or;
+}
+
+function mapBookingRow(booking) {
+  const customer = booking.userId || {};
+  return {
+    code: booking.code,
+    name: booking.guestName || customer.fullName || "",
+    phone: formatPhone(booking.guestPhone || customer.phone),
+    venue: booking.facilityName || "",
+    court: booking.courtName || "",
+    date: labelDate(booking.date),
+    time: `${booking.timeStart} - ${booking.timeEnd}`,
+    timeLabel: `${booking.timeStart} - ${booking.timeEnd} (${labelDate(booking.date)})`,
+    amount: formatMoney(booking.amount),
+    status: booking.status,
+    statusLabel: BOOKING_STATUS_LABEL[booking.status] || booking.status,
+  };
+}
+
+async function listAllBookings(ownerId, query = {}) {
+  const venues = await ownerVenues(ownerId);
+  const { find, filter } = bookingListQuery(venues, query);
+  await applyKeyword(find, filter.keyword);
+
+  const total = await Booking.countDocuments(find);
+  const pagination = paginationHelper({ limitPage: 8 }, query, total);
+  const docs = await Booking.find(find)
+    .populate("userId", "fullName phone")
+    .select(
+      "code guestName guestPhone facilityName courtName timeStart timeEnd date amount status userId",
+    )
+    .sort({ date: -1, timeStart: -1, courtName: 1 })
+    .skip(pagination.skipPage)
+    .limit(pagination.limitPage)
+    .lean();
+
+  return {
+    bookings: docs.map(mapBookingRow),
+    venues: venues.map((venue) => ({ _id: venue._id, name: venue.name })),
+    filter,
+    pagination,
+    total,
+  };
 }
 
 function hourValue(value) {
@@ -414,6 +529,7 @@ module.exports = {
   resolveDate,
   walkInLimits,
   getTimelineRows,
+  listAllBookings,
   listCourtPrices,
   createWalkIn,
   checkIn,

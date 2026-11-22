@@ -12,7 +12,9 @@ header.sz-header
         .sz-user
           div
             .sz-user-name= user && user.fullName ? user.fullName : "Quản trị"
-            .sz-user-sub Super Admin · Quản trị hệ thống
+            .sz-user-sub= accessRole ? accessRole.name : "Quản trị hệ thống"
+
+
         a.pf-logout(href="/admin/auth/logout") Thoát
 
       else

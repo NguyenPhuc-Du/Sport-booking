@@ -52,6 +52,9 @@ block main
               th Người thực hiện
               th Việc
               th Chi tiết
+              th IP
+              th Trước
+              th Sau
           tbody
             each row in audits
               tr
@@ -59,6 +62,9 @@ block main
                 td= row.actorName
                 td= row.actionLabel
                 td= row.detail
+                td= row.ip
+                td= row.beforeText
+                td= row.afterText
     else
       .pf-empty
         strong Chưa có nhật ký cho tài khoản này

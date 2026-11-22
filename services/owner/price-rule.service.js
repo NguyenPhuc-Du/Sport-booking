@@ -85,14 +85,15 @@ module.exports.updatePriceRule = async (priceRuleId, body) => {
 module.exports.getPriceRuleIndex = async (ownerId, query) => {
   const limit = 10;
   const { court, dayType, status, facility } = query;
+
   const facilities = await facilityService.getAllVenueByOwnerId(ownerId);
   const facilityIds = facilities.map((item) => item._id);
-  const currentFacilityId =
-    facility &&
-    mongoose.Types.ObjectId.isValid(facility) &&
-    facilityIds.some((id) => String(id) === String(facility))
-      ? facility
-      : "";
+
+  let currentFacilityId = "";
+  if (facility && facilityIds.some((id) => String(id) === String(facility))) {
+    currentFacilityId = facility;
+  }
+
   const courts = await Court.find({
     venue_id: currentFacilityId || { $in: facilityIds },
     deleted: false,
@@ -100,24 +101,34 @@ module.exports.getPriceRuleIndex = async (ownerId, query) => {
     .select("name venue_id status")
     .sort({ name: 1 })
     .lean();
+
   const courtIds = courts.map((item) => item._id);
   const find = { court: { $in: courtIds } };
+
   const objectSearch = searchHelper(query);
-  if (objectSearch.regex) find.name = objectSearch.regex;
-  if (
-    court &&
-    mongoose.Types.ObjectId.isValid(court) &&
-    courtIds.some((id) => String(id) === String(court))
-  ) {
+  if (objectSearch.regex) {
+    find.name = objectSearch.regex;
+  }
+
+  let selectedCourt = "";
+  if (court && courtIds.some((id) => String(id) === String(court))) {
+    selectedCourt = String(court);
     find.court = court;
   }
-  if (["weekday", "weekend", "all"].includes(dayType)) find.dayType = dayType;
-  if (status === "active" || status === "inactive") find.status = status;
+
+  if (dayType === "weekday" || dayType === "weekend" || dayType === "all") {
+    find.dayType = dayType;
+  }
+  if (status === "active" || status === "inactive") {
+    find.status = status;
+  }
+
   const totalItems = await PriceRule.countDocuments(find);
   const totalPages = Math.max(1, Math.ceil(totalItems / limit));
-  let currentPage = parseInt(query.page, 10);
-  if (!Number.isFinite(currentPage) || currentPage < 1) currentPage = 1;
+  let currentPage = parseInt(query.page, 10) || 1;
+  if (currentPage < 1) currentPage = 1;
   if (currentPage > totalPages) currentPage = totalPages;
+
   const priceRules = await PriceRule.find(find)
     .populate({
       path: "court",
@@ -128,14 +139,17 @@ module.exports.getPriceRuleIndex = async (ownerId, query) => {
     .skip((currentPage - 1) * limit)
     .limit(limit)
     .lean();
-  const [courtCount, maintenanceCount] = await Promise.all([
-    Court.countDocuments({ venue_id: { $in: facilityIds }, deleted: false }),
-    Court.countDocuments({
-      venue_id: { $in: facilityIds },
-      deleted: false,
-      status: "maintenance",
-    }),
-  ]);
+
+  const courtCount = await Court.countDocuments({
+    venue_id: { $in: facilityIds },
+    deleted: false,
+  });
+  const maintenanceCount = await Court.countDocuments({
+    venue_id: { $in: facilityIds },
+    deleted: false,
+    status: "maintenance",
+  });
+
   return {
     priceRules,
     courts,
@@ -147,7 +161,7 @@ module.exports.getPriceRuleIndex = async (ownerId, query) => {
     query: {
       keyword: objectSearch.keyword,
       facility: currentFacilityId,
-      court: find.court && !find.court.$in ? String(find.court) : "",
+      court: selectedCourt,
       dayType: find.dayType || "",
       status: find.status || "",
     },

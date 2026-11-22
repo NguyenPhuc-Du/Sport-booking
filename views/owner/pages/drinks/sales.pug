@@ -50,20 +50,21 @@ block main
 
     if list.length
       .sz-table-wrap
-        table.sz-table
+        table.sz-table.sl-sales-table#sl-sales-table
           thead
             tr
               th MÃ PHIẾU
               th KHÁCH
               th CƠ SỞ
-              th MÓN
+              th.sl-col-fold MÓN
               th TỔNG THU
-              th THANH TOÁN
-              th THỜI GIAN
-              th.text-end
+              th.sl-col-fold THANH TOÁN
+              th.sl-col-fold THỜI GIAN
+              th.sl-col-action.text-end
+              th.sl-detail-head CHI TIẾT
           tbody
-            each sale in list
-              tr
+            each sale, index in list
+              tr.sl-row(data-sale-id=String(sale._id) tabindex="0")
                 td
                   strong.sl-code= sale.code
                 td
@@ -71,14 +72,17 @@ block main
                   if sale.guestPhone
                     .sz-muted= sale.guestPhone
                 td.sz-muted= sale.venueName || "—"
-                td= sale.items.length + " món"
+                td.sl-col-fold= sale.items.length + " món"
                 td
                   strong.sz-price= fmt(sale.amount)
-                td= payLabel[sale.paymentMethod] || sale.paymentMethod
-                td.sz-muted= when(sale.paidAt || sale.createdAt)
-                td.text-end
-                  a.sz-icon-btn(href=`${prefixOwner}/drinks/sales/${sale._id}` title="Xem phiếu")
+                td.sl-col-fold= payLabel[sale.paymentMethod] || sale.paymentMethod
+                td.sl-col-fold.sz-muted= when(sale.paidAt || sale.createdAt)
+                td.sl-col-action.text-end
+                  span.sz-icon-btn(title="Xem phiếu")
                     i.bi.bi-receipt
+                if index === 0
+                  td.sl-detail-cell(rowspan=list.length)
+                    .sl-bill-slot
 
       if pg.totalPage > 1
         nav.sz-pagination(aria-label="Phân trang")
@@ -98,3 +102,166 @@ block main
         a.sz-btn-primary(href=`${prefixOwner}/drinks/sales/create`)
           i.bi.bi-plus-lg
           |  Tạo phiếu bán
+
+block script
+  -
+    const salesPayload = JSON.stringify((typeof sales !== "undefined" ? sales : []).map((sale) => ({
+      id: String(sale._id),
+      code: sale.code || "",
+      guestName: sale.guestName || "",
+      guestPhone: sale.guestPhone || "",
+      venueName: sale.venueName || "",
+      paymentMethod: sale.paymentMethod || "",
+      status: sale.status || "",
+      note: sale.note || "",
+      amount: sale.amount || 0,
+      paidAt: sale.paidAt || sale.createdAt || null,
+      items: (sale.items || []).map((line) => ({
+        name: line.name || "",
+        price: line.price || 0,
+        qty: line.qty || 0,
+        lineTotal: line.lineTotal || 0,
+      })),
+    }))).replace(/</g, "\\u003c")
+  script#sl-sales-data(type="application/json")!= salesPayload
+  script.
+    (function () {
+      const table = document.getElementById("sl-sales-table");
+      const dataNode = document.getElementById("sl-sales-data");
+      if (!table || !dataNode) return;
+
+      const sales = JSON.parse(dataNode.textContent || "[]");
+      const rows = Array.from(table.querySelectorAll(".sl-row"));
+      const payLabel = { cash: "Tiền mặt tại quầy", vnpay: "Chuyển khoản QR" };
+      let openId = null;
+
+      const money = (n) => Number(n || 0).toLocaleString("vi-VN") + "đ";
+      const when = (d) => (d ? new Date(d).toLocaleString("vi-VN") : "—");
+      const statusLabel = (status) => {
+        if (status === "paid") return "Đã thu";
+        if (status === "cancelled") return "Đã hủy";
+        return status || "—";
+      };
+
+      function el(tag, className, text) {
+        const node = document.createElement(tag);
+        if (className) node.className = className;
+        if (text != null) node.textContent = text;
+        return node;
+      }
+
+      function meta(parent, label, value) {
+        const row = el("div", "sl-meta-row");
+        row.append(el("span", null, label), el("strong", null, value || "—"));
+        parent.appendChild(row);
+      }
+
+      const BILL_ROWS = 8;
+
+      function clearBills() {
+        table.querySelectorAll(".sl-bill-slot").forEach((slot) => slot.replaceChildren());
+      }
+
+      function sizeBill() {
+        const row = table.querySelector(".sl-row");
+        const slot = table.querySelector(".sl-bill-slot");
+        const wrap = table.closest(".sz-table-wrap");
+        if (!row || !slot || !wrap) return;
+        const rowH = row.getBoundingClientRect().height;
+        const bodyH = table.tBodies[0].getBoundingClientRect().height;
+        const billH = rowH * BILL_ROWS;
+        slot.style.height = billH + "px";
+        const extra = Math.max(0, billH - bodyH);
+        wrap.style.paddingBottom = extra ? extra + "px" : "";
+      }
+
+      function resetBillSize() {
+        const slot = table.querySelector(".sl-bill-slot");
+        const wrap = table.closest(".sz-table-wrap");
+        if (slot) slot.style.height = "";
+        if (wrap) wrap.style.paddingBottom = "";
+      }
+
+      function closePanel() {
+        openId = null;
+        table.classList.remove("is-open");
+        clearBills();
+        resetBillSize();
+      }
+
+      function render(sale) {
+        const root = el("div", "sl-side-bill");
+        const head = el("div", "sl-side-bill-head");
+        const titles = el("div");
+        titles.append(
+          el("div", "sl-code", sale.code),
+          el("div", "sz-muted", sale.venueName || "Cơ sở"),
+          el("div", "sz-muted", when(sale.paidAt))
+        );
+        const close = el("button", "sl-bill-close");
+        close.type = "button";
+        close.setAttribute("aria-label", "Đóng chi tiết");
+        close.innerHTML = '<i class="bi bi-x-lg"></i>';
+        close.addEventListener("click", function (event) {
+          event.stopPropagation();
+          closePanel();
+        });
+        head.append(titles, close);
+        root.appendChild(head);
+
+        meta(root, "Khách hàng", sale.guestName);
+        meta(root, "Số điện thoại", sale.guestPhone);
+        meta(root, "Thanh toán", payLabel[sale.paymentMethod] || sale.paymentMethod);
+        meta(root, "Trạng thái", statusLabel(sale.status));
+        if (sale.note) meta(root, "Ghi chú", sale.note);
+
+        const lines = el("div", "sl-side-lines");
+        (sale.items || []).forEach((line) => {
+          const row = el("div", "sl-side-line");
+          const left = el("div");
+          left.append(
+            el("div", "sl-side-line-name", line.name),
+            el("div", "sl-side-line-meta", money(line.price) + " × " + line.qty)
+          );
+          row.append(left, el("strong", "sz-price", money(line.lineTotal)));
+          lines.appendChild(row);
+        });
+        root.appendChild(lines);
+
+        const total = el("div", "sl-total");
+        total.append(el("span", null, "Tổng thu"), el("strong", null, money(sale.amount)));
+        root.appendChild(total);
+        return root;
+      }
+
+      function openPanel(id) {
+        const sale = sales.find((item) => item.id === id);
+        const slot = table.querySelector(".sl-bill-slot");
+        if (!sale || !slot) return;
+        openId = id;
+        table.classList.add("is-open");
+        clearBills();
+        slot.appendChild(render(sale));
+        sizeBill();
+      }
+
+      rows.forEach((row) => {
+        row.addEventListener("click", function () {
+          if (openId === row.dataset.saleId) closePanel();
+          else openPanel(row.dataset.saleId);
+        });
+        row.addEventListener("keydown", function (event) {
+          if (event.key !== "Enter" && event.key !== " ") return;
+          event.preventDefault();
+          if (openId === row.dataset.saleId) closePanel();
+          else openPanel(row.dataset.saleId);
+        });
+      });
+
+      const detailCell = table.querySelector(".sl-detail-cell");
+      if (detailCell) {
+        detailCell.addEventListener("click", function (event) {
+          event.stopPropagation();
+        });
+      }
+    })();

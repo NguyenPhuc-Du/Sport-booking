@@ -25,14 +25,21 @@ module.exports.requireAuth = async (req, res, next) => {
         return res.redirect("/auth/login");
     }
 
-    const decoded = jwt.verify(accessToken, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.id).select("-password_hash").lean();
+    try {
+        const decoded = jwt.verify(accessToken, process.env.JWT_SECRET);
+        const user = await User.findById(decoded.id).select("-password_hash").lean();
 
-    if (!user || user.status !== "active") {
+        if (!user || user.status !== "active") {
+            res.clearCookie("access_token");
+            return res.redirect("/auth/login");
+        }
+
+        res.locals.user = user;
+        res.locals.user.id = user._id.toString();
+        return next();
+    } catch (error) {
+        // Token cũ / JWT_SECRET đổi / chữ ký không khớp → xóa cookie và bắt login lại
+        res.clearCookie("access_token");
         return res.redirect("/auth/login");
     }
-
-    res.locals.user = user;
-    res.locals.user.id = user._id.toString();
-    next();
 };

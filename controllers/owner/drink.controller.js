@@ -111,7 +111,7 @@ module.exports.sales = async (req, res) => {
     const find = saleService.buildSaleFilter(req.query, venueIds);
 
     const count = await saleService.countSales(find);
-    const pagination = paginationHelper({ limitPage: 10 }, req.query, count);
+    const pagination = paginationHelper({ limitPage: 8 }, req.query, count);
     const sales = await saleService.listSales(find, pagination);
 
     res.render("owner/pages/drinks/sales", {
