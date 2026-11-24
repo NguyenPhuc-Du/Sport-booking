@@ -130,6 +130,24 @@
     color: var(--rf-muted);
 }
 
+.db-bill-amount {
+    font-size: 26px;
+    font-weight: 800;
+    line-height: 1.1;
+    color: var(--rf-green-dark);
+}
+
+.db-bill-main .db-code,
+.db-side-bill-head .db-code {
+    margin-top: 8px;
+}
+
+.db-bill-time {
+    margin-top: 4px;
+    font-size: 13px;
+    color: var(--rf-muted);
+}
+
 .db-bill-close {
     width: 32px;
     height: 32px;

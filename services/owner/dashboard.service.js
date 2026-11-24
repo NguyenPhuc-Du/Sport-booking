@@ -374,6 +374,7 @@ function buildStats({ bookings, previous, todayBookings, fillPct, goldenPct, new
         sport: row.sport,
         bookings: row.bookings,
         revenue: formatMoney(row.revenue),
+        revenueValue: row.revenue,
         fill: row.fill,
       }));
   }

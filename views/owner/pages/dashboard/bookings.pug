@@ -45,10 +45,10 @@ block main
           thead
             tr
               th Mã đơn
-              th Khách
-              th Ngày giờ
-              th.db-col-fold Số tiền
-              th.db-col-fold Trạng thái
+              th Thời gian
+              th Số tiền
+              th Trạng thái
+              th.db-col-fold Khách
               th.db-col-action.text-end
               th.db-detail-head Chi tiết
           tbody
@@ -56,15 +56,15 @@ block main
               tr.db-row(data-code=b.code tabindex="0")
                 td
                   strong.db-code= b.code
+                td= b.time
                 td
+                  strong.sz-price= b.amount
+                td
+                  span.sz-status(class=`is-${b.status}`)= b.statusLabel
+                td.db-col-fold
                   div= b.customer
                   if b.phone
                     .sz-muted= b.phone
-                td= b.time
-                td.db-col-fold
-                  strong.sz-price= b.amount
-                td.db-col-fold
-                  span.sz-status(class=`is-${b.status}`)= b.statusLabel
                 td.db-col-action.text-end
                   button.db-view-btn(type="button" title="Xem chi tiết" aria-label="Xem chi tiết")
                     i.bi.bi-receipt
@@ -105,7 +105,6 @@ block script
       const BILL_ROWS = 8;
       let openCode = null;
 
-      const money = (n) => Number(n || 0).toLocaleString("vi-VN") + "đ";
       const when = (d) => (d ? new Date(d).toLocaleString("vi-VN") : "");
 
       function dateLabel(iso) {
@@ -175,26 +174,17 @@ block script
         resetBillSize();
       }
 
-      function line(parent, name, metaText, total, extraClass) {
-        const row = el("div", "db-side-line" + (extraClass ? " " + extraClass : ""));
-        const left = el("div");
-        left.append(el("div", "db-side-line-name", name));
-        if (metaText) left.append(el("div", "db-side-line-meta", metaText));
-        row.append(left, el("strong", extraClass === "is-discount" ? "db-discount" : "sz-price", total));
-        parent.appendChild(row);
-      }
-
       function render(booking) {
         const root = el("div", "db-side-bill");
         const head = el("div", "db-side-bill-head");
         const titles = el("div");
         const slot = [booking.timeStart, booking.timeEnd].filter(Boolean).join(" – ");
         const duration = durationLabel(booking.timeStart, booking.timeEnd);
+        const timeLine = dateLabel(booking.date) + (slot ? " · " + slot : "");
         titles.append(
-          el("div", "db-bill-kicker", "Phiếu đặt sân"),
+          el("div", "db-bill-amount", booking.amount),
           el("div", "db-code", booking.code),
-          el("div", "sz-muted", booking.venue || "Cơ sở"),
-          el("div", "sz-muted", dateLabel(booking.date) + (slot ? " · " + slot : ""))
+          el("div", "db-bill-time", duration ? timeLine + " (" + duration + ")" : timeLine)
         );
         const close = el("button", "db-bill-close");
         close.type = "button";
@@ -207,31 +197,15 @@ block script
         head.append(titles, close);
         root.appendChild(head);
 
+        meta(root, "Trạng thái", booking.statusLabel);
         meta(root, "Khách hàng", booking.customer);
         meta(root, "Số điện thoại", booking.phone);
         meta(root, "Sân", booking.court);
-        meta(root, "Khung giờ", duration ? slot + " (" + duration + ")" : slot);
+        meta(root, "Cơ sở", booking.venue);
         meta(root, "Thanh toán", payLabel[booking.paymentMethod] || booking.pay);
-        meta(root, "Trạng thái", booking.statusLabel);
         meta(root, "Voucher", booking.voucherCode);
         meta(root, "Đặt lúc", when(booking.createdAt));
         meta(root, "Thanh toán lúc", when(booking.paidAt));
-
-        const lines = el("div", "db-side-lines");
-        if (booking.courtPrice) {
-          line(lines, "Tiền sân", booking.court, money(booking.courtPrice));
-        }
-        (booking.drinks || []).forEach((item) => {
-          line(lines, item.name, money(item.price) + " × " + item.qty, money(item.lineTotal));
-        });
-        if (booking.discount) {
-          line(lines, "Giảm giá", booking.voucherCode || "", "−" + money(booking.discount), "is-discount");
-        }
-        if (lines.childNodes.length) root.appendChild(lines);
-
-        const total = el("div", "db-total");
-        total.append(el("span", null, "Tổng tiền"), el("strong", null, booking.amount));
-        root.appendChild(total);
         return root;
       }
 
