@@ -53,31 +53,33 @@ block main
         table.bk-day-table.bk-list-table#bk-list-table
           thead
             tr
-              th NGÀY
-              th MỐC GIỜ
-              th SÂN
+              th MÃ ĐƠN
+              th THỜI GIAN
+              th SỐ TIỀN
+              th TRẠNG THÁI
+              th.bk-col-fold KHÁCH
+              th.bk-col-fold SÂN
               th.bk-col-fold CƠ SỞ
-              th KHÁCH
-              th.bk-col-fold TRẠNG THÁI
-              th.bk-col-fold TIỀN
               th.bk-col-action.text-end
               th.bk-detail-head CHI TIẾT
           tbody
             each booking, index in list
               tr.bk-row(data-code=booking.code tabindex="0")
-                td= booking.date
+                td
+                  strong.bk-code= booking.code
                 td
                   strong.bk-day-time= booking.time
-                td= booking.court
-                td.bk-col-fold.bk-day-muted= booking.venue || "—"
+                  .bk-day-muted= booking.date
                 td
+                  strong.bk-amount= booking.amount
+                td
+                  span.bk-day-status(class=`is-${booking.status}`)= booking.statusLabel
+                td.bk-col-fold
                   div= booking.name || "—"
                   if booking.phone
                     .bk-day-muted= booking.phone
-                td.bk-col-fold
-                  span.bk-day-status(class=`is-${booking.status}`)= booking.statusLabel
-                td.bk-col-fold
-                  strong= booking.amount
+                td.bk-col-fold= booking.court
+                td.bk-col-fold.bk-day-muted= booking.venue || "—"
                 td.bk-col-action.text-end
                   span.bk-icon-btn(title="Xem đơn")
                     i.bi.bi-receipt
@@ -160,12 +162,8 @@ block script
       function render(booking) {
         const root = el("div", "bk-side-bill");
         const head = el("div", "bk-side-head");
-        const titles = el("div");
-        titles.append(
-          el("div", "bk-side-code", booking.code),
-          el("div", "bk-day-muted", booking.venue || "Cơ sở"),
-          el("div", "bk-day-muted", booking.date + " · " + booking.time)
-        );
+        const total = el("div", "bk-side-total");
+        total.append(el("span", null, "Tổng tiền"), el("strong", null, booking.amount));
         const close = el("button", "bk-side-close");
         close.type = "button";
         close.setAttribute("aria-label", "Đóng chi tiết");
@@ -174,16 +172,16 @@ block script
           event.stopPropagation();
           closePanel();
         });
-        head.append(titles, close);
+        head.append(total, close);
         root.appendChild(head);
 
+        meta(root, "Mã đơn", booking.code);
+        meta(root, "Thời gian", [booking.date, booking.time].filter(Boolean).join(" · "));
         meta(root, "Khách hàng", booking.name);
         meta(root, "Số điện thoại", booking.phone);
         meta(root, "Sân", booking.court);
+        meta(root, "Cơ sở", booking.venue);
         meta(root, "Trạng thái", booking.statusLabel);
-        const total = el("div", "bk-side-total");
-        total.append(el("span", null, "Tổng tiền"), el("strong", null, booking.amount));
-        root.appendChild(total);
         return root;
       }
 

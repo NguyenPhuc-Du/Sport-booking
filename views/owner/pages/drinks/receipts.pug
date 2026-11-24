@@ -57,30 +57,36 @@ block main
           thead
             tr
               th MÃ PHIẾU
-              th NHÀ CUNG CẤP
-              th CƠ SỞ
+              th THỜI GIAN
+              th SỐ TIỀN
+              th TRẠNG THÁI
+              th.sl-col-fold NHÀ CUNG CẤP
+              th.sl-col-fold CƠ SỞ
               th.sl-col-fold MÓN
-              th TỔNG NHẬP
-              th.sl-col-fold TRẠNG THÁI
-              th.sl-col-fold THỜI GIAN
               th.sl-col-action.text-end
               th.sl-detail-head CHI TIẾT
           tbody
             each bill, index in list
+              - const at = bill.receivedAt || bill.createdAt
               tr.sl-row(data-receipt-id=String(bill._id) tabindex="0")
                 td
                   strong.sl-code= bill.code
-                td= bill.supplierName
-                td.sz-muted= bill.venueName || "—"
-                td.sl-col-fold= bill.items.length + " món"
+                td
+                  if at
+                    strong.sl-when= new Date(at).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })
+                    .sz-muted= new Date(at).toLocaleDateString("vi-VN")
+                  else
+                    | —
                 td
                   strong.sz-price= fmt(bill.amount)
-                td.sl-col-fold
+                td
                   if bill.status === "cancelled"
                     span.sz-tag.off Đã hủy
                   else
                     span.sz-tag Đã nhập
-                td.sl-col-fold.sz-muted= when(bill.receivedAt || bill.createdAt)
+                td.sl-col-fold= bill.supplierName
+                td.sl-col-fold.sz-muted= bill.venueName || "—"
+                td.sl-col-fold= bill.items.length + " món"
                 td.sl-col-action.text-end
                   span.sz-icon-btn(title="Xem phiếu")
                     i.bi.bi-box-arrow-in-down
@@ -195,12 +201,8 @@ block script
       function render(receipt) {
         const root = el("div", "sl-side-bill");
         const head = el("div", "sl-side-bill-head");
-        const titles = el("div");
-        titles.append(
-          el("div", "sl-code", receipt.code),
-          el("div", "sz-muted", receipt.venueName || "Cơ sở"),
-          el("div", "sz-muted", when(receipt.receivedAt))
-        );
+        const total = el("div", "sl-total");
+        total.append(el("span", null, "Tổng nhập"), el("strong", null, money(receipt.amount)));
         const close = el("button", "sl-bill-close");
         close.type = "button";
         close.setAttribute("aria-label", "Đóng chi tiết");
@@ -209,10 +211,13 @@ block script
           event.stopPropagation();
           closePanel();
         });
-        head.append(titles, close);
+        head.append(total, close);
         root.appendChild(head);
 
+        meta(root, "Mã phiếu", receipt.code);
+        meta(root, "Thời gian", when(receipt.receivedAt));
         meta(root, "Nhà cung cấp", receipt.supplierName);
+        meta(root, "Cơ sở", receipt.venueName);
         meta(root, "Trạng thái", statusLabel(receipt.status));
         if (receipt.status === "cancelled") meta(root, "Hủy lúc", when(receipt.cancelledAt));
         if (receipt.note) meta(root, "Ghi chú", receipt.note);
@@ -229,10 +234,6 @@ block script
           lines.appendChild(row);
         });
         root.appendChild(lines);
-
-        const total = el("div", "sl-total");
-        total.append(el("span", null, "Tổng nhập"), el("strong", null, money(receipt.amount)));
-        root.appendChild(total);
 
         if (receipt.status === "received") {
           const form = el("form", "sz-form-actions");

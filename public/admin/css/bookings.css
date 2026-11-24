@@ -627,7 +627,20 @@ body.bk-modal-open {
 }
 
 .bk-day-time {
+  display: block;
   font-variant-numeric: tabular-nums;
+}
+
+.bk-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--green-dark);
+}
+
+.bk-amount {
+  font-variant-numeric: tabular-nums;
+  color: var(--green-dark);
 }
 
 .bk-day-muted {
@@ -745,7 +758,9 @@ body.bk-modal-open {
   justify-content: space-between;
   align-items: flex-start;
   gap: 12px;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed #e2e8f0;
 }
 
 .bk-side-code {
@@ -792,15 +807,22 @@ body.bk-modal-open {
 
 .bk-side-total {
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-top: 14px;
-  padding-top: 14px;
-  border-top: 1px dashed #e2e8f0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+}
+
+.bk-side-total span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
 }
 
 .bk-side-total strong {
-  font-size: 20px;
+  font-size: 22px;
+  line-height: 1.2;
   color: var(--green-dark);
 }
 
