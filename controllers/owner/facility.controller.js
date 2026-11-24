@@ -1,6 +1,6 @@
 const facilities = require("../../services/owner/facility.service");
 const prefixAdmin = require("../../config/system");
-const paginationHelper = require("../../helper/pagination.helper");
+const paginationHelper = require("../../helpers/pagination");
 
 const PREFIX = prefixAdmin.prefixOwner;
 

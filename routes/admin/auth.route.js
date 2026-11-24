@@ -1,6 +1,7 @@
 const express = require("express");
 const controller = require("../../controllers/admin/auth.controller");
 const validate = require("../../validates/admin/platform-auth.validate");
+const authorize = require("../../middlewares/admin/authorize.middleware");
 
 const router = express.Router();
 

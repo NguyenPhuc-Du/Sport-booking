@@ -3,8 +3,11 @@ package com.sportbooking.user.ui.profile
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,7 +25,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.rounded.Logout
+import androidx.compose.material.icons.rounded.CameraAlt
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Email
 import androidx.compose.material.icons.rounded.Notifications
@@ -30,7 +35,7 @@ import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.Phone
 import androidx.compose.material.icons.rounded.RateReview
 import androidx.compose.material.icons.rounded.Save
-import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -47,6 +52,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -55,26 +61,24 @@ import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
 import com.sportbooking.domain.model.AppNotification
-import com.sportbooking.domain.model.Review
 import com.sportbooking.domain.model.User
 import com.sportbooking.user.R
 import com.sportbooking.user.ui.components.ErrorText
 import com.sportbooking.user.ui.components.LoadingScreen
 import com.sportbooking.user.ui.components.PrimaryButton
 import com.sportbooking.user.ui.components.SecondaryButton
-import com.sportbooking.user.ui.theme.PillShape
 import com.sportbooking.user.ui.theme.SportBookingTheme
-import com.sportbooking.user.ui.theme.extraColors
 import com.sportbooking.user.ui.theme.spacing
 import com.sportbooking.user.ui.util.PreviewData
-import com.sportbooking.user.ui.util.toVnd
 
 sealed interface ProfileUiEvent {
     data class ChangeFullName(val value: String) : ProfileUiEvent
     data class ChangePhone(val value: String) : ProfileUiEvent
     data class ChangeEmail(val value: String) : ProfileUiEvent
     data object Save : ProfileUiEvent
+    data object PickAvatar : ProfileUiEvent
     data object Logout : ProfileUiEvent
 }
 
@@ -82,10 +86,14 @@ sealed interface ProfileUiEvent {
 fun ProfileScreen(
     onUserUpdated: (User) -> Unit,
     onLogout: () -> Unit,
+    onOpenReviews: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ProfileViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val pickAvatar = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) viewModel.uploadAvatar(uri)
+    }
 
     LaunchedEffect(viewModel) {
         viewModel.updated.collect(onUserUpdated)
@@ -99,9 +107,11 @@ fun ProfileScreen(
                 is ProfileUiEvent.ChangePhone -> viewModel.onPhoneChange(event.value)
                 is ProfileUiEvent.ChangeEmail -> viewModel.onEmailChange(event.value)
                 ProfileUiEvent.Save -> viewModel.save()
+                ProfileUiEvent.PickAvatar -> pickAvatar.launch("image/*")
                 ProfileUiEvent.Logout -> onLogout()
             }
         },
+        onOpenReviews = onOpenReviews,
         modifier = modifier,
     )
 }
@@ -110,6 +120,7 @@ fun ProfileScreen(
 fun ProfileContent(
     state: ProfileUiState,
     onEvent: (ProfileUiEvent) -> Unit,
+    onOpenReviews: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (state.loading) {
@@ -140,24 +151,63 @@ fun ProfileContent(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(64.dp)
-                            .clip(CircleShape)
-                            .background(
-                                Brush.linearGradient(
-                                    listOf(
-                                        MaterialTheme.colorScheme.primary,
-                                        MaterialTheme.colorScheme.secondary,
+                            .size(72.dp)
+                            .clickable(enabled = !state.uploadingAvatar) {
+                                onEvent(ProfileUiEvent.PickAvatar)
+                            },
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CircleShape)
+                                .background(
+                                    Brush.linearGradient(
+                                        listOf(
+                                            MaterialTheme.colorScheme.primary,
+                                            MaterialTheme.colorScheme.secondary,
+                                        ),
                                     ),
                                 ),
-                            ),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = state.fullName.take(1).uppercase().ifBlank { "U" },
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimary,
-                        )
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            if (state.uploadingAvatar) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(28.dp),
+                                    strokeWidth = 2.dp,
+                                    color = MaterialTheme.colorScheme.onPrimary,
+                                )
+                            } else if (!state.avatarUrl.isNullOrBlank()) {
+                                AsyncImage(
+                                    model = state.avatarUrl,
+                                    contentDescription = stringResource(R.string.profile_avatar),
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize(),
+                                )
+                            } else {
+                                Text(
+                                    text = state.fullName.take(1).uppercase().ifBlank { "U" },
+                                    style = MaterialTheme.typography.headlineMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onPrimary,
+                                )
+                            }
+                        }
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .size(22.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.surface)
+                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.CameraAlt,
+                                contentDescription = stringResource(R.string.profile_change_avatar),
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(12.dp),
+                            )
+                        }
                     }
 
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -295,19 +345,12 @@ fun ProfileContent(
             }
         }
 
-        // Reviews Section
-        if (state.reviews.isNotEmpty()) {
-            item(key = "profile_reviews_header") {
-                Text(
-                    text = stringResource(R.string.profile_reviews),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                )
-            }
-
-            items(state.reviews, key = { it.facility + it.rating }) { review ->
-                ReviewTile(review = review)
-            }
+        // Reviews entry — danh sách đầy đủ nằm ở trang riêng
+        item(key = "profile_reviews_entry") {
+            ReviewsEntryCard(
+                reviewCount = state.reviews.size,
+                onClick = onOpenReviews,
+            )
         }
 
         // Logout
@@ -375,50 +418,60 @@ private fun NotificationTile(
 }
 
 @Composable
-private fun ReviewTile(
-    review: Review,
+private fun ReviewsEntryCard(
+    reviewCount: Int,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Card(
         shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
     ) {
-        Column(
+        Row(
             modifier = Modifier.padding(MaterialTheme.spacing.medium),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.RateReview,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(22.dp),
+                )
+            }
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 Text(
-                    text = review.facility,
+                    text = stringResource(R.string.profile_reviews),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                 )
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(2.dp),
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Star,
-                        contentDescription = null,
-                        tint = MaterialTheme.extraColors.rating,
-                        modifier = Modifier.size(16.dp),
-                    )
-                    Text(
-                        text = "${review.rating}/5",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
+                Text(
+                    text = if (reviewCount > 0) {
+                        stringResource(R.string.profile_reviews_count, reviewCount)
+                    } else {
+                        stringResource(R.string.profile_reviews_entry_subtitle)
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
-            Text(
-                text = review.text,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            Icon(
+                imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -444,6 +497,7 @@ private fun ProfileContentSuccessPreview() {
                     reviews = PreviewData.reviews,
                 ),
                 onEvent = {},
+                onOpenReviews = {},
             )
         }
     }
@@ -457,6 +511,7 @@ private fun ProfileContentLoadingPreview() {
             ProfileContent(
                 state = ProfileUiState(loading = true),
                 onEvent = {},
+                onOpenReviews = {},
             )
         }
     }

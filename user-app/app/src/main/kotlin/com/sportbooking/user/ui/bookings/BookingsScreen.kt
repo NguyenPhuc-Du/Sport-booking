@@ -56,6 +56,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sportbooking.domain.model.Booking
 import com.sportbooking.domain.model.BookingCounts
 import com.sportbooking.user.R
+import com.sportbooking.user.ui.components.BookingReviewAction
 import com.sportbooking.user.ui.components.ConfirmBottomSheet
 import com.sportbooking.user.ui.components.EmptyState
 import com.sportbooking.user.ui.components.ErrorText
@@ -73,6 +74,7 @@ sealed interface BookingsUiEvent {
     data class SelectFilter(val filterId: String) : BookingsUiEvent
     data object Refresh : BookingsUiEvent
     data class CancelBooking(val code: String) : BookingsUiEvent
+    data class SubmitReview(val code: String, val rating: Int, val text: String) : BookingsUiEvent
 }
 
 @Composable
@@ -98,6 +100,7 @@ fun BookingsScreen(
                 is BookingsUiEvent.SelectFilter -> viewModel.onFilterSelected(event.filterId)
                 BookingsUiEvent.Refresh -> viewModel.refresh()
                 is BookingsUiEvent.CancelBooking -> viewModel.cancel(event.code)
+                is BookingsUiEvent.SubmitReview -> viewModel.submitReview(event.code, event.rating, event.text)
             }
         },
         modifier = modifier,
@@ -207,7 +210,11 @@ fun BookingsContent(
                             BookingTicketCard(
                                 booking = booking,
                                 cancelling = state.workingCode == booking.code,
+                                reviewing = state.reviewingCode == booking.code,
                                 onCancelClick = { pendingCancelBooking = booking },
+                                onSubmitReview = { rating, text ->
+                                    onEvent(BookingsUiEvent.SubmitReview(booking.code, rating, text))
+                                },
                             )
                         }
 
@@ -235,6 +242,7 @@ fun BookingsContent(
             onDismiss = { pendingCancelBooking = null },
         )
     }
+
 }
 
 @Composable
@@ -243,6 +251,8 @@ fun BookingTicketCard(
     cancelling: Boolean,
     onCancelClick: () -> Unit,
     modifier: Modifier = Modifier,
+    reviewing: Boolean = false,
+    onSubmitReview: (rating: Int, text: String) -> Unit = { _, _ -> },
 ) {
     Card(
         shape = MaterialTheme.shapes.large,
@@ -290,6 +300,13 @@ fun BookingTicketCard(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                if (booking.drinks.isNotEmpty()) {
+                    Text(
+                        text = booking.drinks.joinToString(" · ") { "${it.name} x${it.qty}" },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
@@ -339,6 +356,18 @@ fun BookingTicketCard(
                         modifier = Modifier.size(width = 130.dp, height = 40.dp),
                     )
                 }
+            }
+
+            // Chỉ hiện nút đánh giá sau khi đã thanh toán và đã vào sân (completed / check-in).
+            if (booking.status == "completed") {
+                BookingReviewAction(
+                    facilityName = booking.facilityName,
+                    existingRating = booking.review?.rating,
+                    existingText = booking.review?.text,
+                    submitting = reviewing,
+                    onSubmit = onSubmitReview,
+                    fullWidth = true,
+                )
             }
         }
     }

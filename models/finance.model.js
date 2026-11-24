@@ -2,6 +2,12 @@ const mongoose = require("mongoose");
 
 const voucherSchema = new mongoose.Schema(
   {
+    campaign_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Campaign",
+      required: true,
+      index: true,
+    },
     code: {
       type: String,
       required: true,

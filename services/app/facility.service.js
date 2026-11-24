@@ -1,6 +1,13 @@
+const mongoose = require("mongoose");
 const Venue = require("../../models/facilities.model");
 const Court = require("../../models/court.model");
 const CourtType = require("../../models/court-types.model");
+const Voucher = require("../../models/finance.model");
+const drinkService = require("./drink.service");
+const reviewService = require("./review.service");
+const cache = require("../../helpers/memory-cache");
+
+const TTL = 60 * 1000;
 
 const OBJECT_ID = /^[0-9a-fA-F]{24}$/;
 
@@ -16,13 +23,19 @@ function hoursOf(v) {
   return "06:00 - 22:00 hàng ngày";
 }
 
+async function courtTypes() {
+  return cache.remember("catalog:app-court-types", TTL, () => {
+    return CourtType.find().sort({ name: 1 }).lean();
+  });
+}
+
 async function courtTypeMap() {
-  const types = await CourtType.find().lean();
+  const types = await courtTypes();
   return new Map(types.map((t) => [String(t._id), t.name]));
 }
 
 async function listSports() {
-  const types = await CourtType.find().sort({ name: 1 }).lean();
+  const types = await courtTypes();
   return [
     { id: "all", label: "Tất cả" },
     ...types.map((t) => ({ id: String(t._id), label: t.name })),
@@ -35,6 +48,11 @@ function sportsOf(courts, typeNames) {
 }
 
 async function listForHome({ sport = "all", q = "" } = {}) {
+  const cacheKey = `app:home:${sport}:${q.trim().toLowerCase()}`;
+  return cache.remember(cacheKey, TTL, () => loadHome({ sport, q }));
+}
+
+async function loadHome({ sport = "all", q = "" } = {}) {
   const filter = { ...ACTIVE_VENUE };
   if (q.trim()) {
     const re = new RegExp(q.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
@@ -55,14 +73,16 @@ async function listForHome({ sport = "all", q = "" } = {}) {
     byVenue.get(k).push(c);
   }
 
+  const stats = await reviewService.aggregatesForFacilities(venues.map((v) => v._id));
   let facilities = venues.map((v) => {
     const { sports, sportIds } = sportsOf(byVenue.get(String(v._id)) || [], typeNames);
+    const agg = stats.get(String(v._id)) || { count: 0, avg: 0 };
     return {
       id: String(v._id),
       name: v.name,
       location: locationOf(v),
-      rating: 0,
-      reviews: 0,
+      rating: agg.avg,
+      reviews: agg.count,
       badge: v.is_featured ? "Nổi bật" : null,
       sports,
       sportIds,
@@ -78,12 +98,21 @@ async function listForHome({ sport = "all", q = "" } = {}) {
 
 async function getDetail(id) {
   if (!OBJECT_ID.test(id || "")) return null;
+  return cache.remember(`app:facility:${id}`, TTL, () => loadDetail(id));
+}
+
+async function loadDetail(id) {
   const v = await Venue.findOne({ _id: id, ...ACTIVE_VENUE }).lean();
   if (!v) return null;
 
   const courts = await Court.find({ ...ACTIVE_COURT, venue_id: v._id }).lean();
   const typeNames = await courtTypeMap();
   const { sports, sportIds } = sportsOf(courts, typeNames);
+  const [stats, reviewList] = await Promise.all([
+    reviewService.aggregatesForFacilities([v._id]),
+    reviewService.listForFacility(v._id),
+  ]);
+  const agg = stats.get(String(v._id)) || { count: 0, avg: 0 };
 
   return {
     id: String(v._id),
@@ -91,14 +120,13 @@ async function getDetail(id) {
     location: locationOf(v),
     hours: hoursOf(v),
     phone: v.phone || "",
-    rating: 0,
-    reviews: 0,
+    rating: agg.avg,
+    reviews: agg.count,
     badge: v.is_featured ? "Nổi bật" : null,
     description: v.description || "",
     sports,
     sportIds,
     image: v.image_url || "",
-    amenities: [],
     images: v.image_url ? [v.image_url] : [],
     courts: courts.map((c) => ({
       id: String(c._id),
@@ -106,12 +134,23 @@ async function getDetail(id) {
       surface: c.surface || "",
       capacity: c.capacity || "",
     })),
+    reviewList: reviewList.map((r) => ({
+      id: r.id,
+      author: r.author,
+      rating: r.rating,
+      date: r.createdAt,
+      text: r.text,
+      ownerReply: r.ownerReply,
+      ownerReplyDate: r.ownerReplyAt,
+    })),
   };
 }
 
 async function getVenue(id) {
   if (!OBJECT_ID.test(id || "")) return null;
-  return Venue.findOne({ _id: id, ...ACTIVE_VENUE }).lean();
+  return cache.remember(`app:venue:${id}`, TTL, () => {
+    return Venue.findOne({ _id: id, ...ACTIVE_VENUE }).lean();
+  });
 }
 
 async function getCourt(venueId, courtId) {
@@ -130,4 +169,37 @@ async function getVenueAndCourt(facilityId, courtId) {
   return { venue, court };
 }
 
-module.exports = { listSports, listForHome, getDetail, getVenue, getCourt, getVenueAndCourt };
+async function listCheckoutOptions(facilityId) {
+  if (!facilityId || !mongoose.Types.ObjectId.isValid(facilityId)) {
+    const err = new Error("Thiếu cơ sở");
+    err.status = 400;
+    throw err;
+  }
+
+  const now = new Date();
+  const vouchers = await Voucher.find({
+    deleted: false,
+    status: "active",
+    venue_id: facilityId,
+    start_date: { $lte: now },
+    end_date: { $gte: now },
+  }).select("code name").lean();
+
+  return {
+    vouchers: vouchers.map((v) => ({ code: v.code, description: v.name })),
+    payments: [
+      { id: "vnpay", title: "VNPay", description: "ATM / thẻ / QR ngân hàng" },
+    ],
+    drinks: await drinkService.listForVenue(facilityId),
+  };
+}
+
+module.exports = {
+  listSports,
+  listForHome,
+  getDetail,
+  getVenue,
+  getCourt,
+  getVenueAndCourt,
+  listCheckoutOptions,
+};

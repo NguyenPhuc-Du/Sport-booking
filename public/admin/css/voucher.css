@@ -401,6 +401,69 @@
   filter: brightness(1.05);
 }
 
+.vc-empty {
+  padding: 36px 16px !important;
+  color: #047857;
+  font-size: 15px;
+  font-weight: 700;
+  text-align: center;
+  background: #f0fdf4;
+}
+
+.vc-pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 22px;
+}
+
+.vc-pagination .pagination {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+}
+
+.vc-pagination .page-item .page-link {
+  min-width: 38px;
+  height: 38px;
+  margin: 0;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #d1fae5;
+  border-radius: 12px;
+  background: #fff;
+  color: #065f46;
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: none;
+}
+
+.vc-pagination .page-item:first-child .page-link,
+.vc-pagination .page-item:last-child .page-link {
+  border-radius: 12px;
+}
+
+.vc-pagination .page-link:hover {
+  background: #ecfdf5;
+  border-color: #6ee7b7;
+  color: #047857;
+}
+
+.vc-pagination .page-item.active .page-link {
+  background: linear-gradient(135deg, #10b981, #059669);
+  border-color: #059669;
+  color: #fff;
+  box-shadow: 0 8px 16px rgba(5, 150, 105, 0.22);
+}
+
+.vc-pagination .page-item.active .page-link:focus {
+  color: #fff;
+}
+
 @media (max-width: 768px) {
   .vc-head,
   .vc-card-head {

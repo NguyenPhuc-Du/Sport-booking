@@ -1,77 +1,79 @@
 extends ../../layouts/default.pug
 include ../../../mixins/alert.pug
+include ../../../mixins/pagination.pug
+
 block main
   +alert-success(5000)
+  +alert-error(5000)
   .vc-page
     .vc-head
       div
-        h1.vc-title Tài chính, Đối soát &amp; Khuyến mãi
-        p.vc-sub Quản trị chiến dịch mã ưu đãi, đối soát hoa hồng 5% và gói phần mềm SaaS
-
-    .vc-tabs
-      a.vc-tab.active(href="#")
-        i.bi.bi-ticket-perforated
-        | Chiến dịch Voucher (3)
-      a.vc-tab(href="#")
-        i.bi.bi-credit-card-2-front
-        | Đối soát &amp; Hoa hồng sàn (4)
+        h1.vc-title Chương trình khuyến mãi
+        p.vc-sub Quản lý chiến dịch theo thời gian sự kiện và các mã voucher con bên trong
+      a.vc-btn.vc-btn-sm(href=`${prefixAdmin}/finance/campaigns/create`)
+        i.bi.bi-plus-lg
+        | Tạo chương trình
 
     .vc-card
       .vc-card-head
         div
-          h2.vc-card-title Mã giảm giá đang kích hoạt
-          p.vc-card-sub Kích cầu người chơi vào các khung giờ vàng hoặc tri ân hội viên
-        a.vc-btn.vc-btn-sm(href=`${prefixAdmin}/finance/create`)
-          i.bi.bi-plus-lg
-          | Tạo Voucher mới
+          h2.vc-card-title Danh sách chương trình
+          p.vc-card-sub Mỗi chương trình có thời hạn riêng và chứa nhiều voucher con
 
       .vc-table-wrap
         table.vc-table
           thead
             tr
-              th Mã code
-              th Chương trình
-              th Mức giảm
-              th Đơn tối thiểu
-              th Đã dùng / Giới hạn
+              th Tên chương trình
+              th Cơ sở
               th Thời hạn
+              th Số voucher
               th Trạng thái
               th Hành động
           tbody
-            for item in voucher
+            if campaigns && campaigns.length
+              each item in campaigns
+                tr
+                  td
+                    strong #{item.name}
+                    if item.description
+                      .sz-muted #{item.description}
+                  td #{item.venue_name}
+                  td
+                    span.vc-date #{item.start_date_display} → #{item.end_date_display}
+                  td #{item.voucher_count}
+                  td
+                    if item.status == "active"
+                      span.vc-status hoạt động
+                    else if item.status == "expired"
+                      span.vc-status.vc-status-muted hết hạn
+                    else
+                      span.vc-status.vc-status-danger ngưng
+                  td
+                    .vc-actions
+                      a.vc-btn-edit(
+                        href=`${prefixAdmin}/finance/campaigns/${item._id}/vouchers`
+                      ) Voucher
+                      a.vc-btn-edit(
+                        href=`${prefixAdmin}/finance/campaigns/edit/${item._id}`
+                      ) Sửa
+                      button.vc-btn-del(
+                        type="button"
+                        button-delete
+                        data-id=item._id
+                      ) Xóa
+            else
               tr
-                td
-                  span.vc-code #{item.code}
-                td #{item.name}
-                td
-                  if(item.discount_type === "fixed")
-                    span.vc-discount #{item.display_value}
-                  else
-                    span.vc-discount #{item.discount_value}%
-                td #{item.display_minorder}
-                td.vc-usage
-                  span.vc-usage-text #{item.used_count}/#{item.quantity}
-                  .vc-bar
-                    .vc-bar-fill(style=`width: ${item.percentUsed}%`)
-                td
-                  span.vc-date #{item.start_date} - #{item.end_date}
-                td
-                  if(item.status=="active")
-                    span.vc-status.cursor-btn hoạt động
-                  else if(item.status=="expired")
-                    span.vc-status.vc-status-muted.cursor-btn Hết lượt dùng
-                  else
-                    span.vc-status.vc-status-danger.cursor-btn Ngưng hoạt động
-                td
-                  .vc-actions
-                    a.vc-btn-edit(
-                      href=`${prefixAdmin}/finance/edit/${item._id}`
-                    ) Sửa
-                    button.vc-btn-del(
-                      type="button"
-                      button-delete
-                      data-id=item._id
-                    ) Xóa
-    form(method='POST' action="" id="form-delete" data-path=`${prefixAdmin}/finance/delete`)
+                td.vc-empty(colspan="6") Không có chương trình khuyến mãi
+
+      nav.vc-pagination(aria-label="Phân trang chương trình")
+        +pagination(pagination)
+
+    form(
+      method="POST"
+      action=""
+      id="form-delete"
+      data-path=`${prefixAdmin}/finance/campaigns/delete`
+    )
     script(src="/admin/js/finance.js")
     script(src="/js/script.js")

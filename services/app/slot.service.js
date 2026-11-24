@@ -1,8 +1,11 @@
 const PriceRule = require("../../models/price-rule.model");
 const Booking = require("../../models/booking.model");
 const Voucher = require("../../models/finance.model");
+const drinkService = require("./drink.service");
+const cache = require("../../helpers/memory-cache");
 
 const TIME_ZONE = "Asia/Ho_Chi_Minh";
+const PRICE_TTL = 60 * 1000;
 
 function toMinutes(hhmm) {
   const [h, m] = hhmm.split(":").map(Number);
@@ -38,10 +41,19 @@ function dayTypeOf(dateStr) {
 }
 
 async function expireStablePending() {
+  const expired = await Booking.find({
+    status: "pending_payment",
+    expiresAt: { $lte: new Date() },
+  }).select("_id");
+  if (!expired.length) return;
+
   await Booking.updateMany(
-    { status: "pending_payment", expiresAt: { $lte: new Date() } },
-    { $set: { status: "cancelled", statusLabel: "HẾT HẠN THANH TOÁN" } }
+    { _id: { $in: expired.map((item) => item._id) }, status: "pending_payment" },
+    { $set: { status: "cancelled", statusLabel: "HẾT HẠN THANH TOÁN" } },
   );
+  for (const item of expired) {
+    await drinkService.releaseDrinks(item._id);
+  }
 }
 
 async function completePastBookings(filter = {}) {
@@ -63,9 +75,20 @@ async function takenStarts(courtId, date) {
     date,
     status: { $in: ["pending_payment", "upcoming", "completed"] },
   })
-    .select("timeStart")
+    .select("timeStart timeEnd")
     .lean();
-  return new Set(bookings.map((b) => b.timeStart));
+  
+    const taken = new Set();
+    for (const booking of bookings) {
+      let cursor = toMinutes(booking.timeStart);
+      const end = toMinutes(booking.timeEnd);
+
+      for (; cursor < end; cursor += 60) {
+        taken.add(fromMinutes(cursor));
+      }
+    }
+    
+    return taken;
 }
 
 async function buildSlots(venue, courtId, date) {
@@ -74,11 +97,14 @@ async function buildSlots(venue, courtId, date) {
   const now = nowInVietnam();
   const nowMinutes = toMinutes(now.time);
 
-  const rules = await PriceRule.find({
-    court: courtId,
-    status: "active",
-    dayType: { $in: [dayTypeOf(date), "all"] },
-  }).lean();
+  const dayType = dayTypeOf(date);
+  const rules = await cache.remember(`price:${courtId}:${dayType}`, PRICE_TTL, () => {
+    return PriceRule.find({
+      court: courtId,
+      status: "active",
+      dayType: { $in: [dayType, "all"] },
+    }).lean();
+  });
   const taken = await takenStarts(courtId, date);
 
   const slots = [];

@@ -1,0 +1,247 @@
+extends ../../layouts/default.pug
+
+block head
+  link(rel="stylesheet" href="/admin/css/drinks.css")
+  link(rel="stylesheet" href="/admin/css/drink-index.css")
+  link(rel="stylesheet" href="/admin/css/dashboard-bookings.css")
+
+block main
+  - const f = typeof filter !== "undefined" ? filter : { status: "", q: "", venueId: "" }
+  - const list = typeof bookings !== "undefined" ? bookings : []
+  - const pg = typeof pagination !== "undefined" ? pagination : { currentPage: 1, totalPage: 1 }
+  - const c = typeof counts !== "undefined" ? counts : { all: 0 }
+  - const qs = (o) => { const p = Object.assign({}, f, o); return Object.keys(p).filter((k) => p[k] !== undefined && p[k] !== "").map((k) => k + "=" + encodeURIComponent(p[k])).join("&"); }
+
+  .d-flex.justify-content-between.align-items-start.flex-wrap.gap-3.mb-4
+    div
+      h1.sz-title Tất cả đơn đặt sân
+      p.sz-subtitle Xem chi tiết các đơn cũ và mới của toàn bộ cơ sở bạn quản lý.
+    a.sz-link(href=`${prefixOwner}/dashboard`) ← Về tổng quan
+
+  .sz-tabs.mb-3
+    a.sz-tab(href=`${prefixOwner}/dashboard/bookings?${qs({ status: "", page: 1 })}` class=(!f.status ? "active" : undefined)) Tất cả (#{c.all || 0})
+    a.sz-tab(href=`${prefixOwner}/dashboard/bookings?${qs({ status: "upcoming", page: 1 })}` class=(f.status === "upcoming" ? "active" : undefined)) Đã duyệt (#{c.upcoming || 0})
+    a.sz-tab(href=`${prefixOwner}/dashboard/bookings?${qs({ status: "pending_payment", page: 1 })}` class=(f.status === "pending_payment" ? "active" : undefined)) Chờ thanh toán (#{c.pending_payment || 0})
+    a.sz-tab(href=`${prefixOwner}/dashboard/bookings?${qs({ status: "completed", page: 1 })}` class=(f.status === "completed" ? "active" : undefined)) Hoàn thành (#{c.completed || 0})
+    a.sz-tab(href=`${prefixOwner}/dashboard/bookings?${qs({ status: "cancelled", page: 1 })}` class=(f.status === "cancelled" ? "active" : undefined)) Đã hủy (#{c.cancelled || 0})
+
+  .sz-card.sz-panel
+    form.sz-filter.mb-3(method="GET" action=`${prefixOwner}/dashboard/bookings`)
+      if f.status
+        input(type="hidden" name="status" value=f.status)
+      select.sz-input.sz-filter-select(name="venueId")
+        option(value="") Tất cả cơ sở
+        each v in (typeof venues !== "undefined" ? venues : [])
+          option(value=v._id selected=(String(f.venueId) === String(v._id)))= v.name
+      .sz-search
+        i.bi.bi-search
+        input.sz-input(type="search" name="q" placeholder="Mã đơn, tên khách, SĐT, sân..." value=f.q)
+      button.sz-btn.sz-btn-dark(type="submit") Lọc
+      a.sz-link(href=`${prefixOwner}/dashboard/bookings`) Xóa lọc
+
+    if list.length
+      .sz-table-wrap
+        table.sz-table.db-bookings-table#db-bookings-table
+          thead
+            tr
+              th Mã đơn
+              th Thời gian
+              th Số tiền
+              th Trạng thái
+              th.db-col-fold Khách
+              th.db-col-action.text-end
+              th.db-detail-head Chi tiết
+          tbody
+            each b, index in list
+              tr.db-row(data-code=b.code tabindex="0")
+                td
+                  strong.db-code= b.code
+                td= b.time
+                td
+                  strong.sz-price= b.amount
+                td
+                  span.sz-status(class=`is-${b.status}`)= b.statusLabel
+                td.db-col-fold
+                  div= b.customer
+                  if b.phone
+                    .sz-muted= b.phone
+                td.db-col-action.text-end
+                  button.db-view-btn(type="button" title="Xem chi tiết" aria-label="Xem chi tiết")
+                    i.bi.bi-receipt
+                    span Xem chi tiết
+                if index === 0
+                  td.db-detail-cell(rowspan=list.length)
+                    .db-bill-slot
+
+      if pg.totalPage > 1
+        nav.sz-pagination(aria-label="Phân trang đơn đặt sân")
+          if pg.currentPage > 1
+            a.sz-page(href=`?${qs({ page: pg.currentPage - 1 })}`)
+              i.bi.bi-chevron-left
+          - for (let i = 1; i <= pg.totalPage; i++)
+            a.sz-page(href=`?${qs({ page: i })}` class=(i === pg.currentPage ? "active" : undefined))= i
+          if pg.currentPage < pg.totalPage
+            a.sz-page(href=`?${qs({ page: pg.currentPage + 1 })}`)
+              i.bi.bi-chevron-right
+    else
+      .sz-empty
+        i.bi.bi-calendar-x
+        h3 Chưa có đơn đặt sân
+        p Không tìm thấy đơn nào khớp bộ lọc hiện tại.
+
+block script
+  -
+    const bookingsPayload = JSON.stringify(typeof bookings !== "undefined" ? bookings : []).replace(/</g, "\\u003c")
+  script#db-bookings-data(type="application/json")!= bookingsPayload
+  script.
+    (function () {
+      const table = document.getElementById("db-bookings-table");
+      const dataNode = document.getElementById("db-bookings-data");
+      if (!table || !dataNode) return;
+
+      const bookings = JSON.parse(dataNode.textContent || "[]");
+      const rows = Array.from(table.querySelectorAll(".db-row"));
+      const payLabel = { cash: "Tiền mặt", vnpay: "VNPAY" };
+      const BILL_ROWS = 8;
+      let openCode = null;
+
+      const when = (d) => (d ? new Date(d).toLocaleString("vi-VN") : "");
+
+      function dateLabel(iso) {
+        const parts = String(iso || "").split("-");
+        if (parts.length !== 3) return iso || "—";
+        return parts[2] + "/" + parts[1] + "/" + parts[0];
+      }
+
+      function durationLabel(start, end) {
+        const toMin = (value) => {
+          const bits = String(value || "").split(":");
+          const hour = Number(bits[0]);
+          const minute = Number(bits[1] || 0);
+          if (!Number.isFinite(hour) || !Number.isFinite(minute)) return NaN;
+          return hour * 60 + minute;
+        };
+        const mins = toMin(end) - toMin(start);
+        if (!Number.isFinite(mins) || mins <= 0) return "";
+        if (mins % 60 === 0) return mins / 60 + " tiếng";
+        const hours = Math.floor(mins / 60);
+        return hours ? hours + " tiếng " + (mins % 60) + " phút" : mins + " phút";
+      }
+
+      function el(tag, className, text) {
+        const node = document.createElement(tag);
+        if (className) node.className = className;
+        if (text != null) node.textContent = text;
+        return node;
+      }
+
+      function meta(parent, label, value) {
+        if (!value) return;
+        const row = el("div", "db-meta-row");
+        row.append(el("span", null, label), el("strong", null, value));
+        parent.appendChild(row);
+      }
+
+      function clearBills() {
+        table.querySelectorAll(".db-bill-slot").forEach((slot) => slot.replaceChildren());
+      }
+
+      function sizeBill() {
+        const row = table.querySelector(".db-row");
+        const slot = table.querySelector(".db-bill-slot");
+        const wrap = table.closest(".sz-table-wrap");
+        if (!row || !slot || !wrap) return;
+        const rowH = row.getBoundingClientRect().height;
+        const bodyH = table.tBodies[0].getBoundingClientRect().height;
+        const billH = rowH * BILL_ROWS;
+        slot.style.height = billH + "px";
+        const extra = Math.max(0, billH - bodyH);
+        wrap.style.paddingBottom = extra ? extra + "px" : "";
+      }
+
+      function resetBillSize() {
+        const slot = table.querySelector(".db-bill-slot");
+        const wrap = table.closest(".sz-table-wrap");
+        if (slot) slot.style.height = "";
+        if (wrap) wrap.style.paddingBottom = "";
+      }
+
+      function closePanel() {
+        openCode = null;
+        table.classList.remove("is-open");
+        rows.forEach((row) => row.classList.remove("is-active"));
+        clearBills();
+        resetBillSize();
+      }
+
+      function render(booking) {
+        const root = el("div", "db-side-bill");
+        const head = el("div", "db-side-bill-head");
+        const titles = el("div");
+        const slot = [booking.timeStart, booking.timeEnd].filter(Boolean).join(" – ");
+        const duration = durationLabel(booking.timeStart, booking.timeEnd);
+        const timeLine = dateLabel(booking.date) + (slot ? " · " + slot : "");
+        titles.append(
+          el("div", "db-bill-amount", booking.amount),
+          el("div", "db-code", booking.code),
+          el("div", "db-bill-time", duration ? timeLine + " (" + duration + ")" : timeLine)
+        );
+        const close = el("button", "db-bill-close");
+        close.type = "button";
+        close.setAttribute("aria-label", "Đóng chi tiết");
+        close.innerHTML = '<i class="bi bi-x-lg"></i>';
+        close.addEventListener("click", function (event) {
+          event.stopPropagation();
+          closePanel();
+        });
+        head.append(titles, close);
+        root.appendChild(head);
+
+        meta(root, "Trạng thái", booking.statusLabel);
+        meta(root, "Khách hàng", booking.customer);
+        meta(root, "Số điện thoại", booking.phone);
+        meta(root, "Sân", booking.court);
+        meta(root, "Cơ sở", booking.venue);
+        meta(root, "Thanh toán", payLabel[booking.paymentMethod] || booking.pay);
+        meta(root, "Voucher", booking.voucherCode);
+        meta(root, "Đặt lúc", when(booking.createdAt));
+        meta(root, "Thanh toán lúc", when(booking.paidAt));
+        return root;
+      }
+
+      function openPanel(code) {
+        const booking = bookings.find((item) => item.code === code);
+        const slot = table.querySelector(".db-bill-slot");
+        if (!booking || !slot) return;
+        openCode = code;
+        table.classList.add("is-open");
+        rows.forEach((row) => row.classList.toggle("is-active", row.dataset.code === code));
+        clearBills();
+        slot.appendChild(render(booking));
+        sizeBill();
+      }
+
+      rows.forEach((row) => {
+        row.addEventListener("click", function () {
+          if (openCode === row.dataset.code) closePanel();
+          else openPanel(row.dataset.code);
+        });
+        row.addEventListener("keydown", function (event) {
+          if (event.key !== "Enter" && event.key !== " ") return;
+          event.preventDefault();
+          if (openCode === row.dataset.code) closePanel();
+          else openPanel(row.dataset.code);
+        });
+      });
+
+      const detailCell = table.querySelector(".db-detail-cell");
+      if (detailCell) {
+        detailCell.addEventListener("click", function (event) {
+          event.stopPropagation();
+        });
+      }
+
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape") closePanel();
+      });
+    })();

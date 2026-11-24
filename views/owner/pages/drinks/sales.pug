@@ -1,0 +1,272 @@
+extends ../../layouts/default.pug
+include ../../../mixins/alert.pug
+
+block head
+  link(rel="stylesheet" href="/admin/css/drinks.css")
+  link(rel="stylesheet" href="/admin/css/drink-index.css")
+  link(rel="stylesheet" href="/admin/css/sale.css")
+
+block main
+  +alert-success(3000)
+  +alert-error(5000)
+  - const f = typeof filter !== "undefined" ? filter : {}
+  - const list = typeof sales !== "undefined" ? sales : []
+  - const pg = typeof pagination !== "undefined" ? pagination : { currentPage: 1, totalPage: 1 }
+  - const fmt = (n) => Number(n || 0).toLocaleString("vi-VN") + "đ"
+  - const payLabel = { cash: "Tiền mặt", vnpay: "Chuyển khoản" }
+  - const qs = (o) => { const p = Object.assign({}, f, o); return Object.keys(p).filter(k => p[k]).map(k => k + "=" + encodeURIComponent(p[k])).join("&"); }
+  - const when = (d) => d ? new Date(d).toLocaleString("vi-VN") : "—"
+
+  .d-flex.justify-content-between.align-items-start.flex-wrap.gap-3
+    div
+      h1.sz-page-title Phiếu bán giải khát
+      p.sz-page-sub Hóa đơn khách mua nước trực tiếp tại quầy.
+    .sl-actions
+      a.sz-btn-outline(href=`${prefixOwner}/drinks`)
+        i.bi.bi-cup-straw
+        |  Sản phẩm
+      a.sz-btn-primary(href=`${prefixOwner}/drinks/sales/create`)
+        i.bi.bi-plus-lg
+        |  Tạo phiếu bán
+
+  - const tab = "sales"
+  include _tabs.pug
+
+  .sz-card.sz-list-card.mt-3
+    .d-flex.justify-content-between.align-items-end.flex-wrap.gap-3.mb-3
+      div
+        h2.sz-card-title Danh sách phiếu
+        p.sz-card-sub Mỗi phiếu trừ tồn kho ngay khi xuất
+      form.sz-filter(method="GET" action=`${prefixOwner}/drinks/sales`)
+        select.sz-input.sz-filter-select(name="venueId" onchange="this.form.submit()")
+          option(value="") Tất cả cơ sở
+          each v in (typeof venues !== "undefined" ? venues : [])
+            option(value=v._id selected=(String(f.venueId) === String(v._id)))= v.name
+        .sz-search
+          i.bi.bi-search
+          input.sz-input(type="search" name="keyword" placeholder="Mã phiếu, tên, SĐT..." value=f.keyword)
+        button.sz-btn-outline(type="submit") Lọc
+        a.sz-btn-outline(href=`${prefixOwner}/drinks/sales`) Xóa lọc
+
+    if list.length
+      .sz-table-wrap
+        table.sz-table.sl-split-table#sl-sales-table
+          thead
+            tr
+              th MÃ PHIẾU
+              th THỜI GIAN
+              th SỐ TIỀN
+              th TRẠNG THÁI
+              th.sl-col-fold KHÁCH
+              th.sl-col-fold CƠ SỞ
+              th.sl-col-fold THANH TOÁN
+              th.sl-col-action.text-end
+              th.sl-detail-head CHI TIẾT
+          tbody
+            each sale, index in list
+              - const at = sale.paidAt || sale.createdAt
+              tr.sl-row(data-sale-id=String(sale._id) tabindex="0")
+                td
+                  strong.sl-code= sale.code
+                td
+                  if at
+                    strong.sl-when= new Date(at).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })
+                    .sz-muted= new Date(at).toLocaleDateString("vi-VN")
+                  else
+                    | —
+                td
+                  strong.sz-price= fmt(sale.amount)
+                td
+                  if sale.status === "cancelled"
+                    span.sz-tag.off Đã hủy
+                  else
+                    span.sz-tag Đã thu
+                td.sl-col-fold
+                  div= sale.guestName
+                  if sale.guestPhone
+                    .sz-muted= sale.guestPhone
+                td.sl-col-fold.sz-muted= sale.venueName || "—"
+                td.sl-col-fold= payLabel[sale.paymentMethod] || sale.paymentMethod
+                td.sl-col-action.text-end
+                  span.sz-icon-btn(title="Xem phiếu")
+                    i.bi.bi-receipt
+                if index === 0
+                  td.sl-detail-cell(rowspan=list.length)
+                    .sl-bill-slot
+
+      if pg.totalPage > 1
+        nav.sz-pagination(aria-label="Phân trang")
+          if pg.currentPage > 1
+            a.sz-page(href=`?${qs({ page: pg.currentPage - 1 })}`)
+              i.bi.bi-chevron-left
+          - for (let i = 1; i <= pg.totalPage; i++)
+            a.sz-page(href=`?${qs({ page: i })}` class=(i === pg.currentPage ? "active" : undefined))= i
+          if pg.currentPage < pg.totalPage
+            a.sz-page(href=`?${qs({ page: pg.currentPage + 1 })}`)
+              i.bi.bi-chevron-right
+    else
+      .sz-empty
+        i.bi.bi-receipt
+        h3 Chưa có phiếu bán
+        p Tạo phiếu khi khách đến mua nước trực tiếp tại quầy.
+        a.sz-btn-primary(href=`${prefixOwner}/drinks/sales/create`)
+          i.bi.bi-plus-lg
+          |  Tạo phiếu bán
+
+block script
+  -
+    const salesPayload = JSON.stringify((typeof sales !== "undefined" ? sales : []).map((sale) => ({
+      id: String(sale._id),
+      code: sale.code || "",
+      guestName: sale.guestName || "",
+      guestPhone: sale.guestPhone || "",
+      venueName: sale.venueName || "",
+      paymentMethod: sale.paymentMethod || "",
+      status: sale.status || "",
+      note: sale.note || "",
+      amount: sale.amount || 0,
+      paidAt: sale.paidAt || sale.createdAt || null,
+      items: (sale.items || []).map((line) => ({
+        name: line.name || "",
+        price: line.price || 0,
+        qty: line.qty || 0,
+        lineTotal: line.lineTotal || 0,
+      })),
+    }))).replace(/</g, "\\u003c")
+  script#sl-sales-data(type="application/json")!= salesPayload
+  script.
+    (function () {
+      const table = document.getElementById("sl-sales-table");
+      const dataNode = document.getElementById("sl-sales-data");
+      if (!table || !dataNode) return;
+
+      const sales = JSON.parse(dataNode.textContent || "[]");
+      const rows = Array.from(table.querySelectorAll(".sl-row"));
+      const payLabel = { cash: "Tiền mặt tại quầy", vnpay: "Chuyển khoản QR" };
+      let openId = null;
+
+      const money = (n) => Number(n || 0).toLocaleString("vi-VN") + "đ";
+      const when = (d) => (d ? new Date(d).toLocaleString("vi-VN") : "—");
+      const statusLabel = (status) => {
+        if (status === "paid") return "Đã thu";
+        if (status === "cancelled") return "Đã hủy";
+        return status || "—";
+      };
+
+      function el(tag, className, text) {
+        const node = document.createElement(tag);
+        if (className) node.className = className;
+        if (text != null) node.textContent = text;
+        return node;
+      }
+
+      function meta(parent, label, value) {
+        const row = el("div", "sl-meta-row");
+        row.append(el("span", null, label), el("strong", null, value || "—"));
+        parent.appendChild(row);
+      }
+
+      const BILL_ROWS = 8;
+
+      function clearBills() {
+        table.querySelectorAll(".sl-bill-slot").forEach((slot) => slot.replaceChildren());
+      }
+
+      function sizeBill() {
+        const row = table.querySelector(".sl-row");
+        const slot = table.querySelector(".sl-bill-slot");
+        const wrap = table.closest(".sz-table-wrap");
+        if (!row || !slot || !wrap) return;
+        const rowH = row.getBoundingClientRect().height;
+        const bodyH = table.tBodies[0].getBoundingClientRect().height;
+        const billH = rowH * BILL_ROWS;
+        slot.style.height = billH + "px";
+        const extra = Math.max(0, billH - bodyH);
+        wrap.style.paddingBottom = extra ? extra + "px" : "";
+      }
+
+      function resetBillSize() {
+        const slot = table.querySelector(".sl-bill-slot");
+        const wrap = table.closest(".sz-table-wrap");
+        if (slot) slot.style.height = "";
+        if (wrap) wrap.style.paddingBottom = "";
+      }
+
+      function closePanel() {
+        openId = null;
+        table.classList.remove("is-open");
+        clearBills();
+        resetBillSize();
+      }
+
+      function render(sale) {
+        const root = el("div", "sl-side-bill sl-sale-bill");
+        const head = el("div", "sl-side-bill-head");
+        const total = el("div", "sl-total");
+        total.append(el("span", null, "Tổng thu"), el("strong", null, money(sale.amount)));
+        const close = el("button", "sl-bill-close");
+        close.type = "button";
+        close.setAttribute("aria-label", "Đóng chi tiết");
+        close.innerHTML = '<i class="bi bi-x-lg"></i>';
+        close.addEventListener("click", function (event) {
+          event.stopPropagation();
+          closePanel();
+        });
+        head.append(total, close);
+        root.appendChild(head);
+
+        const lines = el("div", "sl-sale-lines");
+        (sale.items || []).forEach((line) => {
+          const row = el("div", "sl-side-line");
+          const left = el("div");
+          left.append(
+            el("div", "sl-side-line-name", line.name),
+            el("div", "sl-side-line-meta", money(line.price) + " × " + line.qty)
+          );
+          row.append(left, el("strong", "sz-price", money(line.lineTotal)));
+          lines.appendChild(row);
+        });
+        root.appendChild(lines);
+
+        meta(root, "Mã phiếu", sale.code);
+        meta(root, "Thời gian", when(sale.paidAt));
+        meta(root, "Khách hàng", sale.guestName);
+        meta(root, "Số điện thoại", sale.guestPhone);
+        meta(root, "Cơ sở", sale.venueName);
+        meta(root, "Thanh toán", payLabel[sale.paymentMethod] || sale.paymentMethod);
+        meta(root, "Trạng thái", statusLabel(sale.status));
+        if (sale.note) meta(root, "Ghi chú", sale.note);
+        return root;
+      }
+
+      function openPanel(id) {
+        const sale = sales.find((item) => item.id === id);
+        const slot = table.querySelector(".sl-bill-slot");
+        if (!sale || !slot) return;
+        openId = id;
+        table.classList.add("is-open");
+        clearBills();
+        slot.appendChild(render(sale));
+        sizeBill();
+      }
+
+      rows.forEach((row) => {
+        row.addEventListener("click", function () {
+          if (openId === row.dataset.saleId) closePanel();
+          else openPanel(row.dataset.saleId);
+        });
+        row.addEventListener("keydown", function (event) {
+          if (event.key !== "Enter" && event.key !== " ") return;
+          event.preventDefault();
+          if (openId === row.dataset.saleId) closePanel();
+          else openPanel(row.dataset.saleId);
+        });
+      });
+
+      const detailCell = table.querySelector(".sl-detail-cell");
+      if (detailCell) {
+        detailCell.addEventListener("click", function (event) {
+          event.stopPropagation();
+        });
+      }
+    })();

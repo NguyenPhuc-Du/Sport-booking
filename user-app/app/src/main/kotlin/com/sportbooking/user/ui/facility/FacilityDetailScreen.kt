@@ -6,14 +6,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -25,7 +24,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Call
-import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.EventAvailable
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.LocationOn
@@ -43,6 +41,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -53,6 +54,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.PreviewFontScale
 import androidx.compose.ui.tooling.preview.PreviewLightDark
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -62,9 +64,13 @@ import com.sportbooking.domain.model.FacilityDetail
 import com.sportbooking.user.R
 import com.sportbooking.user.ui.components.CourtCard
 import com.sportbooking.user.ui.components.ErrorState
+import com.sportbooking.user.ui.components.FacilityReviewItemCard
+import com.sportbooking.user.ui.components.FacilityReviewUi
 import com.sportbooking.user.ui.components.LoadingScreen
 import com.sportbooking.user.ui.components.PrimaryButton
 import com.sportbooking.user.ui.components.RatingBar
+import com.sportbooking.user.ui.components.ReviewFilterBar
+import com.sportbooking.user.ui.components.ReviewSummaryCard
 import com.sportbooking.user.ui.theme.PillShape
 import com.sportbooking.user.ui.theme.SportBookingTheme
 import com.sportbooking.user.ui.theme.spacing
@@ -87,7 +93,7 @@ fun FacilityDetailScreen(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FacilityDetailContent(
     state: FacilityDetailUiState,
@@ -97,10 +103,37 @@ fun FacilityDetailContent(
 ) {
     val facility = state.facility
     val context = LocalContext.current
+    // Chỉ ĐỌC đánh giá. Viết/sửa từ đơn completed trong lịch đặt.
+    val reviews = remember(facility) {
+        facility?.reviewList.orEmpty().map {
+            FacilityReviewUi(
+                id = it.id,
+                author = it.author,
+                rating = it.rating,
+                date = it.date,
+                comment = it.text,
+                ownerReply = it.ownerReply,
+                ownerReplyDate = it.ownerReplyDate,
+            )
+        }
+    }
+    var selectedReviewFilter by remember { mutableStateOf("all") }
+
+    val filteredReviews = remember(selectedReviewFilter, reviews) {
+        when (selectedReviewFilter) {
+            "5" -> reviews.filter { it.rating == 5 }
+            "4" -> reviews.filter { it.rating == 4 }
+            "3" -> reviews.filter { it.rating <= 3 }
+            "replied" -> reviews.filter { !it.ownerReply.isNullOrBlank() }
+            else -> reviews
+        }
+    }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
+                windowInsets = WindowInsets(0, 0, 0, 0),
                 title = {
                     Text(
                         text = facility?.name ?: stringResource(R.string.facility_detail_title),
@@ -137,6 +170,7 @@ fun FacilityDetailContent(
                     titleContentColor = MaterialTheme.colorScheme.onSurface,
                 ),
             )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
         },
         bottomBar = {
             if (facility != null) {
@@ -149,7 +183,9 @@ fun FacilityDetailContent(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(MaterialTheme.spacing.normal),
+                            .navigationBarsPadding()
+                            .padding(horizontal = MaterialTheme.spacing.normal)
+                            .padding(top = MaterialTheme.spacing.small, bottom = MaterialTheme.spacing.medium),
                     ) {
                         PrimaryButton(
                             text = if (hasCourts) {
@@ -267,9 +303,18 @@ fun FacilityDetailContent(
                                 fontWeight = FontWeight.Bold,
                             )
 
+                            val avgRating = if (facility.rating > 0) {
+                                facility.rating
+                            } else if (reviews.isNotEmpty()) {
+                                reviews.sumOf { it.rating }.toDouble() / reviews.size
+                            } else {
+                                0.0
+                            }
+                            val totalReviews = if (facility.reviews > 0) facility.reviews else reviews.size
+
                             RatingBar(
-                                rating = facility.rating,
-                                reviewsCount = facility.reviews,
+                                rating = avgRating,
+                                reviewsCount = totalReviews,
                             )
 
                             Spacer(Modifier.height(MaterialTheme.spacing.extraSmall))
@@ -329,53 +374,6 @@ fun FacilityDetailContent(
                         }
                     }
 
-                    // Amenities Section (chỉ hiện khi cơ sở có tiện ích)
-                    if (facility.amenities.isNotEmpty()) {
-                        item(key = "facility_amenities") {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = MaterialTheme.spacing.normal),
-                                verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.facility_amenities),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                )
-                                FlowRow(
-                                    horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
-                                    verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
-                                ) {
-                                    facility.amenities.forEach { amenity ->
-                                        Surface(
-                                            color = MaterialTheme.colorScheme.surfaceVariant,
-                                            shape = PillShape,
-                                        ) {
-                                            Row(
-                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Rounded.CheckCircle,
-                                                    contentDescription = null,
-                                                    tint = MaterialTheme.colorScheme.primary,
-                                                    modifier = Modifier.size(16.dp),
-                                                )
-                                                Text(
-                                                    text = amenity,
-                                                    style = MaterialTheme.typography.labelMedium,
-                                                    color = MaterialTheme.colorScheme.onSurface,
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
                     // Courts Section (chỉ hiện khi cơ sở có danh sách sân)
                     if (facility.courts.isNotEmpty()) {
                         item(key = "facility_courts_header") {
@@ -425,6 +423,67 @@ fun FacilityDetailContent(
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 }
+                            }
+                        }
+                    }
+
+                    // Reviews Section (Giao diện đánh giá)
+                    item(key = "facility_reviews_divider") {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = MaterialTheme.spacing.normal),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                        )
+                    }
+
+                    item(key = "facility_reviews_header") {
+                        Text(
+                            text = stringResource(R.string.facility_reviews_title),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = MaterialTheme.spacing.normal),
+                        )
+                    }
+
+                    if (reviews.isEmpty()) {
+                        item(key = "facility_reviews_empty") {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = MaterialTheme.spacing.normal),
+                                verticalArrangement = Arrangement.spacedBy(4.dp),
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.label_no_reviews),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                )
+                                Text(
+                                    text = stringResource(R.string.review_only_after_payment),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    } else {
+                        item(key = "facility_reviews_summary") {
+                            Box(modifier = Modifier.padding(horizontal = MaterialTheme.spacing.normal)) {
+                                ReviewSummaryCard(reviews = reviews)
+                            }
+                        }
+
+                        item(key = "facility_reviews_filter") {
+                            ReviewFilterBar(
+                                selectedFilter = selectedReviewFilter,
+                                onSelectFilter = { selectedReviewFilter = it },
+                            )
+                        }
+
+                        items(
+                            items = filteredReviews,
+                            key = { it.id },
+                        ) { review ->
+                            Box(modifier = Modifier.padding(horizontal = MaterialTheme.spacing.normal)) {
+                                FacilityReviewItemCard(review = review)
                             }
                         }
                     }

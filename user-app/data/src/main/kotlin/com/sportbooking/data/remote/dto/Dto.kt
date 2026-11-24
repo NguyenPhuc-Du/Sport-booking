@@ -55,7 +55,6 @@ data class FacilitySummaryDto(
 
 data class HomeDto(
     val sports: List<SportDto>,
-    val amenities: List<String>,
     val facilities: List<FacilitySummaryDto>,
 )
 
@@ -64,6 +63,16 @@ data class CourtDto(
     val name: String,
     val surface: String,
     val capacity: String,
+)
+
+data class FacilityReviewDto(
+    val id: String,
+    val author: String,
+    val rating: Int,
+    val date: String,
+    val text: String,
+    val ownerReply: String? = null,
+    val ownerReplyDate: String? = null,
 )
 
 data class FacilityDetailDto(
@@ -79,9 +88,9 @@ data class FacilityDetailDto(
     val sports: List<String>,
     val sportIds: List<String>,
     val image: String,
-    val amenities: List<String>,
     val images: List<String>,
     val courts: List<CourtDto>,
+    val reviewList: List<FacilityReviewDto>? = null,
 )
 
 data class FacilityEnvelope(
@@ -113,9 +122,30 @@ data class VoucherDto(
     val description: String,
 )
 
+data class DrinkDto(
+    val id: String,
+    val name: String,
+    val image: String?,
+    val price: Long,
+    val stock: Int,
+)
+
+data class DrinkLineDto(
+    val drinkId: String,
+    val name: String,
+    val price: Long,
+    val qty: Int,
+)
+
+data class DrinkOrderDto(
+    val drinkId: String,
+    val qty: Int,
+)
+
 data class CheckoutOptionsDto(
     val vouchers: List<VoucherDto>,
     val payments: List<PaymentMethodDto>,
+    val drinks: List<DrinkDto>? = null,
 )
 
 data class BookingRequest(
@@ -123,8 +153,10 @@ data class BookingRequest(
     val courtId: String,
     val date: String,
     val time: String,
+    val hours: Int = 1,
     val voucherCode: String?,
     val paymentMethod: String?,
+    val drinks: List<DrinkOrderDto> = emptyList(),
 )
 
 data class BookingQuoteDto(
@@ -138,6 +170,14 @@ data class BookingQuoteDto(
     val discount: Long,
     val amount: Long,
     val voucherCode: String?,
+    val drinks: List<DrinkLineDto>? = null,
+    val drinkTotal: Long? = null,
+)
+
+data class BookingReviewSummaryDto(
+    val id: String,
+    val rating: Int,
+    val text: String,
 )
 
 data class BookingDto(
@@ -156,6 +196,9 @@ data class BookingDto(
     val voucherCode: String?,
     val paymentMethod: String,
     val bookedAt: String,
+    val drinks: List<DrinkLineDto>? = null,
+    val drinkTotal: Long? = null,
+    val review: BookingReviewSummaryDto? = null,
 )
 
 data class BookingCountsDto(
@@ -185,9 +228,40 @@ data class NotificationDto(
 )
 
 data class ReviewDto(
+    val id: String? = null,
     val facility: String,
+    val facilityId: String? = null,
+    val bookingCode: String? = null,
     val rating: Int,
     val text: String,
+    val createdAt: String? = null,
+)
+
+data class UpsertReviewRequest(
+    val bookingCode: String? = null,
+    val rating: Int,
+    val text: String,
+)
+
+data class ReviewEnvelope(
+    val review: ReviewDetailDto,
+)
+
+data class ReviewDetailDto(
+    val id: String,
+    val bookingCode: String,
+    val facilityId: String,
+    val facilityName: String,
+    val rating: Int,
+    val text: String,
+    val createdAt: String? = null,
+    val author: String? = null,
+    val ownerReply: String? = null,
+    val ownerReplyAt: String? = null,
+)
+
+data class ReviewListDto(
+    val reviews: List<ReviewDetailDto>,
 )
 
 data class ProfileDto(

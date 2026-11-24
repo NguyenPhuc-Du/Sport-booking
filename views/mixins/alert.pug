@@ -5,13 +5,14 @@ mixin alert-success(time)
                 class="alert alert-success"
                 show-alert
                 data-time = time
+                role="status"
             )
-                .alert-icon
+                .alert-icon(aria-hidden="true")
                     i.bi.bi-check-lg
                 .alert-body
                     .alert-title Thành công
                     .alert-text #{messages.success}
-                span.alert-close(close-alert)
+                button.alert-close(type="button" close-alert aria-label="Đóng thông báo")
                     i.bi.bi-x-lg
                 .alert-progress(style=`animation-duration:${time}ms`)
 
@@ -22,13 +23,14 @@ mixin alert-error(time)
                 class="alert alert-danger"
                 show-alert
                 data-time = time
+                role="alert"
             )
-                .alert-icon
+                .alert-icon(aria-hidden="true")
                     i.bi.bi-exclamation-lg
                 .alert-body
                     .alert-title Có lỗi xảy ra
                     .alert-text #{messages.error}
-                span.alert-close(close-alert)
+                button.alert-close(type="button" close-alert aria-label="Đóng thông báo")
                     i.bi.bi-x-lg
                 .alert-progress(style=`animation-duration:${time}ms`)
 
@@ -39,12 +41,13 @@ mixin alert-warning(time)
                 class="alert alert-warning"
                 show-alert
                 data-time = time
+                role="status"
             )
-                .alert-icon
-                    i.bi.bi-exclamation-triangle-fill
+                .alert-icon(aria-hidden="true")
+                    i.bi.bi-exclamation-triangle
                 .alert-body
                     .alert-title Cảnh báo
                     .alert-text #{messages.warning}
-                span.alert-close(close-alert)
+                button.alert-close(type="button" close-alert aria-label="Đóng thông báo")
                     i.bi.bi-x-lg
                 .alert-progress(style=`animation-duration:${time}ms`)

@@ -1,0 +1,58 @@
+extends ../../../owner/layouts/default.pug
+include ../../../mixins/alert.pug
+
+block main
+  +alert-success(3000)
+  +alert-error(5000)
+
+  header.pf-head
+    div
+      p.pf-kicker Quản trị hệ thống / Hoa hồng
+      h1.pf-title Hoa hồng và đối soát
+      p.pf-sub Tỷ lệ mặc định #{rateLabel}. Mỗi dòng dùng tỷ lệ đã khóa lúc thanh toán. Bấm Chốt giá để khóa kỳ.
+
+  form.pf-filters(method="get" action="/admin/commissions")
+    select.sz-select(name="cycle")
+      each item in cycles
+        option(value=item.code selected=period.cycle === item.code)= item.label
+    input.sz-input(type="date" name="from" value=period.fromInput)
+    input.sz-input(type="date" name="to" value=period.toInput)
+    button.sz-btn.sz-btn-dark(type="submit") Xem kỳ
+
+  section.sz-card.sz-panel
+    if rows.length
+      p.sz-panel-sub #{rows.length} chủ sân có phát sinh từ #{period.fromInput} đến #{period.toInput}.
+      .table-responsive
+        table.sz-table.pf-table
+          thead
+            tr
+              th Chủ sân
+              th.pf-num Doanh thu
+              th Tỷ lệ
+              th.pf-num Hoa hồng
+              th.pf-num Đã thu
+              th.pf-num Chưa thu
+              th
+          tbody
+            each row in rows
+              tr
+                td= row.ownerName
+                td.pf-num= row.revenueLabel
+                td= row.rateLabel
+                td.pf-num= row.feeLabel
+                td.pf-num= row.collectedLabel
+                td.pf-num= row.openLabel
+                td
+                  if row.closed
+                    button.sz-btn.sz-btn-sm(type="button" disabled) Đã chốt
+                  else
+                    form(method="post" action="/admin/commissions/close" data-confirm=`Chốt giá kỳ này của ${row.ownerName}?`)
+                      input(type="hidden" name="ownerId" value=row.ownerId)
+                      input(type="hidden" name="from" value=period.fromInput)
+                      input(type="hidden" name="to" value=period.toInput)
+                      input(type="hidden" name="cycle" value=period.cycle)
+                      button.sz-btn.sz-btn-green.sz-btn-sm(type="submit") Chốt giá
+    else
+      .pf-empty
+        strong Chưa có hoa hồng trong kỳ
+        p Khi có đơn đã thanh toán, chọn lại kỳ rồi tải lại trang.

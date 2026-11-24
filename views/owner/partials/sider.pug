@@ -1,4 +1,4 @@
-aside.sz-sidebar
+aside.sz-sidebar(class=panelRole === "admin" ? "sz-sidebar-admin" : undefined)
   if panelRole === "admin"
     .sz-facility
       .d-flex.justify-content-between.align-items-center
@@ -8,16 +8,18 @@ aside.sz-sidebar
       .sz-facility-plan
         i.bi.bi-shield-lock
         |  Quản trị hệ thống
-    .sz-menu-title PHÂN HỆ QUẢN TRỊ
-    nav.sz-menu(aria-label="Menu quản trị")
-      a.sz-menu-item(href="/admin/dashboard" class=(activeMenu === "dashboard" ? "active" : undefined))
-        i.bi.bi-grid
-        span.sz-menu-text Tổng quan sàn
-      a.sz-menu-item(href="/admin/users" class=(activeMenu === "users" ? "active" : undefined))
-        i.bi.bi-people
-        span.sz-menu-text Tài khoản
+    each group in adminMenu
+      .sz-menu-title= group.title
+      nav.sz-menu(aria-label=group.title)
+        each item in group.items
+          a.sz-menu-item(href=item.href class=(activeMenu === item.key ? "active" : undefined))
+            i.bi(class=item.icon)
+            span.sz-menu-text= item.text
     .sz-sidebar-bottom
-      .sz-copy Hệ thống SportZone 
+      .sz-copy Hệ thống SportZone
+      .sz-copy 8 mục quản trị sàn
+
+
 
   else
     .sz-facility
@@ -37,12 +39,18 @@ aside.sz-sidebar
       a.sz-menu-item(href=`${prefixAdmin}/bookings` class={ active: activeMenu === "bookings" })
         i.bi.bi-calendar-check
         span.sz-menu-text Lịch đặt & Sơ đồ Timeline
+      a.sz-menu-item(href=`${prefixAdmin}/bookings/list` class={ active: activeMenu === "booking-list" })
+        i.bi.bi-list-ul
+        span.sz-menu-text Danh sách đặt sân
       a.sz-menu-item(href=`${prefixAdmin}/finance` class={ active: activeMenu === "finance" })
         i.bi.bi-credit-card-2-front
         span.sz-menu-text Tài chính & Khuyến mãi
-      a.sz-menu-item(href=`${prefixAdmin}/refreshments` class={ active: activeMenu === "refreshments" })
+      a.sz-menu-item(href=`${prefixAdmin}/drinks` class={ active: activeMenu === "drinks" })
         i.bi.bi-cup-straw
         span.sz-menu-text Dịch vụ giải khát
+      a.sz-menu-item(href=`${prefixAdmin}/reviews` class={ active: activeMenu === "reviews" })
+        i.bi.bi-star-half
+        span.sz-menu-text Đánh giá & Phản hồi
       a.sz-menu-item(href=`${prefixAdmin}/profile` class={ active: activeMenu === "profile" })
         i.bi.bi-person-badge
         span.sz-menu-text Hồ sơ & Avatar

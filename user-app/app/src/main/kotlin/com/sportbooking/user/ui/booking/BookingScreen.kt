@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -59,6 +60,7 @@ import com.sportbooking.user.ui.theme.extraColors
 import com.sportbooking.user.ui.theme.spacing
 import com.sportbooking.user.ui.util.PreviewData
 import com.sportbooking.user.ui.util.dayLabel
+import androidx.compose.foundation.layout.WindowInsets
 import com.sportbooking.user.ui.util.toVnd
 import java.time.LocalDate
 
@@ -72,7 +74,7 @@ sealed interface BookingUiEvent {
 @Composable
 fun BookingScreen(
     onBack: () -> Unit,
-    onCheckout: (courtId: String, date: String, time: String) -> Unit,
+    onCheckout: (courtId: String, date: String, time: String, hours: Int) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: BookingViewModel = hiltViewModel(),
 ) {
@@ -99,17 +101,20 @@ fun BookingScreen(
 fun BookingContent(
     state: BookingUiState,
     onBack: () -> Unit,
-    onCheckout: (courtId: String, date: String, time: String) -> Unit,
+    onCheckout: (courtId: String, date: String, time: String, hours: Int) -> Unit,
     onEvent: (BookingUiEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val dates = remember { (0..13).map { LocalDate.now().plusDays(it.toLong()) } }
     val selectedCourt = state.courts.find { it.id == state.courtId }
-    val selectedSlot = state.slots.find { it.time == state.selectedTime }
+    val selectedSlots = state.selectedTimes.mapNotNull { time -> state.slots.find { it.time == time } }
+    val totalPrice = selectedSlots.sumOf { it.price }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
+                windowInsets = WindowInsets(0, 0, 0, 0),
                 title = {
                     Column {
                         Text(
@@ -140,6 +145,7 @@ fun BookingContent(
                     containerColor = MaterialTheme.colorScheme.surface,
                 ),
             )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
         },
         bottomBar = {
             if (state.courts.isNotEmpty()) {
@@ -151,10 +157,12 @@ fun BookingContent(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(MaterialTheme.spacing.normal),
+                            .navigationBarsPadding()
+                            .padding(horizontal = MaterialTheme.spacing.normal)
+                            .padding(top = MaterialTheme.spacing.small, bottom = MaterialTheme.spacing.medium),
                         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
                     ) {
-                        if (selectedSlot != null) {
+                        if (selectedSlots.isNotEmpty()) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -162,12 +170,12 @@ fun BookingContent(
                             ) {
                                 Column {
                                     Text(
-                                        text = "${selectedCourt?.name} · ${selectedSlot.time}",
+                                        text = "${selectedCourt?.name} · ${selectedSlots.first().time} - ${plusOneHour(selectedSlots.last().time)}",
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                     Text(
-                                        text = selectedSlot.price.toVnd(),
+                                        text = totalPrice.toVnd(),
                                         style = MaterialTheme.typography.titleLarge,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.primary,
@@ -177,12 +185,17 @@ fun BookingContent(
                         }
 
                         PrimaryButton(
-                            text = if (state.selectedTime != null) stringResource(R.string.booking_continue_cta) else "Vui lòng chọn khung giờ",
-                            enabled = state.selectedTime != null,
+                            text = if (selectedSlots.isNotEmpty()) stringResource(R.string.booking_continue_cta) else "Vui lòng chọn khung giờ",
+                            enabled = selectedSlots.isNotEmpty(),
                             leadingIcon = Icons.Rounded.Check,
                             onClick = {
-                                val time = state.selectedTime ?: return@PrimaryButton
-                                onCheckout(state.courtId, state.date.toString(), time)
+                                if (selectedSlots.isEmpty()) return@PrimaryButton
+                                onCheckout(
+                                    state.courtId,
+                                    state.date.toString(),
+                                    selectedSlots.first().time,
+                                    selectedSlots.size,
+                                )
                             },
                         )
                     }
@@ -430,7 +443,7 @@ fun BookingContent(
                                     row.forEach { slot ->
                                         TimeSlotChip(
                                             slot = slot,
-                                            selected = slot.time == state.selectedTime,
+                                            selected = slot.time in state.selectedTimes,
                                             onClick = { onEvent(BookingUiEvent.SelectSlot(slot.time)) },
                                             modifier = Modifier.weight(1f),
                                         )
@@ -505,6 +518,14 @@ private fun LegendItem(
 // Previews
 // -------------------------------------------------------------
 
+@Composable
+private fun plusOneHour(time: String): String {
+    val parts = time.split(":")
+    val hour = (parts.firstOrNull()?.toIntOrNull() ?: 0) + 1
+    val minute = parts.getOrElse(1) { "00" }
+    return "%02d:%s".format(hour, minute)
+}
+
 @PreviewLightDark
 @PreviewFontScale
 @Composable
@@ -518,10 +539,10 @@ private fun BookingContentSuccessPreview() {
                     courtId = "c_1",
                     date = LocalDate.now(),
                     slots = PreviewData.timeSlots,
-                    selectedTime = "18:00 - 19:00",
+                    selectedTimes = listOf("18:00", "19:00"),
                 ),
                 onBack = {},
-                onCheckout = { _, _, _ -> },
+                onCheckout = { _, _, _, _ -> },
                 onEvent = {},
             )
         }
@@ -539,7 +560,7 @@ private fun BookingContentNoCourtsPreview() {
                     facility = PreviewData.facilityDetail.copy(courts = emptyList()),
                 ),
                 onBack = {},
-                onCheckout = { _, _, _ -> },
+                onCheckout = { _, _, _, _ -> },
                 onEvent = {},
             )
         }
@@ -560,7 +581,7 @@ private fun BookingContentNoSlotsPreview() {
                     slots = emptyList(),
                 ),
                 onBack = {},
-                onCheckout = { _, _, _ -> },
+                onCheckout = { _, _, _, _ -> },
                 onEvent = {},
             )
         }
@@ -575,7 +596,7 @@ private fun BookingContentLoadingPreview() {
             BookingContent(
                 state = BookingUiState(loading = true),
                 onBack = {},
-                onCheckout = { _, _, _ -> },
+                onCheckout = { _, _, _, _ -> },
                 onEvent = {},
             )
         }

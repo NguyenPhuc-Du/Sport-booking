@@ -54,7 +54,7 @@ Tên field của `users` giữ đúng model hiện có: `fullName`, không phả
 | Bảng ERD | Quyết định |
 |---|---|
 | `notifications` | Module dùng chung. Ai phát sinh sự kiện thì người đó ghi. Tạo ở đây sẽ đụng mọi nhóm |
-| `court_types`, `courts`, `venue_images`, `amenities`, `venue_amenities`, `price_rules` | Chủ sân. `venue_amenities` là bảng nối của SQL; nhóm chủ sân có thể nhúng `amenity_ids` trong document `venues` |
+| `court_types`, `courts`, `venue_images`, `price_rules` | Chủ sân. Không dùng amenities / venue_amenities |
 | `bookings` (tạo schema), `booking_slots`, `booking_items`, `payments` | Nhóm đặt sân. `booking_slots` và `booking_items` cùng mô tả khung giờ; việc gộp hay giữ là của nhóm đó |
 | `vouchers`, `voucher_usages` | Theo từng `venue_id`, thuộc chủ sân. Repo đã có voucher ở `models/finance.model.js` |
 | `reviews` | Người dùng viết, chủ sân trả lời. `is_hidden` là việc kiểm duyệt sau, không nằm trong phạm vi bảng lần này |
@@ -172,7 +172,7 @@ Bạn cần các field:
 | `is_featured` | Bạn ghi `true` / `false`. ERD đặt cờ này trên venue vì sàn mới được chọn cơ sở nổi bật |
 | `createdAt` hoặc `created_at` | Đọc. Hỏi nhóm chủ sân họ đặt tên timestamp nào rồi đọc đúng tên đó |
 
-Chưa có collection `venues` thì màn duyệt query ra mảng rỗng. Bạn không tạo schema venue, không tạo sân, ảnh, tiện ích.
+Chưa có collection `venues` thì màn duyệt query ra mảng rỗng. Bạn không tạo schema venue, không tạo sân, ảnh.
 
 Cách đọc an toàn khi chưa muốn đăng ký model Mongoose thứ hai: `mongoose.connection.collection("venues")`.
 

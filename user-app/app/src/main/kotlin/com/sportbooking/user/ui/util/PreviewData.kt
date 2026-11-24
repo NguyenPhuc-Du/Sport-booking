@@ -5,6 +5,8 @@ import com.sportbooking.domain.model.Booking
 import com.sportbooking.domain.model.BookingCounts
 import com.sportbooking.domain.model.BookingQuote
 import com.sportbooking.domain.model.Court
+import com.sportbooking.domain.model.Drink
+import com.sportbooking.domain.model.DrinkLine
 import com.sportbooking.domain.model.FacilityDetail
 import com.sportbooking.domain.model.FacilitySummary
 import com.sportbooking.domain.model.PaymentMethod
@@ -80,7 +82,6 @@ object PreviewData {
         sports = listOf("Cầu lông", "Tennis", "Pickleball"),
         sportIds = listOf("badminton", "tennis", "pickleball"),
         image = "https://images.unsplash.com/photo-1546519638-68e109498ffc",
-        amenities = listOf("Wifi tốc độ cao", "Bãi xe ô tô & xe máy", "Phòng thay đồ & tắm nóng lạnh", "Quầy nước giải khát & phụ kiện", "Hệ thống đèn LED chống chói"),
         images = listOf(
             "https://images.unsplash.com/photo-1546519638-68e109498ffc",
             "https://images.unsplash.com/photo-1529900748604-07564a03e7a6",
@@ -100,6 +101,15 @@ object PreviewData {
         TimeSlot(time = "21:00 - 22:00", price = 140_000, peak = false, available = true),
     )
 
+    val drinks = listOf(
+        Drink(id = "d1", name = "Aquafina 500ml", image = "", price = 10_000, stock = 24),
+        Drink(id = "d2", name = "Sting dâu", image = "", price = 15_000, stock = 12),
+    )
+
+    val drinkLines = listOf(
+        DrinkLine(drinkId = "d1", name = "Aquafina 500ml", price = 10_000, qty = 2),
+    )
+
     val bookingQuote = BookingQuote(
         facilityId = "fac_1",
         facilityName = "CLB Thể Thao Kỳ Hòa",
@@ -109,8 +119,10 @@ object PreviewData {
         time = "18:00 - 19:00",
         courtPrice = 200_000,
         discount = 30_000,
-        amount = 170_000,
+        amount = 190_000,
         voucherCode = "SPORT30K",
+        drinks = drinkLines,
+        drinkTotal = 20_000,
     )
 
     val vouchers = listOf(
@@ -212,14 +224,49 @@ object PreviewData {
 
     val reviews = listOf(
         Review(
+            id = "r1",
             facility = "CLB Thể Thao Kỳ Hòa",
+            facilityId = "fac_1",
+            bookingCode = "BK001",
             rating = 5,
             text = "Sân thảm mới, đèn sáng không chói mắt, nhân viên nhiệt tình hỗ trợ nước uống và vợt tập.",
+            createdAt = "01/11/2026",
         ),
         Review(
+            id = "r2",
             facility = "Sân Bóng Đá Chảo Lửa",
+            facilityId = "fac_2",
+            bookingCode = "BK002",
             rating = 4,
             text = "Mặt cỏ êm, thoát nước tốt ngay cả khi trời mưa.",
+            createdAt = "02/11/2026",
+        ),
+        Review(
+            id = "r3",
+            facility = "Sân Tennis Quận 7",
+            facilityId = "fac_3",
+            bookingCode = "BK003",
+            rating = 3,
+            text = "Sân ổn nhưng phòng thay đồ hơi chật, cần cải thiện thêm.",
+            createdAt = "03/11/2026",
+        ),
+        Review(
+            id = "r4",
+            facility = "Pickleball City Sports",
+            facilityId = "fac_4",
+            bookingCode = "BK004",
+            rating = 5,
+            text = "Không gian rộng, đặt lịch nhanh, sẽ quay lại.",
+            createdAt = "04/11/2026",
+        ),
+        Review(
+            id = "r5",
+            facility = "Sân Cầu Lông Hòa Bình",
+            facilityId = "fac_5",
+            bookingCode = "BK005",
+            rating = 2,
+            text = "Đèn hơi tối ở góc sân, mặt sàn còn trơn khi đổ mồ hôi.",
+            createdAt = "05/11/2026",
         ),
     )
 }

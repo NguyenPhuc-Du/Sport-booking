@@ -4,10 +4,12 @@ import com.sportbooking.data.repository.AuthRepositoryImpl
 import com.sportbooking.data.repository.BookingRepositoryImpl
 import com.sportbooking.data.repository.FacilityRepositoryImpl
 import com.sportbooking.data.repository.ProfileRepositoryImpl
+import com.sportbooking.data.repository.ReviewRepositoryImpl
 import com.sportbooking.domain.repository.AuthRepository
 import com.sportbooking.domain.repository.BookingRepository
 import com.sportbooking.domain.repository.FacilityRepository
 import com.sportbooking.domain.repository.ProfileRepository
+import com.sportbooking.domain.repository.ReviewRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -32,4 +34,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun profile(impl: ProfileRepositoryImpl): ProfileRepository
+
+    @Binds
+    @Singleton
+    abstract fun reviews(impl: ReviewRepositoryImpl): ReviewRepository
 }

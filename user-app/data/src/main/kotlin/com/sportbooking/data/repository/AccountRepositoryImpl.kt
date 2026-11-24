@@ -10,6 +10,9 @@ import com.sportbooking.domain.model.User
 import com.sportbooking.domain.repository.ProfileRepository
 import javax.inject.Inject
 import javax.inject.Singleton
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
 
 @Singleton
 class ProfileRepositoryImpl @Inject constructor(
@@ -26,6 +29,19 @@ class ProfileRepositoryImpl @Inject constructor(
     override suspend fun update(fullName: String, phone: String, email: String): DomainResult<User> {
         val body = UpdateProfileRequest(fullName, phone, email)
         return when (val result = caller.call { api.updateProfile(body) }) {
+            is DomainResult.Success -> DomainResult.Success(result.data.user.toDomain())
+            is DomainResult.Failure -> result
+        }
+    }
+
+    override suspend fun uploadAvatar(bytes: ByteArray, mime: String): DomainResult<User> {
+        val mediaType = mime.toMediaType()
+        val part = MultipartBody.Part.createFormData(
+            "avatar",
+            "avatar.jpg",
+            bytes.toRequestBody(mediaType),
+        )
+        return when (val result = caller.call { api.uploadAvatar(part) }) {
             is DomainResult.Success -> DomainResult.Success(result.data.user.toDomain())
             is DomainResult.Failure -> result
         }

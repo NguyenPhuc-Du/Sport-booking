@@ -1,7 +1,11 @@
 package com.sportbooking.user.navigation
 
 import android.net.Uri
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -40,6 +44,7 @@ import com.sportbooking.user.ui.components.MessageScreen
 import com.sportbooking.user.ui.components.defaultBottomNavTabs
 import com.sportbooking.user.ui.facility.FacilityDetailScreen
 import com.sportbooking.user.ui.home.HomeScreen
+import com.sportbooking.user.ui.profile.MyReviewsScreen
 import com.sportbooking.user.ui.profile.ProfileScreen
 import com.sportbooking.user.ui.payment.PaymentResultScreen
 import com.sportbooking.user.ui.session.SessionUiState
@@ -131,13 +136,13 @@ private fun MainNavHost(
         val result = paymentResult ?: return@LaunchedEffect
         PaymentResultBus.consume()
         val flag = if (result.success) "success" else "failed"
-        navController.navigate("payment_result/$flag/${Uri.encode(result.code)}") {
-            popUpTo(navController.graph.findStartDestination().id) { inclusive = false }
-            launchSingleTop = true
-        }
+        navController.clearStack("payment_result/$flag/${Uri.encode(result.code)}")
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets.safeDrawing.only(
+            WindowInsetsSides.Horizontal + WindowInsetsSides.Top,
+        ),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
             if (showBar) {
@@ -168,7 +173,14 @@ private fun MainNavHost(
                 BookingsScreen()
             }
             composable("account") {
-                ProfileScreen(onUserUpdated = onUserUpdated, onLogout = onLogout)
+                ProfileScreen(
+                    onUserUpdated = onUserUpdated,
+                    onLogout = onLogout,
+                    onOpenReviews = { navController.navigateOnce("my_reviews") },
+                )
+            }
+            composable("my_reviews") {
+                MyReviewsScreen(onBack = { navController.popOnce() })
             }
             composable(
                 route = "payment_result/{success}/{code}",
@@ -178,15 +190,8 @@ private fun MainNavHost(
                 ),
             ) {
                 PaymentResultScreen(
-                    onGoHome = {
-                        navController.navigate("home") {
-                            popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
-                            launchSingleTop = true
-                        }
-                    },
-                    onViewBookings = {
-                        navController.goToBookings()
-                    },
+                    onGoHome = { navController.clearStack("home") },
+                    onViewBookings = { navController.clearStack("bookings") },
                 )
             }
             composable(
@@ -204,28 +209,29 @@ private fun MainNavHost(
             ) { entry ->
                 BookingScreen(
                     onBack = { navController.popBackStack() },
-                    onCheckout = { courtId, date, time ->
+                    onCheckout = { courtId, date, time, hours ->
                         val encodedTime = Uri.encode(time)
                         val facilityId = entry.arguments?.getString("facilityId").orEmpty()
                         navController.navigate(
-                            "checkout?facilityId=$facilityId&courtId=$courtId&date=$date&time=$encodedTime",
+                            "checkout?facilityId=$facilityId&courtId=$courtId&date=$date&time=$encodedTime&hours=$hours",
                         )
                     },
                 )
             }
             composable(
-                route = "checkout?facilityId={facilityId}&courtId={courtId}&date={date}&time={time}",
+                route = "checkout?facilityId={facilityId}&courtId={courtId}&date={date}&time={time}&hours={hours}",
                 arguments = listOf(
                     navArgument("facilityId") { type = NavType.StringType },
                     navArgument("courtId") { type = NavType.StringType },
                     navArgument("date") { type = NavType.StringType },
                     navArgument("time") { type = NavType.StringType },
+                    navArgument("hours") { type = NavType.IntType },
                 ),
             ) {
                 CheckoutScreen(
                     onBack = { navController.popBackStack() },
                     onPaymentStarted = {
-                        navController.goToBookings()
+                        navController.clearStack("bookings")
                         scope.launch { snackbarHostState.showSnackbar("Hoàn tất thanh toán trên VNPay trong 15 phút") }
                     },
                 )
@@ -234,9 +240,9 @@ private fun MainNavHost(
     }
 }
 
-private fun NavHostController.goToBookings() {
-    navigate("bookings") {
-        popUpTo(graph.findStartDestination().id) { saveState = true }
+private fun NavHostController.clearStack(route: String) {
+    navigate(route) {
+        popUpTo(graph.id) { inclusive = true }
         launchSingleTop = true
     }
 }

@@ -15,14 +15,20 @@ import com.sportbooking.data.remote.dto.ProfileDto
 import com.sportbooking.data.remote.dto.RegisterRequest
 import com.sportbooking.data.remote.dto.ResendOtpRequest
 import com.sportbooking.data.remote.dto.ResetPasswordRequest
+import com.sportbooking.data.remote.dto.ReviewEnvelope
+import com.sportbooking.data.remote.dto.ReviewListDto
 import com.sportbooking.data.remote.dto.SlotScheduleDto
 import com.sportbooking.data.remote.dto.UpdateProfileRequest
+import com.sportbooking.data.remote.dto.UpsertReviewRequest
 import com.sportbooking.data.remote.dto.UserEnvelope
 import com.sportbooking.data.remote.dto.VerifyOtpRequest
+import okhttp3.MultipartBody
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.PUT
+import retrofit2.http.Part
 import retrofit2.http.Path
 import retrofit2.http.Query
 
@@ -65,7 +71,7 @@ interface SportApi {
     ): SlotScheduleDto
 
     @GET("checkout/options")
-    suspend fun checkoutOptions(): CheckoutOptionsDto
+    suspend fun checkoutOptions(@Query("facilityId") facilityId: String): CheckoutOptionsDto
 
     @POST("bookings/quote")
     suspend fun quote(@Body body: BookingRequest): BookingQuoteDto
@@ -84,4 +90,17 @@ interface SportApi {
 
     @PUT("profile")
     suspend fun updateProfile(@Body body: UpdateProfileRequest): UserEnvelope
+
+    @Multipart
+    @POST("profile/avatar")
+    suspend fun uploadAvatar(@Part avatar: MultipartBody.Part): UserEnvelope
+
+    @GET("reviews/mine")
+    suspend fun myReviews(): ReviewListDto
+
+    @POST("reviews")
+    suspend fun createReview(@Body body: UpsertReviewRequest): ReviewEnvelope
+
+    @PUT("reviews/{id}")
+    suspend fun updateReview(@Path("id") id: String, @Body body: UpsertReviewRequest): ReviewEnvelope
 }

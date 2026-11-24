@@ -34,8 +34,7 @@ block main
     //- ===== Tabs =====
     .fv-tabs
       a.fv-tab(href=`${prefixAdmin}/facilities`) Sân con (#{courtCount || 0})
-      a.fv-tab.active(href=`${prefixOwner}/facilities/price-rules`) Bảng giá &amp; Giờ vàng (#{rules.length})
-      a.fv-tab(href="#") Khóa slot bảo trì (#{maintenanceCount || 0})
+      a.fv-tab.active(href=`${prefixOwner}/facilities/price-rules`) Bảng giá (#{rules.length})
       a.fv-tab(href=`${prefixAdmin}/facilities/venues`) Danh sách cơ sở (#{facilityCount || 0})
 
     //- ===== Table card =====

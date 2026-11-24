@@ -8,7 +8,11 @@ import com.sportbooking.domain.model.BookingQuote
 import com.sportbooking.domain.model.BookingReceipt
 import com.sportbooking.domain.model.CheckoutOptions
 import com.sportbooking.domain.model.Court
+import com.sportbooking.domain.model.Drink
+import com.sportbooking.domain.model.DrinkLine
+import com.sportbooking.domain.model.BookingReviewSummary
 import com.sportbooking.domain.model.FacilityDetail
+import com.sportbooking.domain.model.FacilityReview
 import com.sportbooking.domain.model.FacilitySummary
 import com.sportbooking.domain.model.HomeContent
 import com.sportbooking.domain.model.PaymentMethod
@@ -24,7 +28,6 @@ fun UserDto.toDomain() = User(id, fullName, email, phone, avatarUrl, status)
 
 fun HomeDto.toDomain() = HomeContent(
     sports = sports.map { Sport(it.id, it.label) },
-    amenities = amenities,
     facilities = facilities.map { it.toDomain() },
 )
 
@@ -45,9 +48,19 @@ fun FacilityDetailDto.toDomain() = FacilityDetail(
     sports = sports,
     sportIds = sportIds,
     image = image,
-    amenities = amenities,
     images = images,
     courts = courts.map { Court(it.id, it.name, it.surface, it.capacity) },
+    reviewList = reviewList.orEmpty().map {
+        FacilityReview(
+            id = it.id,
+            author = it.author,
+            rating = it.rating,
+            date = it.date,
+            text = it.text,
+            ownerReply = it.ownerReply,
+            ownerReplyDate = it.ownerReplyDate,
+        )
+    },
 )
 
 fun SlotScheduleDto.toDomain() = SlotSchedule(
@@ -59,18 +72,28 @@ fun SlotScheduleDto.toDomain() = SlotSchedule(
 
 fun PaymentMethodDto.toDomain() = PaymentMethod(id, title, description)
 
+fun DrinkDto.toDomain() = Drink(id, name, image.orEmpty(), price, stock)
+
+fun DrinkLineDto.toDomain() = DrinkLine(drinkId, name, price, qty)
+
 fun CheckoutOptionsDto.toDomain() = CheckoutOptions(
     vouchers = vouchers.map { Voucher(it.code, it.description) },
     payments = payments.map { it.toDomain() },
+    drinks = drinks.orEmpty().map { it.toDomain() },
 )
 
 fun BookingQuoteDto.toDomain() = BookingQuote(
     facilityId, facilityName, courtId, courtName, date, time, courtPrice, discount, amount, voucherCode,
+    drinks = drinks.orEmpty().map { it.toDomain() },
+    drinkTotal = drinkTotal ?: 0,
 )
 
 fun BookingDto.toDomain() = Booking(
     code, status, statusLabel, facilityId, facilityName, courtId, courtName,
     date, time, courtPrice, discount, amount, voucherCode, paymentMethod, bookedAt,
+    drinks = drinks.orEmpty().map { it.toDomain() },
+    drinkTotal = drinkTotal ?: 0,
+    review = review?.let { BookingReviewSummary(it.id, it.rating, it.text) },
 )
 
 fun BookingPageDto.toDomain() = BookingPage(
@@ -84,5 +107,25 @@ fun BookingReceiptDto.toDomain() = BookingReceipt(booking.toDomain(), paymentUrl
 fun ProfileDto.toDomain() = Profile(
     user = user.toDomain(),
     notifications = notifications.map { AppNotification(it.type, it.title, it.text, it.date) },
-    reviews = reviews.map { Review(it.facility, it.rating, it.text) },
+    reviews = reviews.map {
+        Review(
+            id = it.id.orEmpty(),
+            facility = it.facility,
+            facilityId = it.facilityId.orEmpty(),
+            bookingCode = it.bookingCode.orEmpty(),
+            rating = it.rating,
+            text = it.text,
+            createdAt = it.createdAt.orEmpty(),
+        )
+    },
+)
+
+fun ReviewDetailDto.toDomain() = Review(
+    id = id,
+    facility = facilityName,
+    facilityId = facilityId,
+    bookingCode = bookingCode,
+    rating = rating,
+    text = text,
+    createdAt = createdAt.orEmpty(),
 )

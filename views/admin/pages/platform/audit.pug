@@ -1,0 +1,61 @@
+extends ../../../owner/layouts/default.pug
+include ../../../mixins/alert.pug
+
+block main
+  +alert-success(3000)
+  +alert-error(5000)
+
+  header.pf-head
+    div
+      p.pf-kicker Quản trị hệ thống / Nhật ký
+      h1.pf-title Nhật ký thao tác
+      p.pf-sub Chỉ xem. Không sửa và không xóa.
+
+  form.pf-filters(method="get" action="/admin/audit")
+    select.sz-select(name="actor")
+      option(value="" selected=!actor) Mọi người thực hiện
+      each person in actors
+        option(value=person._id selected=String(actor) === String(person._id))= person.fullName
+    select.sz-select(name="action")
+      option(value="" selected=!action) Mọi việc
+      each item in actions
+        option(value=item.code selected=action === item.code)= item.label
+    input.sz-input(type="date" name="from" value=from)
+    input.sz-input(type="date" name="to" value=to)
+    button.sz-btn.sz-btn-dark(type="submit") Lọc
+    a.sz-btn(href="/admin/audit") Xóa lọc
+
+  section.sz-card.sz-panel
+    if audits.length
+      .table-responsive
+        table.sz-table.pf-table
+          thead
+            tr
+              th Thời gian
+              th Người thực hiện
+              th Việc
+              th Chi tiết
+              th IP
+              th Trước
+              th Sau
+          tbody
+            each row in audits
+              tr
+                td= row.when
+                td= row.actorName
+                td= row.actionLabel
+                td= row.detail
+                td= row.ip
+                td= row.beforeText
+                td= row.afterText
+      nav.pf-pager
+        - const query = `actor=${actor}&action=${action}&from=${from}&to=${to}`
+        if page > 1
+          a(href=`/admin/audit?page=${page - 1}&${query}`) Trước
+        span Trang #{page} / #{pages} · #{total} dòng
+        if page < pages
+          a(href=`/admin/audit?page=${page + 1}&${query}`) Sau
+    else
+      .pf-empty
+        strong Chưa có dòng nào
+        p Đổi bộ lọc hoặc thực hiện một thao tác tài khoản.

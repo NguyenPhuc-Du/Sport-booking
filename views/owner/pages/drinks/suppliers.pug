@@ -1,0 +1,89 @@
+extends ../../layouts/default.pug
+include ../../../mixins/alert.pug
+
+block head
+  link(rel="stylesheet" href="/admin/css/drinks.css")
+  link(rel="stylesheet" href="/admin/css/drink-index.css")
+  link(rel="stylesheet" href="/admin/css/sale.css")
+
+block main
+  +alert-success(3000)
+  +alert-error(5000)
+  - const f = typeof filter !== "undefined" ? filter : {}
+  - const list = typeof suppliers !== "undefined" ? suppliers : []
+  - const tab = "suppliers"
+
+  .d-flex.justify-content-between.align-items-start.flex-wrap.gap-3
+    div
+      h1.sz-page-title Nhà cung cấp
+      p.sz-page-sub Danh mục nơi nhập hàng. Phiếu nhập kho bắt buộc chọn một nhà cung cấp đang dùng.
+    .sl-actions
+      a.sz-btn-outline(href=`${prefixOwner}/drinks`)
+        i.bi.bi-cup-straw
+        |  Sản phẩm
+      a.sz-btn-primary(href=`${prefixOwner}/drinks/suppliers/create`)
+        i.bi.bi-plus-lg
+        |  Thêm nhà cung cấp
+
+  include _tabs.pug
+
+  .sz-card.sz-list-card.mt-3
+    .d-flex.justify-content-between.align-items-end.flex-wrap.gap-3.mb-3
+      div
+        h2.sz-card-title Danh sách nhà cung cấp
+        p.sz-card-sub Nhà cung cấp ngừng dùng sẽ không chọn được khi lập phiếu nhập
+      form.sz-filter(method="GET" action=`${prefixOwner}/drinks/suppliers`)
+        select.sz-input.sz-filter-select(name="status" onchange="this.form.submit()")
+          option(value="") Tất cả trạng thái
+          option(value="active" selected=(f.status === "active")) Đang dùng
+          option(value="inactive" selected=(f.status === "inactive")) Ngừng dùng
+        .sz-search
+          i.bi.bi-search
+          input.sz-input(type="search" name="keyword" placeholder="Tên, SĐT, địa chỉ..." value=f.keyword)
+        button.sz-btn-outline(type="submit") Lọc
+        a.sz-btn-outline(href=`${prefixOwner}/drinks/suppliers`) Xóa lọc
+
+    if list.length
+      .sz-table-wrap
+        table.sz-table
+          thead
+            tr
+              th TÊN
+              th ĐIỆN THOẠI
+              th ĐỊA CHỈ
+              th TRẠNG THÁI
+              th.text-end THAO TÁC
+          tbody
+            each item in list
+              tr
+                td
+                  strong= item.name
+                  if item.note
+                    .sz-muted= item.note
+                td.sz-muted= item.phone || "—"
+                td.sz-muted= item.address || "—"
+                td
+                  if item.status === "active"
+                    span.sz-tag đang dùng
+                  else
+                    span.sz-tag.off ngừng dùng
+                td
+                  .sz-actions
+                    a.sz-icon-btn(href=`${prefixOwner}/drinks/suppliers/edit/${item._id}` title="Sửa")
+                      i.bi.bi-pencil-square
+                    form(method="POST" action=`${prefixOwner}/drinks/suppliers/change-status/${item._id}?_method=PATCH`)
+                      input(type="hidden" name="status" value=(item.status === "active" ? "inactive" : "active"))
+                      if item.status === "active"
+                        button.sz-icon-btn.warn(type="submit" title="Ngừng dùng")
+                          i.bi.bi-pause-circle
+                      else
+                        button.sz-icon-btn.ok(type="submit" title="Dùng lại")
+                          i.bi.bi-play-circle
+    else
+      .sz-empty
+        i.bi.bi-truck
+        h3 Chưa có nhà cung cấp
+        p Thêm nhà cung cấp trước khi lập phiếu nhập kho.
+        a.sz-btn-primary(href=`${prefixOwner}/drinks/suppliers/create`)
+          i.bi.bi-plus-lg
+          |  Thêm nhà cung cấp

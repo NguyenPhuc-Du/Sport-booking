@@ -28,7 +28,6 @@ data class FacilitySummary(
 
 data class HomeContent(
     val sports: List<Sport>,
-    val amenities: List<String>,
     val facilities: List<FacilitySummary>,
 )
 
@@ -37,6 +36,16 @@ data class Court(
     val name: String,
     val surface: String,
     val capacity: String,
+)
+
+data class FacilityReview(
+    val id: String,
+    val author: String,
+    val rating: Int,
+    val date: String,
+    val text: String,
+    val ownerReply: String? = null,
+    val ownerReplyDate: String? = null,
 )
 
 data class FacilityDetail(
@@ -52,9 +61,9 @@ data class FacilityDetail(
     val sports: List<String>,
     val sportIds: List<String>,
     val image: String,
-    val amenities: List<String>,
     val images: List<String>,
     val courts: List<Court>,
+    val reviewList: List<FacilityReview> = emptyList(),
 )
 
 data class TimeSlot(
@@ -82,9 +91,30 @@ data class Voucher(
     val description: String,
 )
 
+data class Drink(
+    val id: String,
+    val name: String,
+    val image: String,
+    val price: Long,
+    val stock: Int,
+)
+
+data class DrinkLine(
+    val drinkId: String,
+    val name: String,
+    val price: Long,
+    val qty: Int,
+)
+
+data class DrinkSelection(
+    val drinkId: String,
+    val qty: Int,
+)
+
 data class CheckoutOptions(
     val vouchers: List<Voucher>,
     val payments: List<PaymentMethod>,
+    val drinks: List<Drink> = emptyList(),
 )
 
 data class BookingQuote(
@@ -98,6 +128,8 @@ data class BookingQuote(
     val discount: Long,
     val amount: Long,
     val voucherCode: String?,
+    val drinks: List<DrinkLine> = emptyList(),
+    val drinkTotal: Long = 0,
 )
 
 data class BookingDraft(
@@ -105,8 +137,16 @@ data class BookingDraft(
     val courtId: String,
     val date: String,
     val time: String,
+    val hours: Int = 1,
     val voucherCode: String? = null,
     val paymentMethod: String? = null,
+    val drinks: List<DrinkSelection> = emptyList(),
+)
+
+data class BookingReviewSummary(
+    val id: String,
+    val rating: Int,
+    val text: String,
 )
 
 data class Booking(
@@ -125,6 +165,9 @@ data class Booking(
     val voucherCode: String?,
     val paymentMethod: String,
     val bookedAt: String,
+    val drinks: List<DrinkLine> = emptyList(),
+    val drinkTotal: Long = 0,
+    val review: BookingReviewSummary? = null,
 )
 
 data class BookingCounts(
@@ -154,9 +197,13 @@ data class AppNotification(
 )
 
 data class Review(
+    val id: String,
     val facility: String,
+    val facilityId: String = "",
+    val bookingCode: String = "",
     val rating: Int,
     val text: String,
+    val createdAt: String = "",
 )
 
 data class Profile(

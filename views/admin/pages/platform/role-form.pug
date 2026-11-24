@@ -1,0 +1,102 @@
+extends ../../../owner/layouts/default.pug
+include ../../../mixins/alert.pug
+
+block main
+  -
+    const pmPermissions = []
+    groups.forEach(function (group) {
+      group.items.forEach(function (item) {
+        pmPermissions.push({
+          code: item.code,
+          description: item.description || "",
+          checked: !!item.checked,
+          group: group.key,
+          groupLabel: group.label,
+        })
+      })
+    })
+    const pmPayload = {
+      roleId: String(role._id),
+      readOnly: !!role.is_system,
+      nameLocked: !!role.is_protected,
+      permissions: pmPermissions,
+    }
+
+  +alert-success(3000)
+  +alert-error(5000)
+
+  header.pf-head
+    div
+      p.pf-kicker
+        a(href="/admin/roles") Về danh sách vai trò
+      h1.pf-title= role.name
+      p.pf-sub Một chỗ để xem vai trò này được làm những gì.
+
+  if role.is_system
+    p.pm-banner(role="status")
+      i.bi.bi-lock(aria-hidden="true")
+      span Vai trò hệ thống không thể chỉnh sửa quyền. Hãy tạo vai trò tùy chỉnh nếu cần một bộ quyền khác.
+
+  section.sz-card.sz-panel.pm-profile
+    .pm-badges
+      if role.is_system
+        span.pm-badge.is-system Vai trò hệ thống
+      else
+        span.pm-badge Vai trò tùy chỉnh
+      span.pm-badge #{userCount} tài khoản đang dùng
+      span.pm-badge.is-code= role.code
+    .pm-profile-grid
+      label
+        span Tên
+        input#pm-name.sz-input(type="text" value=role.name required maxlength="80" autocomplete="off" disabled=role.is_protected)
+      label
+        span Mô tả
+        textarea#pm-desc.sz-input(maxlength="300" disabled=role.is_protected)= role.description
+
+  section.sz-card.sz-panel.pm-board
+    #pm-tools
+    #pm-matrix
+      .pm-skel
+      .pm-skel
+      .pm-skel
+      .pm-skel
+    #pm-error(hidden)
+      strong Không tải được ma trận quyền.
+      button#pm-retry.sz-btn(type="button") Thử lại
+    noscript
+      p.pm-hint Bật JavaScript để xem và sửa ma trận quyền.
+
+  .pm-savebar#pm-save(hidden)
+    p#pm-save-text(aria-live="polite") Có 0 thay đổi chưa lưu
+    div
+      button#pm-revert.sz-btn(type="button") Hoàn tác
+      button#pm-save-btn.sz-btn.sz-btn-green(type="button") Lưu thay đổi
+
+  dialog.pf-dialog.pm-confirm#pm-confirm
+    .pf-dialog-head
+      h2 Xác nhận lưu
+      button(type="button" data-close aria-label="Đóng") ×
+    p#pm-confirm-lead
+    ul.pm-diff#pm-confirm-body
+    p.pm-dialog-error#pm-confirm-error(role="alert")
+    .pf-dialog-actions
+      button.sz-btn(type="button" data-close) Quay lại
+      button#pm-confirm-save.sz-btn.sz-btn-green(type="button") Lưu thay đổi
+
+  if !role.is_system
+    section.sz-card.sz-panel
+      form(method="post" action=`/admin/roles/${role._id}/delete` data-confirm=`Xóa vai trò ${role.name}?`)
+        p.sz-muted Xóa được ngay nếu không còn tài khoản. Nếu còn, chọn vai trò để chuyển họ sang.
+        label Chuyển tài khoản sang
+        select.sz-select(name="transfer_role_id")
+          option(value="") Không chuyển
+          each item in otherRoles
+            if String(item._id) !== String(role._id)
+              option(value=item._id)= item.label
+        button.sz-btn.sz-btn-outline-danger(type="submit") Xóa vai trò
+
+  script#pm-data(type="application/json")!= JSON.stringify(pmPayload).replace(/</g, "\\u003c")
+
+block script
+  script(src="/admin/js/permission-map.js")
+  script(src="/admin/js/permission-matrix.js")

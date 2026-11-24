@@ -15,3 +15,9 @@ class UpdateProfileUseCase @Inject constructor(
     suspend operator fun invoke(fullName: String, phone: String, email: String) =
         repository.update(fullName.trim(), phone.trim(), email.trim())
 }
+
+class UploadAvatarUseCase @Inject constructor(
+    private val repository: ProfileRepository,
+) {
+    suspend operator fun invoke(bytes: ByteArray, mime: String) = repository.uploadAvatar(bytes, mime)
+}

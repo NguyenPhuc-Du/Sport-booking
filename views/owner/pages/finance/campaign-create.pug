@@ -1,0 +1,76 @@
+extends ../../layouts/default.pug
+include ../../../mixins/alert.pug
+
+block main
+  +alert-error(5000)
+  .vc-modal-page
+    .vc-modal
+      .vc-modal-head
+        h1.vc-modal-title Tạo chương trình khuyến mãi
+        a.vc-modal-close(href=`${prefixAdmin}/finance` aria-label="Đóng")
+          i.bi.bi-x-lg
+
+      form.vc-modal-form(
+        action=`${prefixAdmin}/finance/campaigns/create`
+        method="POST"
+      )
+        .vc-field
+          label.vc-label(for="campaignName")
+            | Tên chương trình
+            span.vc-req *
+          input#campaignName.vc-input(
+            type="text"
+            name="name"
+            placeholder="Ví dụ: Summer Sale 2026"
+            required
+          )
+
+        .vc-field
+          label.vc-label(for="campaignDesc") Mô tả
+          textarea#campaignDesc.vc-input(
+            name="description"
+            rows="3"
+            placeholder="Mô tả ngắn về chương trình"
+          )
+
+        .vc-field
+          label.vc-label(for="venueId")
+            | Cơ sở áp dụng
+            span.vc-req *
+          .vc-select-wrap
+            select#venueId.vc-input.vc-select(name="venue_id" required)
+              option(value="" selected disabled) -- Chọn cơ sở --
+              each item in venues
+                option(value=item._id)= item.name
+
+        .vc-field-row
+          .vc-field
+            label.vc-label(for="startDate")
+              | Ngày bắt đầu
+              span.vc-req *
+            input#startDate.vc-input(
+              type="datetime-local"
+              name="start_date"
+              required
+            )
+          .vc-field
+            label.vc-label(for="endDate")
+              | Ngày kết thúc
+              span.vc-req *
+            input#endDate.vc-input(
+              type="datetime-local"
+              name="end_date"
+              required
+            )
+
+        .vc-field
+          label.vc-label(for="status") Trạng thái
+          .vc-select-wrap
+            select#status.vc-input.vc-select(name="status")
+              option(value="active" selected) Đang hoạt động
+              option(value="inactive") Ngưng hoạt động
+
+        .vc-modal-foot
+          a.vc-btn-cancel(href=`${prefixAdmin}/finance`) Hủy
+          button.vc-btn-submit(type="submit") Tạo chương trình
+    script(src="/js/script.js")
