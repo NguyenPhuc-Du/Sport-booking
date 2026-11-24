@@ -32,9 +32,10 @@ block main
             tr
               th Mã code
               th Tiêu đề
+              th Loại
+              th Khung giờ
               th Mức giảm
-              th Đơn tối thiểu
-              th Đã dùng / Giới hạn
+              th Đã dùng
               th Trạng thái
               th Hành động
           tbody
@@ -44,12 +45,13 @@ block main
                   td
                     span.vc-code #{item.code}
                   td #{item.name}
+                  td #{item.scope_label || "Tiền sân"}
+                  td #{item.time_label || "Mọi ngày"}
                   td
                     if item.discount_type === "fixed"
                       span.vc-discount #{item.display_value}
                     else
                       span.vc-discount #{item.discount_value}%
-                  td #{item.display_minorder}
                   td.vc-usage
                     span.vc-usage-text #{item.used_count}/#{item.quantity}
                     .vc-bar
@@ -71,7 +73,7 @@ block main
                       ) Xóa
             else
               tr
-                td.vc-empty(colspan="7") Không có voucher trong chương trình này
+                td.vc-empty(colspan="8") Không có voucher trong chương trình này
 
       nav.vc-pagination(aria-label="Phân trang voucher")
         +pagination(pagination)

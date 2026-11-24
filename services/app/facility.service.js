@@ -183,10 +183,35 @@ async function listCheckoutOptions(facilityId) {
     venue_id: facilityId,
     start_date: { $lte: now },
     end_date: { $gte: now },
-  }).select("code name").lean();
+  })
+    .select("code name apply_scope day_type time_start time_end")
+    .lean();
+
+  const scopeLabel = {
+    court: "tiền sân",
+    drink: "đồ uống",
+    order: "hoá đơn",
+  };
+  const dayLabel = {
+    all: "mọi ngày",
+    weekday: "T2–T6",
+    weekend: "T7–CN",
+  };
 
   return {
-    vouchers: vouchers.map((v) => ({ code: v.code, description: v.name })),
+    vouchers: vouchers.map((v) => {
+      const scope = v.apply_scope || "court";
+      const day = dayLabel[v.day_type || "all"] || "mọi ngày";
+      const time =
+        v.time_start && v.time_end
+          ? `${v.time_start}-${v.time_end}`
+          : "cả ngày";
+      return {
+        code: v.code,
+        description: `${v.name} · giảm ${scopeLabel[scope] || scope} · ${day} · ${time}`,
+        applyScope: scope,
+      };
+    }),
     payments: [
       { id: "vnpay", title: "VNPay", description: "ATM / thẻ / QR ngân hàng" },
     ],

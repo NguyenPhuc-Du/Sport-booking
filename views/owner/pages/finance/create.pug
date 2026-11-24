@@ -22,11 +22,7 @@ block main
 
         .vc-field
           label.vc-label Chương trình
-          input.vc-input(
-            type="text"
-            value=campaign.name
-            disabled
-          )
+          input.vc-input(type="text" value=campaign.name disabled)
           small.sz-muted
             | Thời hạn: #{campaign.start_date_display} → #{campaign.end_date_display}
             |  · Cơ sở: #{campaign.venue_name}
@@ -55,6 +51,49 @@ block main
 
         .vc-field-row
           .vc-field
+            label.vc-label(for="applyScope")
+              | Loại áp dụng
+              span.vc-req *
+            .vc-select-wrap
+              select#applyScope.vc-input.vc-select(name="apply_scope" required)
+                option(value="court" selected) Tiền sân
+                option(value="drink") Đồ uống
+                option(value="order") Hoá đơn (sân + nước)
+          .vc-field
+            label.vc-label(for="dayType") Ngày áp dụng
+            .vc-select-wrap
+              select#dayType.vc-input.vc-select(name="day_type")
+                option(value="all" selected) Mọi ngày
+                option(value="weekday") Thứ 2 – Thứ 6
+                option(value="weekend") Thứ 7 & Chủ nhật
+
+        .vc-field-row
+          .vc-field
+            label.vc-label(for="timeStart") Giờ bắt đầu (tuỳ chọn)
+            input#timeStart.vc-input(type="time" name="time_start")
+          .vc-field
+            label.vc-label(for="timeEnd") Giờ kết thúc (tuỳ chọn)
+            input#timeEnd.vc-input(type="time" name="time_end")
+
+        .vc-field#productField(style="display:none")
+          label.vc-label(for="productIds")
+            | Sản phẩm đồ uống
+            span.vc-req *
+          select#productIds.vc-input(
+            name="product_ids"
+            multiple
+            size="6"
+            style="height:auto;padding:10px"
+          )
+            if drinks && drinks.length
+              each d in drinks
+                option(value=d._id)= `${d.name} (${d.price}đ)`
+            else
+              option(value="" disabled) Cơ sở chưa có đồ uống
+          small.sz-muted Giữ Ctrl (Windows) hoặc Cmd (Mac) để chọn nhiều món
+
+        .vc-field-row
+          .vc-field
             label.vc-label(for="discountType")
               | Loại giảm giá
               span.vc-req *
@@ -80,7 +119,7 @@ block main
             input#minOrder.vc-input(
               type="number"
               name="min_order_amount"
-              value="150000"
+              value="0"
               min="0"
             )
           .vc-field
@@ -107,4 +146,15 @@ block main
         .vc-modal-foot
           a.vc-btn-cancel(href=`${prefixAdmin}/finance/campaigns/${campaign._id}/vouchers`) Hủy
           button.vc-btn-submit(type="submit") Phát hành Voucher
+
+    script.
+      (function () {
+        var scope = document.getElementById("applyScope");
+        var field = document.getElementById("productField");
+        function sync() {
+          field.style.display = scope.value === "drink" ? "" : "none";
+        }
+        scope.addEventListener("change", sync);
+        sync();
+      })();
     script(src="/js/script.js")

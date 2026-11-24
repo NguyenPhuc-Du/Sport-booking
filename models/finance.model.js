@@ -1,5 +1,7 @@
 const mongoose = require("mongoose");
 
+const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
+
 const voucherSchema = new mongoose.Schema(
   {
     campaign_id: {
@@ -29,6 +31,44 @@ const voucherSchema = new mongoose.Schema(
       ref: "Venue",
       required: true,
     },
+    apply_scope: {
+      type: String,
+      enum: ["court", "drink", "order"],
+      default: "court",
+      required: true,
+    },
+    day_type: {
+      type: String,
+      enum: ["all", "weekday", "weekend"],
+      default: "all",
+      required: true,
+    },
+    time_start: {
+      type: String,
+      default: "",
+      validate: {
+        validator(v) {
+          return !v || HHMM.test(v);
+        },
+        message: "time_start phải dạng HH:mm",
+      },
+    },
+    time_end: {
+      type: String,
+      default: "",
+      validate: {
+        validator(v) {
+          return !v || HHMM.test(v);
+        },
+        message: "time_end phải dạng HH:mm",
+      },
+    },
+    product_ids: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Drink",
+      },
+    ],
     discount_type: {
       type: String,
       required: true,

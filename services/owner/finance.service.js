@@ -1,6 +1,18 @@
 const Voucher = require("../../models/finance.model");
 const Campaign = require("../../models/campaign.model");
 const Venues = require("../../models/facilities.model");
+const Drink = require("../../models/drink.model");
+
+const SCOPE_LABEL = {
+  court: "Tiền sân",
+  drink: "Đồ uống",
+  order: "Hoá đơn",
+};
+const DAY_LABEL = {
+  all: "Mọi ngày",
+  weekday: "T2–T6",
+  weekend: "T7–CN",
+};
 
 function formatDate(dateObj) {
   if (!dateObj) return "";
@@ -10,6 +22,26 @@ function formatDate(dateObj) {
 function formatDateTimeLocal(dateObj) {
   if (!dateObj) return "";
   return new Date(dateObj).toISOString().slice(0, 16);
+}
+
+function normalizeProductIds(raw) {
+  if (!raw) return [];
+  const list = Array.isArray(raw) ? raw : [raw];
+  return list.map(String).filter(Boolean);
+}
+
+function parseScopeFields(body) {
+  const apply_scope = ["court", "drink", "order"].includes(body.apply_scope)
+    ? body.apply_scope
+    : "court";
+  const day_type = ["all", "weekday", "weekend"].includes(body.day_type)
+    ? body.day_type
+    : "all";
+  const time_start = (body.time_start || "").trim();
+  const time_end = (body.time_end || "").trim();
+  const product_ids =
+    apply_scope === "drink" ? normalizeProductIds(body.product_ids) : [];
+  return { apply_scope, day_type, time_start, time_end, product_ids };
 }
 
 function mapVoucherDisplay(item) {
@@ -25,8 +57,29 @@ function mapVoucherDisplay(item) {
     item.quantity > 0 ? (item.used_count / item.quantity) * 100 : 0;
   item.start_date_display = formatDate(item.start_date);
   item.end_date_display = formatDate(item.end_date);
+  item.apply_scope = item.apply_scope || "court";
+  item.day_type = item.day_type || "all";
+  item.scope_label = SCOPE_LABEL[item.apply_scope] || item.apply_scope;
+  const dayPart = DAY_LABEL[item.day_type] || item.day_type;
+  if (item.time_start && item.time_end) {
+    item.time_label = `${dayPart} · ${item.time_start}-${item.time_end}`;
+  } else {
+    item.time_label = dayPart;
+  }
+  item.product_ids = (item.product_ids || []).map(String);
   return item;
 }
+
+module.exports.listDrinksByVenue = async (venueId) => {
+  if (!venueId) return [];
+  return Drink.find({
+    venueId,
+    status: "active",
+  })
+    .select("name price stock")
+    .sort({ name: 1 })
+    .lean();
+};
 
 async function getOwnedCampaign(campaignId, ownerId) {
   return Campaign.findOne({
@@ -181,12 +234,25 @@ module.exports.createVoucher = async (body, ownerId) => {
     throw err;
   }
 
+  const scope = parseScopeFields(body);
+  if (scope.apply_scope === "drink" && !scope.product_ids.length) {
+    const err = new Error("Voucher đồ uống cần chọn ít nhất 1 sản phẩm");
+    err.status = 400;
+    throw err;
+  }
+  if (scope.time_start && scope.time_end && scope.time_end <= scope.time_start) {
+    const err = new Error("Giờ kết thúc phải sau giờ bắt đầu");
+    err.status = 400;
+    throw err;
+  }
+
   const voucher = new Voucher({
     campaign_id: campaign._id,
     code: (body.code || "").trim().toUpperCase(),
     name: body.name,
     owner_id: ownerId,
     venue_id: campaign.venue_id,
+    ...scope,
     discount_type: body.discount_type,
     discount_value: parseInt(body.discount_value, 10) || 0,
     max_discount: parseInt(body.max_discount, 10) || 0,
@@ -231,8 +297,25 @@ module.exports.updateOneVoucher = async (id, ownerId, body) => {
   const campaign = await getOwnedCampaign(voucher.campaign_id, ownerId);
   if (!campaign) return null;
 
+  const scope = parseScopeFields(body);
+  if (scope.apply_scope === "drink" && !scope.product_ids.length) {
+    const err = new Error("Voucher đồ uống cần chọn ít nhất 1 sản phẩm");
+    err.status = 400;
+    throw err;
+  }
+  if (scope.time_start && scope.time_end && scope.time_end <= scope.time_start) {
+    const err = new Error("Giờ kết thúc phải sau giờ bắt đầu");
+    err.status = 400;
+    throw err;
+  }
+
   voucher.code = (body.code || voucher.code).trim().toUpperCase();
   voucher.name = body.name;
+  voucher.apply_scope = scope.apply_scope;
+  voucher.day_type = scope.day_type;
+  voucher.time_start = scope.time_start;
+  voucher.time_end = scope.time_end;
+  voucher.product_ids = scope.product_ids;
   voucher.discount_type = body.discount_type;
   voucher.discount_value = parseInt(body.discount_value, 10) || 0;
   voucher.max_discount = parseInt(body.max_discount, 10) || 0;

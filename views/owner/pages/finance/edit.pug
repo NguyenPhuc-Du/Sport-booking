@@ -4,6 +4,9 @@ include ../../../mixins/alert.pug
 block main
   +alert-success(5000)
   +alert-error(5000)
+  - const scope = voucher.apply_scope || "court"
+  - const dayType = voucher.day_type || "all"
+  - const selectedProducts = (voucher.product_ids || []).map(String)
   .vc-modal-page
     .vc-modal
       .vc-modal-head
@@ -18,6 +21,7 @@ block main
         action=`${prefixAdmin}/finance/edit/${voucher._id}?_method=PATCH`
         method="POST"
       )
+        input(type="hidden" name="campaign_id" value=(campaign ? campaign._id : voucher.campaign_id))
         if campaign
           .vc-field
             label.vc-label Chương trình
@@ -47,6 +51,60 @@ block main
             required
             value=voucher.name
           )
+
+        .vc-field-row
+          .vc-field
+            label.vc-label(for="applyScope")
+              | Loại áp dụng
+              span.vc-req *
+            .vc-select-wrap
+              select#applyScope.vc-input.vc-select(name="apply_scope" required)
+                option(value="court" selected=(scope === "court")) Tiền sân
+                option(value="drink" selected=(scope === "drink")) Đồ uống
+                option(value="order" selected=(scope === "order")) Hoá đơn (sân + nước)
+          .vc-field
+            label.vc-label(for="dayType") Ngày áp dụng
+            .vc-select-wrap
+              select#dayType.vc-input.vc-select(name="day_type")
+                option(value="all" selected=(dayType === "all")) Mọi ngày
+                option(value="weekday" selected=(dayType === "weekday")) Thứ 2 – Thứ 6
+                option(value="weekend" selected=(dayType === "weekend")) Thứ 7 & Chủ nhật
+
+        .vc-field-row
+          .vc-field
+            label.vc-label(for="timeStart") Giờ bắt đầu (tuỳ chọn)
+            input#timeStart.vc-input(
+              type="time"
+              name="time_start"
+              value=voucher.time_start || ""
+            )
+          .vc-field
+            label.vc-label(for="timeEnd") Giờ kết thúc (tuỳ chọn)
+            input#timeEnd.vc-input(
+              type="time"
+              name="time_end"
+              value=voucher.time_end || ""
+            )
+
+        .vc-field#productField(style=(scope === "drink" ? "" : "display:none"))
+          label.vc-label(for="productIds")
+            | Sản phẩm đồ uống
+            span.vc-req *
+          select#productIds.vc-input(
+            name="product_ids"
+            multiple
+            size="6"
+            style="height:auto;padding:10px"
+          )
+            if drinks && drinks.length
+              each d in drinks
+                option(
+                  value=d._id
+                  selected=(selectedProducts.includes(String(d._id)))
+                )= `${d.name} (${d.price}đ)`
+            else
+              option(value="" disabled) Cơ sở chưa có đồ uống
+          small.sz-muted Giữ Ctrl (Windows) hoặc Cmd (Mac) để chọn nhiều món
 
         .vc-field-row
           .vc-field
@@ -112,4 +170,15 @@ block main
             href=campaign ? `${prefixAdmin}/finance/campaigns/${campaign._id}/vouchers` : `${prefixAdmin}/finance`
           ) Hủy
           button.vc-btn-submit(type="submit") Lưu
+
+    script.
+      (function () {
+        var scope = document.getElementById("applyScope");
+        var field = document.getElementById("productField");
+        function sync() {
+          field.style.display = scope.value === "drink" ? "" : "none";
+        }
+        scope.addEventListener("change", sync);
+        sync();
+      })();
     script(src="/js/script.js")
