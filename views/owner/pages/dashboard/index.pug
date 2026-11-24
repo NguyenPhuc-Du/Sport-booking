@@ -47,9 +47,9 @@ block main
         p.sz-drink-meta= `${drinkChart.orders} phiếu bán`
         #drinkChart.sz-chart.sz-chart-mini(class=(range === "month" ? "is-dense" : undefined) data-chart=JSON.stringify(drinkChart.chartData) aria-label="Biểu đồ doanh thu giải khát")
 
-  .row.g-3
+  .row.g-3.mb-3.sz-equal-row
     .col-12.col-xl-6
-      .sz-card.sz-panel
+      .sz-card.sz-panel.h-100
         .d-flex.justify-content-between.align-items-center.mb-3
           div
             h2.sz-panel-title Sân có doanh thu cao nhất
@@ -70,6 +70,21 @@ block main
         else
           p.sz-panel-sub.mb-0 Chưa có đơn đặt sân trong kỳ này.
 
+    .col-12.col-xl-6
+      .sz-card.sz-panel.h-100.sz-court-card
+        .d-flex.justify-content-between.align-items-center.mb-3
+          div
+            h2.sz-panel-title So sánh doanh thu
+            p.sz-panel-sub= `Cùng các sân top ${rangeLabel}`
+        if topCourts.length
+          #courtChart.sz-court-chart(
+            data-courts=JSON.stringify(topCourts.map((c) => ({ name: c.name, value: c.revenueValue, label: c.revenue })))
+            aria-label="Biểu đồ so sánh doanh thu các sân"
+          )
+        else
+          p.sz-panel-sub.mb-0 Chưa có doanh thu sân trong kỳ này.
+
+  .row.g-3
     .col-12.col-xl-6
       .sz-card.sz-panel
         .d-flex.justify-content-between.align-items-center.mb-3

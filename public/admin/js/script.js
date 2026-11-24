@@ -65,6 +65,34 @@
 
   document.querySelectorAll(".sz-chart[data-chart]").forEach(renderChart);
 
+  const renderCourtChart = (chart) => {
+    const rows = readJson(chart, "courts");
+    const max = Math.max(1, ...rows.map((row) => Number(row.value) || 0));
+    const esc = (value) =>
+      String(value ?? "").replace(/[&<>"']/g, (char) =>
+        ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char],
+      );
+    chart.innerHTML = rows.length
+      ? rows
+          .map((row) => {
+            const width = Math.max(4, Math.round(((Number(row.value) || 0) / max) * 100));
+            return `
+              <div class="sz-court-bar">
+                <div class="sz-court-bar-top">
+                  <span class="sz-court-bar-name">${esc(row.name)}</span>
+                  <strong>${esc(row.label)}</strong>
+                </div>
+                <div class="sz-court-bar-track">
+                  <div class="sz-court-bar-fill" style="width:${width}%"></div>
+                </div>
+              </div>`;
+          })
+          .join("")
+      : `<p class="sz-panel-sub mb-0">Chưa có doanh thu trong kỳ này.</p>`;
+  };
+
+  document.querySelectorAll(".sz-court-chart[data-courts]").forEach(renderCourtChart);
+
   const peakList = document.getElementById("peakList");
   if (peakList) {
     const peakData = readJson(peakList, "peak");
