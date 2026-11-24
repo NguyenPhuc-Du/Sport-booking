@@ -272,6 +272,11 @@
     color: var(--rf-green-dark);
 }
 
+.sl-when {
+    display: block;
+    font-variant-numeric: tabular-nums;
+}
+
 .sl-meta-row {
     display: flex;
     justify-content: space-between;
@@ -356,7 +361,26 @@
     justify-content: space-between;
     align-items: flex-start;
     gap: 12px;
-    margin-bottom: 8px;
+    margin-bottom: 4px;
+    padding-bottom: 12px;
+    border-bottom: 1px dashed var(--rf-border);
+}
+
+.sl-side-bill-head .sl-total {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.sl-side-bill-head .sl-total span {
+    color: var(--rf-muted);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
 }
 
 .sl-bill-close {
@@ -385,6 +409,41 @@
     margin-top: 14px;
 }
 
+.sl-sale-bill .sl-side-bill-head {
+    margin-bottom: 0;
+    padding-bottom: 10px;
+}
+
+.sl-sale-lines {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 12px 0 4px;
+}
+
+.sl-sale-lines .sl-side-line {
+    align-items: center;
+    margin: 0;
+    padding: 8px 10px;
+    border: 0;
+    border-radius: 10px;
+    background: #f6faf8;
+}
+
+.sl-sale-lines .sl-side-line-name {
+    font-size: 14px;
+    line-height: 1.3;
+}
+
+.sl-sale-lines .sl-side-line-meta {
+    margin-top: 1px;
+}
+
+.sl-sale-lines .sz-price {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
 .sl-side-line {
     display: flex;
     justify-content: space-between;
@@ -406,7 +465,8 @@
 }
 
 .sl-side-bill .sl-total strong {
-    font-size: 20px;
+    font-size: 22px;
+    line-height: 1.2;
 }
 
 .sl-side-bill .sl-meta-row {

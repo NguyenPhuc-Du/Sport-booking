@@ -54,29 +54,39 @@ block main
           thead
             tr
               th MÃ PHIẾU
-              th KHÁCH
-              th CƠ SỞ
-              th.sl-col-fold MÓN
-              th TỔNG THU
+              th THỜI GIAN
+              th SỐ TIỀN
+              th TRẠNG THÁI
+              th.sl-col-fold KHÁCH
+              th.sl-col-fold CƠ SỞ
               th.sl-col-fold THANH TOÁN
-              th.sl-col-fold THỜI GIAN
               th.sl-col-action.text-end
               th.sl-detail-head CHI TIẾT
           tbody
             each sale, index in list
+              - const at = sale.paidAt || sale.createdAt
               tr.sl-row(data-sale-id=String(sale._id) tabindex="0")
                 td
                   strong.sl-code= sale.code
                 td
+                  if at
+                    strong.sl-when= new Date(at).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })
+                    .sz-muted= new Date(at).toLocaleDateString("vi-VN")
+                  else
+                    | —
+                td
+                  strong.sz-price= fmt(sale.amount)
+                td
+                  if sale.status === "cancelled"
+                    span.sz-tag.off Đã hủy
+                  else
+                    span.sz-tag Đã thu
+                td.sl-col-fold
                   div= sale.guestName
                   if sale.guestPhone
                     .sz-muted= sale.guestPhone
-                td.sz-muted= sale.venueName || "—"
-                td.sl-col-fold= sale.items.length + " món"
-                td
-                  strong.sz-price= fmt(sale.amount)
+                td.sl-col-fold.sz-muted= sale.venueName || "—"
                 td.sl-col-fold= payLabel[sale.paymentMethod] || sale.paymentMethod
-                td.sl-col-fold.sz-muted= when(sale.paidAt || sale.createdAt)
                 td.sl-col-action.text-end
                   span.sz-icon-btn(title="Xem phiếu")
                     i.bi.bi-receipt
@@ -190,14 +200,10 @@ block script
       }
 
       function render(sale) {
-        const root = el("div", "sl-side-bill");
+        const root = el("div", "sl-side-bill sl-sale-bill");
         const head = el("div", "sl-side-bill-head");
-        const titles = el("div");
-        titles.append(
-          el("div", "sl-code", sale.code),
-          el("div", "sz-muted", sale.venueName || "Cơ sở"),
-          el("div", "sz-muted", when(sale.paidAt))
-        );
+        const total = el("div", "sl-total");
+        total.append(el("span", null, "Tổng thu"), el("strong", null, money(sale.amount)));
         const close = el("button", "sl-bill-close");
         close.type = "button";
         close.setAttribute("aria-label", "Đóng chi tiết");
@@ -206,16 +212,10 @@ block script
           event.stopPropagation();
           closePanel();
         });
-        head.append(titles, close);
+        head.append(total, close);
         root.appendChild(head);
 
-        meta(root, "Khách hàng", sale.guestName);
-        meta(root, "Số điện thoại", sale.guestPhone);
-        meta(root, "Thanh toán", payLabel[sale.paymentMethod] || sale.paymentMethod);
-        meta(root, "Trạng thái", statusLabel(sale.status));
-        if (sale.note) meta(root, "Ghi chú", sale.note);
-
-        const lines = el("div", "sl-side-lines");
+        const lines = el("div", "sl-sale-lines");
         (sale.items || []).forEach((line) => {
           const row = el("div", "sl-side-line");
           const left = el("div");
@@ -228,9 +228,14 @@ block script
         });
         root.appendChild(lines);
 
-        const total = el("div", "sl-total");
-        total.append(el("span", null, "Tổng thu"), el("strong", null, money(sale.amount)));
-        root.appendChild(total);
+        meta(root, "Mã phiếu", sale.code);
+        meta(root, "Thời gian", when(sale.paidAt));
+        meta(root, "Khách hàng", sale.guestName);
+        meta(root, "Số điện thoại", sale.guestPhone);
+        meta(root, "Cơ sở", sale.venueName);
+        meta(root, "Thanh toán", payLabel[sale.paymentMethod] || sale.paymentMethod);
+        meta(root, "Trạng thái", statusLabel(sale.status));
+        if (sale.note) meta(root, "Ghi chú", sale.note);
         return root;
       }
 
