@@ -5,6 +5,11 @@ module.exports.getAllVenueByOwnerId = async (id) => {
   const venues = await Venues.find({ deleted: false, owner_id: id });
   return venues;
 };
+module.exports.findVenuesByOwnerId = async (id, pagination) => {
+  return Venues.find({ deleted: false, owner_id: id })
+    .skip(pagination.skipPage)
+    .limit(pagination.limitPage);
+};
 module.exports.createOwner = async (body) => {
   const venues = new Venues(body);
   await venues.save();
@@ -17,15 +22,23 @@ module.exports.createCourts = async (body) => {
   const courts = new Courts(body);
   await courts.save();
 };
-module.exports.deleteVenues = async (id) => {
-  await Venues.updateOne({ _id: id }, { deleted: true });
+module.exports.deleteVenues = async (id, ownerId) => {
+  const result = await Venues.updateOne(
+    { _id: id, owner_id: ownerId, deleted: false },
+    { deleted: true },
+  );
+  return result.modifiedCount > 0;
 };
-module.exports.findVenuesById = async (id) => {
-  const venues = await Venues.findById(id);
-  return venues;
+module.exports.findVenuesById = async (id, ownerId) => {
+  const filter = { _id: id, deleted: false };
+  if (ownerId) filter.owner_id = ownerId;
+  return Venues.findOne(filter);
 };
-module.exports.updateOneVenues = async (id, body) => {
-  await Venues.updateOne({ _id: id }, body);
+module.exports.updateOneVenues = async (id, body, ownerId) => {
+  const filter = { _id: id, deleted: false };
+  if (ownerId) filter.owner_id = ownerId;
+  const result = await Venues.updateOne(filter, body);
+  return result.matchedCount > 0;
 };
 async function venueIdsOf(userId) {
   const venues = await Venues.find({
@@ -95,18 +108,36 @@ module.exports.findCourtsByIdVenue = async (venueId, pagination, userId) => {
     .limit(pagination.limitPage)
     .lean();
 };
-module.exports.updateStatusCourts = async (id, status) => {
-  if (status) {
-    status = status == "active" ? "maintenance" : "active";
+module.exports.assertCourtOwnedBy = async (courtId, ownerId) => {
+  const venueIds = await venueIdsOf(ownerId);
+  return Courts.findOne({
+    _id: courtId,
+    venue_id: { $in: venueIds },
+    deleted: { $ne: true },
+  });
+};
+
+module.exports.updateStatusCourts = async (id, status, ownerId) => {
+  const nextStatus = status == "active" ? "maintenance" : "active";
+  const filter = { _id: id, deleted: { $ne: true } };
+  if (ownerId) {
+    const venueIds = await venueIdsOf(ownerId);
+    filter.venue_id = { $in: venueIds };
   }
-  await Courts.updateOne({ _id: id }, { status: status });
+  const result = await Courts.updateOne(filter, { status: nextStatus });
+  return result.matchedCount > 0;
 };
-module.exports.getOneCourtsById = async (id) => {
-  const courts = await Courts.findById({ _id: id });
-  return courts;
+module.exports.getOneCourtsById = async (id, ownerId) => {
+  if (!ownerId) return Courts.findById(id);
+  return module.exports.assertCourtOwnedBy(id, ownerId);
 };
-module.exports.getCourtDetailById = async (id) => {
-  return Courts.findById(id)
+module.exports.getCourtDetailById = async (id, ownerId) => {
+  const filter = { _id: id, deleted: { $ne: true } };
+  if (ownerId) {
+    const venueIds = await venueIdsOf(ownerId);
+    filter.venue_id = { $in: venueIds };
+  }
+  return Courts.findOne(filter)
     .populate("court_type_id", "name icon_url description")
     .populate(
       "venue_id",
@@ -114,6 +145,27 @@ module.exports.getCourtDetailById = async (id) => {
     )
     .lean();
 };
-module.exports.updateOneCourts = async (id, body) => {
-  await Courts.updateOne({ _id: id }, body);
+module.exports.updateOneCourts = async (id, body, ownerId) => {
+  const filter = { _id: id, deleted: { $ne: true } };
+  if (ownerId) {
+    const venueIds = await venueIdsOf(ownerId);
+    filter.venue_id = { $in: venueIds };
+  }
+  const result = await Courts.updateOne(filter, body);
+  return result.matchedCount > 0;
+};
+module.exports.createCourtsForOwner = async (body, ownerId) => {
+  const venue = await Venues.findOne({
+    _id: body.venue_id,
+    owner_id: ownerId,
+    deleted: false,
+  }).select("_id");
+  if (!venue) {
+    const err = new Error("Cơ sở không hợp lệ");
+    err.status = 400;
+    throw err;
+  }
+  const courts = new Courts(body);
+  await courts.save();
+  return courts;
 };

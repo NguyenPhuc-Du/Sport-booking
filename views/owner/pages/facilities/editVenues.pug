@@ -2,20 +2,23 @@ extends ../../layouts/default.pug
 include ../../../mixins/alert.pug
 block head
   +alert-success(5000)
+  +alert-error(5000)
   link(rel="stylesheet" href="/admin/css/facilities.css")
 
 block main
   .fv-modal-page
     .fv-modal
       .fv-modal-head
-        h1.fv-modal-title Thêm cơ sở mới
+        h1.fv-modal-title Sửa cơ sở
         a.fv-modal-close(href=`${prefixAdmin}/facilities/venues` aria-label="Đóng")
           i.bi.bi-x-lg
 
-      form( action=`${prefixAdmin}/facilities/venues/edit/${venues._id}?method_PATCH`
+      form(
+        action=`${prefixAdmin}/facilities/venues/edit/${venues._id}`
         id="form-create-product"
         method="POST"
-        enctype="multipart/form-data")
+        enctype="multipart/form-data"
+      )
         .fv-field
             input#closeTime.fv-input.d-none(
               type="text"
