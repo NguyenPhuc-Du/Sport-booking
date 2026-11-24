@@ -1211,6 +1211,12 @@
   text-align: center;
 }
 
+.fv-list-table th:last-child,
+.fv-list-table td:last-child {
+  text-align: right;
+  white-space: nowrap;
+}
+
 .fv-list-table td {
   font-size: 13.5px;
   color: #0f172a;
@@ -1276,6 +1282,7 @@
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
+  justify-content: flex-end;
 }
 
 .fv-list-actions .sz-btn {

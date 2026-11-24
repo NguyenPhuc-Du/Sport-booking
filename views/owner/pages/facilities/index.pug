@@ -7,6 +7,7 @@ block head
 
 block main
   +alert-success(5000)
+  +alert-error(5000)
   .d-flex.justify-content-between.align-items-start.flex-wrap.gap-3.mb-4
     div
       h1.sz-title #{pageTitle}
@@ -45,19 +46,20 @@ block main
               th Hành động
           tbody
             each court in courts
+              - const courtType = court.court_type_id || {}
               tr
                 td
                   .fv-list-entity
                     span.fv-list-icon
-                      if court.court_type_id && court.court_type_id.icon_url
-                        img(src=court.court_type_id.icon_url alt="")
+                      if courtType.icon_url
+                        img(src=courtType.icon_url alt="")
                       else
                         i.bi.bi-grid-3x3-gap
                     div
                       strong.fv-list-name= court.name
                       if court.capacity
                         small.sz-muted Sức chứa: #{court.capacity}
-                td= court.court_type_id ? court.court_type_id.name : "—"
+                td= courtType.name || "—"
                 td= court.surface || "—"
                 td
                   if court.status === "active"

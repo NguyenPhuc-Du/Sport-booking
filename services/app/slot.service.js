@@ -133,12 +133,88 @@ async function findSlot(venue, courtId, date, time) {
   return slots.find((s) => s.time === time) || null;
 }
 
-async function quotePrice(slot, voucherCode, venueId) {
-  const courtPrice = slot.price;
+function matchesDayType(voucher, dateStr) {
+  const dayType = voucher.day_type || "all";
+  if (dayType === "all") return true;
+  return dayTypeOf(dateStr) === dayType;
+}
+
+function matchesTimeWindow(voucher, timeStart) {
+  const start = voucher.time_start || "";
+  const end = voucher.time_end || "";
+  if (!start && !end) return true;
+  if (!start || !end || !timeStart) return false;
+  const t = toMinutes(timeStart);
+  return t >= toMinutes(start) && t < toMinutes(end);
+}
+
+function drinkEligibleTotal(drinks, productIds) {
+  const allowed = new Set((productIds || []).map(String));
+  if (!allowed.size) return 0;
+  return (drinks || []).reduce((sum, line) => {
+    if (!allowed.has(String(line.drinkId))) return sum;
+    return sum + Number(line.price || 0) * Number(line.qty || 0);
+  }, 0);
+}
+
+function computeDiscount(voucher, base) {
+  let discount = 0;
+  if (voucher.discount_type === "fixed") {
+    discount = voucher.discount_value;
+  } else {
+    discount = Math.round((base * voucher.discount_value) / 100);
+    if (voucher.max_discount != null) {
+      discount = Math.min(discount, voucher.max_discount);
+    }
+  }
+  return Math.min(Math.max(discount, 0), base);
+}
+
+/**
+ * @param {object} input
+ * @param {number} input.courtPrice
+ * @param {Array} [input.drinks]
+ * @param {number} [input.drinkTotal]
+ * @param {string} [input.date]
+ * @param {string} [input.timeStart]
+ * @param {string|null} input.voucherCode
+ * @param {string|object} [input.venueId]
+ */
+async function quotePrice(input) {
+  // Backward compat: old call quotePrice({ price }, code, venueId)
+  let courtPrice;
+  let drinks = [];
+  let drinkTotal = 0;
+  let date = "";
+  let timeStart = "";
+  let voucherCode;
+  let venueId;
+
+  if (input && typeof input === "object" && "courtPrice" in input) {
+    courtPrice = Number(input.courtPrice) || 0;
+    drinks = input.drinks || [];
+    drinkTotal = Number(input.drinkTotal) || 0;
+    date = input.date || "";
+    timeStart = input.timeStart || "";
+    voucherCode = input.voucherCode;
+    venueId = input.venueId;
+  } else {
+    courtPrice = Number((input && input.price) || 0);
+    voucherCode = arguments[1];
+    venueId = arguments[2];
+  }
+
   const code = (voucherCode || "").trim().toUpperCase();
+  const orderTotal = courtPrice + drinkTotal;
 
   if (!code) {
-    return { courtPrice, discount: 0, amount: courtPrice, voucherCode: null };
+    return {
+      courtPrice,
+      drinkTotal,
+      discount: 0,
+      amount: orderTotal,
+      voucherCode: null,
+    };
   }
 
   const now = new Date();
@@ -161,28 +237,45 @@ async function quotePrice(slot, voucherCode, venueId) {
     err.status = 400;
     throw err;
   }
-  if (courtPrice < (voucher.min_order_amount || 0)) {
+  if (date && !matchesDayType(voucher, date)) {
+    const err = new Error("Mã không áp dụng cho ngày này");
+    err.status = 400;
+    throw err;
+  }
+  if (date && !matchesTimeWindow(voucher, timeStart)) {
+    const err = new Error("Mã không áp dụng cho khung giờ này");
+    err.status = 400;
+    throw err;
+  }
+
+  const scope = voucher.apply_scope || "court";
+  let base = courtPrice;
+  if (scope === "drink") {
+    base = drinkEligibleTotal(drinks, voucher.product_ids);
+    if (base <= 0) {
+      const err = new Error("Đơn không có đồ uống đủ điều kiện áp mã");
+      err.status = 400;
+      throw err;
+    }
+  } else if (scope === "order") {
+    base = orderTotal;
+  }
+
+  if (base < (voucher.min_order_amount || 0)) {
     const err = new Error("Đơn chưa đủ điều kiện áp dụng mã");
     err.status = 400;
     throw err;
   }
 
-  let discount = 0;
-  if (voucher.discount_type === "fixed") {
-    discount = voucher.discount_value;
-  } else {
-    discount = Math.round((courtPrice * voucher.discount_value) / 100);
-    if (voucher.max_discount != null) {
-      discount = Math.min(discount, voucher.max_discount);
-    }
-  }
-  discount = Math.min(discount, courtPrice);
+  const discount = computeDiscount(voucher, base);
 
   return {
     courtPrice,
+    drinkTotal,
     discount,
-    amount: courtPrice - discount,
+    amount: orderTotal - discount,
     voucherCode: voucher.code,
+    applyScope: scope,
   };
 }
 

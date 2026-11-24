@@ -1,9 +1,9 @@
 const facilities = require("../../services/owner/facility.service");
-const Courts = require("../../models/court.model");
-const CourtsType = require("../../models/court-types.model");
 const prefixAdmin = require("../../config/system");
 const paginationHelper = require("../../helpers/pagination");
-const Court = require("../../models/court.model");
+
+const PREFIX = prefixAdmin.prefixOwner;
+
 module.exports.index = async (req, res) => {
   const userId = res.locals.user.id;
   const venues = await facilities.getAllVenueByOwnerId(userId);
@@ -25,41 +25,51 @@ module.exports.index = async (req, res) => {
   res.render("owner/pages/facilities/index", {
     pageTitle: "Quản lý Cơ sở & Sân",
     activeMenu: "facilities",
-    courts: courts,
-    venues: venues,
+    courts,
+    venues,
     countVenues,
     countCourts,
     VenueSelected,
-    pagination: pagination,
+    pagination,
   });
 };
+
 module.exports.create = async (req, res) => {
   const userId = res.locals.user.id;
   const venues = await facilities.getAllVenueByOwnerId(userId);
   const type = await facilities.getAllCourtTypes();
   res.render("owner/pages/facilities/create", {
     pageTitle: "Thêm mới sân con",
+    activeMenu: "facilities",
     venues,
     type,
   });
 };
+
 module.exports.edit = async (req, res) => {
   const userId = res.locals.user.id;
   const venues = await facilities.getAllVenueByOwnerId(userId);
   const type = await facilities.getAllCourtTypes();
-  const courts = await facilities.getOneCourtsById(req.params.id);
+  const courts = await facilities.getOneCourtsById(req.params.id, userId);
+  if (!courts) {
+    req.flash("error", "Không tìm thấy sân con");
+    return res.redirect(`${PREFIX}/facilities`);
+  }
   res.render("owner/pages/facilities/edit", {
-    pageTitle: "sửa sân con",
+    pageTitle: "Sửa sân con",
+    activeMenu: "facilities",
     venues,
     type,
     courts,
   });
 };
+
 module.exports.detail = async (req, res) => {
-  const court = await facilities.getCourtDetailById(req.params.id);
+  const userId = res.locals.user.id;
+  const court = await facilities.getCourtDetailById(req.params.id, userId);
   if (!court) {
     req.flash("error", "Không tìm thấy sân con");
-    return res.redirect(`${prefixAdmin.prefixOwner}/facilities`);
+    return res.redirect(`${PREFIX}/facilities`);
   }
 
   const statusLabel = {
@@ -75,12 +85,19 @@ module.exports.detail = async (req, res) => {
     statusLabel: statusLabel[court.status] || court.status,
   });
 };
+
 module.exports.createPost = async (req, res) => {
-  await facilities.createCourts(req.body);
-  req.flash("success", "Thêm mới sân con thành công");
-  res.redirect(req.get("Referer"));
+  try {
+    await facilities.createCourtsForOwner(req.body, res.locals.user.id);
+    req.flash("success", "Thêm mới sân con thành công");
+  } catch (error) {
+    req.flash("error", error.message || "Thêm sân con thất bại");
+  }
+  res.redirect(req.get("Referer") || `${PREFIX}/facilities`);
 };
+
 module.exports.editPost = async (req, res) => {
+  const userId = res.locals.user.id;
   const kept = [].concat(req.body.keep_image_urls || []);
   const added = req.body.new_image_urls || [];
   const image_urls = [...kept, ...added].slice(0, 6);
@@ -95,10 +112,15 @@ module.exports.editPost = async (req, res) => {
     image_urls,
   };
 
-  await facilities.updateOneCourts(req.params.id, body);
+  const ok = await facilities.updateOneCourts(req.params.id, body, userId);
+  if (!ok) {
+    req.flash("error", "Không tìm thấy sân con hoặc không có quyền sửa");
+    return res.redirect(`${PREFIX}/facilities`);
+  }
   req.flash("success", "Cập nhật sân con thành công");
-  res.redirect(`${prefixAdmin.prefixOwner}/facilities`);
+  res.redirect(`${PREFIX}/facilities`);
 };
+
 module.exports.indexVenues = async (req, res) => {
   const userId = res.locals.user.id;
   const countVenues = await facilities.countVenuesByOwner(userId);
@@ -112,61 +134,95 @@ module.exports.indexVenues = async (req, res) => {
   res.render("owner/pages/facilities/indexVenues", {
     pageTitle: "Cơ sở",
     activeMenu: "facilities",
-    venues: venues,
+    venues,
     countVenues,
     countCourts,
     pagination,
   });
 };
+
 module.exports.createVenues = async (req, res) => {
   const userId = res.locals.user.id;
   res.render("owner/pages/facilities/createVenues", {
     pageTitle: "Cơ sở",
     activeMenu: "facilities",
-    userId: userId,
+    userId,
   });
 };
+
 module.exports.createVenuesPost = async (req, res) => {
-  console.log(req.body);
-  await facilities.createOwner(req.body);
-  req.flash("success", "Thêm cơ sở thành công");
-  res.redirect(req.get("Referer"));
+  try {
+    await facilities.createOwner({
+      ...req.body,
+      owner_id: res.locals.user.id,
+    });
+    req.flash("success", "Thêm cơ sở thành công");
+  } catch (error) {
+    req.flash("error", "Thêm cơ sở thất bại");
+  }
+  res.redirect(req.get("Referer") || `${PREFIX}/facilities/venues`);
 };
+
 module.exports.deleteVenues = async (req, res) => {
   try {
-    const id = req.params.id;
-    await facilities.deleteVenues(id);
-    req.flash("success", "Bạn đã xoá cơ sở thành công");
-    res.redirect(req.get("Referer"));
+    const ok = await facilities.deleteVenues(
+      req.params.id,
+      res.locals.user.id,
+    );
+    if (ok) {
+      req.flash("success", "Bạn đã xoá cơ sở thành công");
+    } else {
+      req.flash("error", "Không tìm thấy cơ sở hoặc không có quyền xoá");
+    }
   } catch (error) {
-    req.flash("success", "Bạn đã xoá cơ sở  thất bại");
-    res.redirect(req.get("Referer"));
+    req.flash("error", "Bạn đã xoá cơ sở thất bại");
   }
+  res.redirect(req.get("Referer") || `${PREFIX}/facilities/venues`);
 };
+
 module.exports.editVenues = async (req, res) => {
   const userId = res.locals.user.id;
-  const venues = await facilities.findVenuesById(req.params.id);
+  const venues = await facilities.findVenuesById(req.params.id, userId);
+  if (!venues) {
+    req.flash("error", "Không tìm thấy cơ sở");
+    return res.redirect(`${PREFIX}/facilities/venues`);
+  }
   res.render("owner/pages/facilities/editVenues", {
     pageTitle: "Cơ sở",
     activeMenu: "facilities",
-    userId: userId,
-    venues: venues,
+    userId,
+    venues,
   });
 };
+
 module.exports.editVenuesPost = async (req, res) => {
-  const id = req.params.id;
-  facilities.updateOneVenues(id, req.body);
-  req.flash("success", "Thay đổi dữ liệu cơ sở thành công");
-  res.redirect(req.get("Referer"));
+  const ok = await facilities.updateOneVenues(
+    req.params.id,
+    req.body,
+    res.locals.user.id,
+  );
+  if (!ok) {
+    req.flash("error", "Không tìm thấy cơ sở hoặc không có quyền sửa");
+  } else {
+    req.flash("success", "Thay đổi dữ liệu cơ sở thành công");
+  }
+  res.redirect(req.get("Referer") || `${PREFIX}/facilities/venues`);
 };
+
 module.exports.changeStatus = async (req, res) => {
-  const id = req.params.id;
-  let status = req.params.status;
-  await facilities.updateStatusCourts(id, status);
-  if (status == "active") {
+  const userId = res.locals.user.id;
+  const status = req.params.status;
+  const ok = await facilities.updateStatusCourts(
+    req.params.id,
+    status,
+    userId,
+  );
+  if (!ok) {
+    req.flash("error", "Không tìm thấy sân hoặc không có quyền đổi trạng thái");
+  } else if (status == "active") {
     req.flash("success", "Bảo trì sân thành công");
   } else {
     req.flash("success", "Mở lại sân thành công");
   }
-  res.redirect(req.get("Referer"));
+  res.redirect(req.get("Referer") || `${PREFIX}/facilities`);
 };

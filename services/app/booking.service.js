@@ -77,17 +77,21 @@ async function resolveSelection(body) {
   }
 
   const courtPrice = slots.reduce((sum, slot) => sum + slot.price, 0);
-  const quote = await slotService.quotePrice(
-    { price: courtPrice },
-    body.voucherCode,
-    pair.venue._id,
-  );
   const { drinks, drinkTotal } = await drinkService.snapshotDrinks(
     pair.venue._id,
     body.drinks,
   );
   const start = slots[0].time;
   const end = slotService.fromMinutes(startMin + hours * 60);
+  const quote = await slotService.quotePrice({
+    courtPrice,
+    drinks,
+    drinkTotal,
+    date: body.date,
+    timeStart: start,
+    voucherCode: body.voucherCode,
+    venueId: pair.venue._id,
+  });
   return {
     venue: pair.venue,
     court: pair.court,
@@ -96,7 +100,6 @@ async function resolveSelection(body) {
       ...quote,
       drinks,
       drinkTotal,
-      amount: quote.amount + drinkTotal,
     },
     start,
     end,

@@ -41,6 +41,7 @@ block main
               th Hành động
           tbody
             each item in venues
+              - const venueId = item.id || item._id
               tr
                 td
                   .fv-list-entity
@@ -68,14 +69,14 @@ block main
                 td
                   .fv-list-actions
                     a.sz-btn.sz-btn-edit.sz-btn-sm(
-                      href=`${prefixAdmin}/facilities/venues/edit/${item.id || item._id}`
+                      href=`${prefixAdmin}/facilities/venues/edit/${venueId}`
                       title="Sửa"
                     )
                       i.bi.bi-pencil-square
                     button.sz-btn.sz-btn-outline-danger.sz-btn-sm(
                       type="button"
                       button-delete
-                      data-id=item.id || item._id
+                      data-id=venueId
                       title="Xóa"
                     )
                       i.bi.bi-trash3

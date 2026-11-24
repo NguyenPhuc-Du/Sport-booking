@@ -130,11 +130,17 @@ module.exports.create = async (req, res) => {
     req.flash("error", "Vui lòng chọn chương trình trước khi tạo voucher");
     return res.redirect(`${PREFIX}/finance`);
   }
+  const venueId =
+    campaign.venue_id && campaign.venue_id._id
+      ? campaign.venue_id._id
+      : campaign.venue_id;
+  const drinks = await finance.listDrinksByVenue(venueId);
   res.render("owner/pages/finance/create", {
     pageTitle: "Tạo Voucher",
     activeMenu: "finance",
     campaign,
     ownerId: userId,
+    drinks,
   });
 };
 
@@ -171,11 +177,17 @@ module.exports.edit = async (req, res) => {
     return res.redirect(`${PREFIX}/finance`);
   }
   const campaign = await finance.findCampaignById(voucher.campaign_id, userId);
+  const venueId =
+    campaign && campaign.venue_id && campaign.venue_id._id
+      ? campaign.venue_id._id
+      : campaign && campaign.venue_id;
+  const drinks = await finance.listDrinksByVenue(venueId);
   res.render("owner/pages/finance/edit", {
     pageTitle: "Sửa voucher",
     activeMenu: "finance",
     voucher,
     campaign,
+    drinks,
   });
 };
 
