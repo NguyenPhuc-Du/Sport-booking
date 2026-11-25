@@ -6,6 +6,7 @@ const booking = require("../../controllers/api/booking.controller");
 const payment = require("../../controllers/api/payment.controller");
 const review = require("../../controllers/api/review.controller");
 const requireAuth = require("../../middlewares/api/auth.middleware");
+const optionalAuth = require("../../middlewares/api/optional-auth.middleware");
 const upload = require("../../middlewares/api/upload.middleware");
 
 const router = express.Router();
@@ -19,17 +20,18 @@ router.post("/auth/password/reset", auth.resetPassword);
 router.post("/auth/login", auth.login);
 router.get("/auth/me", requireAuth, auth.me);
 
-router.get("/home", requireAuth, facility.home);
-router.get("/facilities/:id", requireAuth, facility.detail);
-router.get("/facilities/:id/reviews", requireAuth, review.forFacility);
-router.get("/facilities/:id/slots", requireAuth, facility.slots);
-router.get("/checkout/options", requireAuth, facility.checkoutOptions);
+// Browse + quote: guest OK
+router.get("/home", optionalAuth, facility.home);
+router.get("/facilities/:id", optionalAuth, facility.detail);
+router.get("/facilities/:id/reviews", optionalAuth, review.forFacility);
+router.get("/facilities/:id/slots", optionalAuth, facility.slots);
+router.get("/checkout/options", optionalAuth, facility.checkoutOptions);
+router.post("/bookings/quote", optionalAuth, booking.quote);
 
 router.get("/reviews/mine", requireAuth, review.mine);
 router.post("/reviews", requireAuth, review.create);
 router.put("/reviews/:id", requireAuth, review.update);
 
-router.post("/bookings/quote", requireAuth, booking.quote);
 router.post("/bookings", requireAuth, booking.create);
 router.get("/bookings", requireAuth, booking.list);
 router.post("/bookings/:code/cancel", requireAuth, booking.cancel);

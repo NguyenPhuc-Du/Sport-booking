@@ -137,6 +137,13 @@
 
     <!-- Forgot Password Screen -->
     <string name="login_forgot_password">Forgot password?</string>
+    <string name="login_continue_as_guest">Continue as guest</string>
+    <string name="guest_login_required_title">Sign in required</string>
+    <string name="guest_login_required_message">Please sign in to use this feature. You will return to the same screen after signing in.</string>
+    <string name="guest_login_required_confirm">Sign in</string>
+    <string name="guest_login_required_checkout">Please sign in to pay. Your booking selections will be kept.</string>
+    <string name="guest_login_required_profile">Please sign in to view your profile and account.</string>
+    <string name="guest_login_required_bookings">Please sign in to view your bookings.</string>
     <string name="forgot_password_title">Forgot Password?</string>
     <string name="forgot_password_subtitle">Enter the email or phone number associated with your SportZone account to receive a recovery code.</string>
     <string name="forgot_password_input_label">Email or phone number</string>
