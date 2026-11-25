@@ -28,8 +28,7 @@ block main
   .d-flex.justify-content-between.align-items-start.flex-wrap.gap-3.mb-4
     div
       h1.sz-title Báo cáo tài chính
-      p.sz-subtitle Lọc · duyệt hóa đơn · thống kê quý/năm · xuất Excel/PDF
-      p.rp-note DB: #{dbNote.connection} · Query: #{dbNote.queries} · Cache #{dbNote.cacheTtlMinutes} phút
+      p.sz-subtitle Lọc nâng cao · duyệt hóa đơn · thống kê quý/năm · xuất Excel/PDF
     .rp-actions
       a.sz-btn.sz-btn-dark(href=`${prefixOwner}/dashboard/reports/export.xlsx?${qs()}`)
         i.bi.bi-file-earmark-excel
@@ -99,8 +98,9 @@ block main
           input.sz-input(type="text" name="customerB" placeholder="VD HN / tên KH 2" value=f.customerB)
 
     form.mt-3.rp-ops(method="POST" action=`${prefixOwner}/dashboard/reports/import` enctype="multipart/form-data")
+      span.rp-note Xem trước file Excel đối chiếu
       input(type="file" name="file" accept=".xlsx,.xls" required)
-      button.sz-btn(type="submit") Đọc Excel
+      button.sz-btn(type="submit") Đọc file Excel
 
   .sz-tabs.mb-3
     a.sz-tab(href=`?${qs({ tab: "overview" })}` class=(tab === "overview" ? "active" : undefined)) Tổng hợp quý

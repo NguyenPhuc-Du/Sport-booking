@@ -22,6 +22,8 @@ yarn-error.log*
 # Android user app
 user-app/.gradle/
 user-app/**/build/
+user-app/**/bin/
+user-app/.kotlin/
 user-app/local.properties
 user-app/.idea/
 *.iml

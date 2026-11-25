@@ -8,23 +8,15 @@ header.sz-header
           small.sz-brand-sub Hệ thống Đặt & Quản lý Sân
 
     .d-flex.align-items-center.gap-3.gap-lg-4
-      if panelRole === "admin"
-        .sz-user
-          div
-            .sz-user-name= user && user.fullName ? user.fullName : "Quản trị"
-            .sz-user-sub= accessRole ? accessRole.name : "Quản trị hệ thống"
-
-
-        a.pf-logout(href="/admin/auth/logout") Thoát
-
-      else
-        .sz-role-pill
-          span.dot
-          | Chủ sân
-        a.sz-user(href="/owner/profile")
-          img(src=user.avatar_url alt="Avatar chủ sân")
-          div
-            .sz-user-name #{user.fullName}
-        a.sz-logout(href="/auth/logout")
-          i.bi.bi-box-arrow-right
-          span Đăng xuất
+      .sz-role-pill
+        span.dot
+        | Chủ sân
+      - const ownerName = user && user.fullName ? user.fullName : "Chu san"
+      - const ownerAvatar = (user && user.avatar_url) || ("https://ui-avatars.com/api/?name=" + encodeURIComponent(ownerName) + "&background=0f766e&color=fff")
+      a.sz-user(href=`${prefixOwner}/profile`)
+        img(src=ownerAvatar alt="Avatar chủ sân")
+        div
+          .sz-user-name= user && user.fullName ? user.fullName : "Chủ sân"
+      a.sz-logout(href="/auth/logout")
+        i.bi.bi-box-arrow-right
+        span Đăng xuất

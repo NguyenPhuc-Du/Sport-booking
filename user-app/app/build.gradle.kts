@@ -18,12 +18,16 @@ android {
         versionName = "1.0"
 
         buildConfigField("String", "API_BASE_URL", "\"https://contort-bust-golf.ngrok-free.dev/api/v1/\"")
-        buildConfigField("Boolean", "HTTP_LOGS", "true")
+        buildConfigField("Boolean", "HTTP_LOGS", "false")
     }
 
     buildTypes {
+        debug {
+            buildConfigField("Boolean", "HTTP_LOGS", "true")
+        }
         release {
             isMinifyEnabled = false
+            buildConfigField("Boolean", "HTTP_LOGS", "false")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
