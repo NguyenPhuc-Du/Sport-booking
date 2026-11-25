@@ -514,11 +514,6 @@ async function buildReport(ownerId, query) {
       ),
       customerStats: groupByCustomer(yearInvoices, years),
       productStats: groupByProduct(yearInvoices, yearNum),
-      dbNote: {
-        connection: "process.env.MONGODB_URL (config/database.js)",
-        queries: "services/owner/report.service.js",
-        cacheTtlMinutes: 7,
-      },
     };
   });
 }

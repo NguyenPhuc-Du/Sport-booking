@@ -1,11 +1,11 @@
 {
-  "name": "flashcard-hoc-eng",
+  "name": "sport-booking",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon --inspect index.js",
-    "seed": "node scripts/seed-admin.js",
-    "test": "node --test tests/admin/rbac-policy.test.js tests/admin/permission-map.test.js tests/admin/menu-quyen.test.js tests/admin/tu-choi-quyen.test.js tests/admin/tao-quan-tri.test.js tests/admin/crud-tai-khoan.test.js"
+    "start": "nodemon index.js",
+    "start:debug": "nodemon --inspect index.js",
+    "seed": "node scripts/seed-admin-test.js"
   },
   "author": "",
   "license": "ISC",
@@ -29,8 +29,7 @@
     "pug": "^3.0.4",
     "qrcode": "^1.5.4",
     "qs": "^6.16.1",
-    "streamifier": "^0.1.1",
-    "vnpay": "^2.5.0"
+    "streamifier": "^0.1.1"
   },
   "devDependencies": {
     "nodemon": "^1.14.10"

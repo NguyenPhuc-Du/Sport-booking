@@ -1,8 +1,10 @@
 const systemConfig = require("../../config/system");
+const facilityService = require("../../services/owner/facility.service");
 
 function resolveActiveMenu(path) {
   if (path.startsWith("/facilities")) return "facilities";
   if (path.startsWith("/finance")) return "finance";
+  if (path.startsWith("/bookings/list")) return "booking-list";
   if (path.startsWith("/bookings")) return "bookings";
   if (path.startsWith("/drinks")) return "drinks";
   if (path.startsWith("/reviews")) return "reviews";
@@ -14,11 +16,28 @@ function resolveActiveMenu(path) {
   return "";
 }
 
-module.exports = (req, res, next) => {
+module.exports = async (req, res, next) => {
   res.locals.prefixOwner = systemConfig.prefixOwner;
-  res.locals.prefixAdmin = systemConfig.prefixOwner; // tương thích view cũ
+  // Giữ alias để view cũ dùng prefixAdmin không gãy link
+  res.locals.prefixAdmin = systemConfig.prefixOwner;
   res.locals.panelRole = "owner";
   res.locals.panelHome = systemConfig.prefixOwner + "/dashboard";
   res.locals.activeMenu = resolveActiveMenu(req.path || "");
+  res.locals.sidebarVenueName = "Cơ sở của bạn";
+
+  try {
+    const ownerId = res.locals.user && res.locals.user.id;
+    if (ownerId) {
+      const venues = await facilityService.getAllVenueByOwnerId(ownerId);
+      if (venues && venues.length) {
+        res.locals.sidebarVenueName =
+          venues.length === 1
+            ? venues[0].name
+            : `${venues[0].name} (+${venues.length - 1})`;
+      }
+    }
+  } catch (error) {
+    // giữ fallback
+  }
   next();
 };

@@ -22,37 +22,29 @@
     }
   });
 })();
-//upload ảnh
-const uploadImage = document.querySelector("[upload-image]");
 
+const uploadImage = document.querySelector("[upload-image]");
 if (uploadImage) {
   const uploadImInput = document.querySelector("[upload-image-input]");
   const uploadImPr = document.querySelector("[upload-image-preview]");
-  uploadImInput.addEventListener("change", (e) => {
-    console.log(e);
-    const file = e.target.files[0];
-    console.log(file);
-    if (file) {
-      uploadImPr.src = URL.createObjectURL(file);
-    }
-  });
+  if (uploadImInput && uploadImPr) {
+    uploadImInput.addEventListener("change", (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (file) {
+        uploadImPr.src = URL.createObjectURL(file);
+      }
+    });
+  }
 }
-//end up load ảnh
-//pagination
+
 const buttonPage = document.querySelectorAll("[button-page]");
-if (buttonPage) {
-  console.log("hello");
-  let url = new URL(window.location.href);
+if (buttonPage.length) {
+  const url = new URL(window.location.href);
   buttonPage.forEach((button) => {
     button.addEventListener("click", () => {
       const buttonvalue = button.getAttribute("button-page");
-      if (buttonvalue) {
-        url.searchParams.set("page", buttonvalue);
-      } else {
-        url.searchParams.set("page", 1);
-      }
+      url.searchParams.set("page", buttonvalue || "1");
       window.location.href = url.href;
     });
   });
 }
-//end pagination
