@@ -1,14 +1,12 @@
 const Sale = require("../../models/sale.model");
 const Drink = require("../../models/drink.model");
 const facilityService = require("./facility.service");
+const drinkService = require("./drink.service");
 const searchHelper = require("../../helpers/search");
-
+const { ganNgayVaTien, ganCoSo, lietKe, tongSoTien, timTheoCoSo } = require("../../helpers/loc-phieu");
+  
 module.exports.getSaleCatalog = async (ownerId) => {
-  const venues = await facilityService.getAllVenueByOwnerId(ownerId);
-  const venueIds = venues.map((item) => item._id);
-  const drinks = await Drink.find({ venueId: { $in: venueIds } })
-    .select("name price stock image venueId status")
-    .lean();
+  const { venues, drinks } = await drinkService.danhSachDaNho(ownerId);
 
   const catalog = drinks.map((item) => {
     return {
@@ -17,7 +15,7 @@ module.exports.getSaleCatalog = async (ownerId) => {
       price: Number(item.price) || 0,
       stock: Number(item.stock) || 0,
       image: item.image || "",
-      venueId: String(item.venueId),
+      venueId: drinkService.venueIdOf(item.venueId),
       status: item.status,
     };
   });
@@ -57,13 +55,14 @@ module.exports.createWalkInSale = async (ownerId, body) => {
       await Drink.updateOne({ _id: item.drinkId }, { $inc: { stock: item.qty } });
     }
     throw error;
+  } finally {
+    drinkService.xoaBanNhoDoUong(ownerId);
   }
 };
 
 module.exports.buildSaleFilter = (query, venueIds) => {
   const find = {};
 
-  // Xử lý tìm kiếm theo mã phiếu, tên khách, số điện thoại
   const objectSearch = searchHelper(query);
   if (objectSearch.regex) {
     const digits = String(objectSearch.keyword).replace(/\D/g, "");
@@ -74,28 +73,23 @@ module.exports.buildSaleFilter = (query, venueIds) => {
     if (digits) find.$or.push({ guestPhone: new RegExp(digits) });
   }
 
-  // Xử lý lọc theo venueId
-  const venueIdQuery = query.venueId;
-  if (
-    venueIdQuery &&
-    venueIds.some((id) => String(id) === String(venueIdQuery))
-  ) {
-    find.venueId = venueIdQuery;
-  } else {
-    find.venueId = { $in: venueIds };
-  }
-
-  return find;
+  const venueId = ganCoSo(find, "venueId", venueIds, query.venueId);
+  const range = ganNgayVaTien(find, query, "paidAt");
+  return {
+    find,
+    filter: {
+      keyword: objectSearch.keyword,
+      venueId,
+      ...range,
+    },
+  };
 };
 
-module.exports.listSales = async (find, pagination) => {
-  return await Sale.find(find)
-    .sort({ createdAt: -1 })
-    .skip(pagination.skipPage)
-    .limit(pagination.limitPage)
-    .lean();
-};
+module.exports.listSales = (find, pagination) => lietKe(Sale, find, pagination);
+module.exports.listAllSales = (find) => lietKe(Sale, find);
+module.exports.tongTheoLoc = (find) => tongSoTien(Sale, find, "soPhieu");
 
-module.exports.countSales = async (find) => {
-  return await Sale.countDocuments(find);
+module.exports.findOwnedSale = async (ownerId, saleId) => {
+  const venues = await facilityService.getAllVenueByOwnerId(ownerId);
+  return timTheoCoSo(Sale, saleId, venues.map((item) => item._id));
 };

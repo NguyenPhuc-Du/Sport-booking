@@ -89,6 +89,20 @@ data class PaymentMethod(
 data class Voucher(
     val code: String,
     val description: String,
+    val name: String = "",
+    val applyScope: String = "court",
+    val discountType: String = "fixed",
+    val discountValue: Long = 0,
+    val maxDiscount: Long = 0,
+    val minOrderAmount: Long = 0,
+    val valueText: String = "",
+    val remaining: Int = 0,
+)
+
+data class VoucherDiscount(
+    val code: String,
+    val applyScope: String,
+    val discount: Long,
 )
 
 data class Drink(
@@ -130,6 +144,8 @@ data class BookingQuote(
     val voucherCode: String?,
     val drinks: List<DrinkLine> = emptyList(),
     val drinkTotal: Long = 0,
+    val voucherCodes: List<String> = emptyList(),
+    val voucherDiscounts: List<VoucherDiscount> = emptyList(),
 )
 
 data class BookingDraft(
@@ -139,6 +155,7 @@ data class BookingDraft(
     val time: String,
     val hours: Int = 1,
     val voucherCode: String? = null,
+    val voucherCodes: List<String> = emptyList(),
     val paymentMethod: String? = null,
     val drinks: List<DrinkSelection> = emptyList(),
 )

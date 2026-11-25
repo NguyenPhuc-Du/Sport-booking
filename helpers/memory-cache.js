@@ -50,6 +50,8 @@ function clearCatalog() {
   forget("catalog:");
   forget("price:");
   forget("app:");
+  // Sửa giá, sân hoặc cơ sở thì danh sách bảng giá phải đọc lại.
+  forget("owner:price-rules:");
 }
 
 module.exports = { remember, forget, clearCatalog };

@@ -9,7 +9,6 @@ block head
 block main
   +alert-success(3000)
   +alert-error(5000)
-  - const f = typeof filter !== "undefined" ? filter : {}
   - const list = typeof suppliers !== "undefined" ? suppliers : []
   - const tab = "suppliers"
 
@@ -31,17 +30,14 @@ block main
     .d-flex.justify-content-between.align-items-end.flex-wrap.gap-3.mb-3
       div
         h2.sz-card-title Danh sách nhà cung cấp
-        p.sz-card-sub Nhà cung cấp ngừng dùng sẽ không chọn được khi lập phiếu nhập
-      form.sz-filter(method="GET" action=`${prefixOwner}/drinks/suppliers`)
-        select.sz-input.sz-filter-select(name="status" onchange="this.form.submit()")
+      .sz-filter
+        select.sz-input.sz-filter-select#supplierStatus
           option(value="") Tất cả trạng thái
-          option(value="active" selected=(f.status === "active")) Đang dùng
-          option(value="inactive" selected=(f.status === "inactive")) Ngừng dùng
+          option(value="active") Đang dùng
+          option(value="inactive") Ngừng dùng
         .sz-search
           i.bi.bi-search
-          input.sz-input(type="search" name="keyword" placeholder="Tên, SĐT, địa chỉ..." value=f.keyword)
-        button.sz-btn-outline(type="submit") Lọc
-        a.sz-btn-outline(href=`${prefixOwner}/drinks/suppliers`) Xóa lọc
+          input.sz-input#supplierKeyword(type="search" placeholder="Tên, SĐT, địa chỉ..." autocomplete="off")
 
     if list.length
       .sz-table-wrap
@@ -55,7 +51,7 @@ block main
               th.text-end THAO TÁC
           tbody
             each item in list
-              tr
+              tr.is-supplier-row(data-name=String(item.name || "").toLowerCase() data-phone=String(item.phone || "").toLowerCase() data-address=String(item.address || "").toLowerCase() data-status=item.status)
                 td
                   strong= item.name
                   if item.note
@@ -79,6 +75,7 @@ block main
                       else
                         button.sz-icon-btn.ok(type="submit" title="Dùng lại")
                           i.bi.bi-play-circle
+      p#supplierNoMatch.sz-card-sub(hidden) Không có nhà cung cấp nào khớp.
     else
       .sz-empty
         i.bi.bi-truck
@@ -87,3 +84,36 @@ block main
         a.sz-btn-primary(href=`${prefixOwner}/drinks/suppliers/create`)
           i.bi.bi-plus-lg
           |  Thêm nhà cung cấp
+
+block script
+  script.
+    //- Lọc tên, số điện thoại, địa chỉ trên mảng đã tải. Không gửi request khi gõ.
+    (function () {
+      var keywordInput = document.getElementById("supplierKeyword");
+      var statusSelect = document.getElementById("supplierStatus");
+      var empty = document.getElementById("supplierNoMatch");
+      var rows = Array.prototype.slice.call(document.querySelectorAll(".is-supplier-row"));
+      if (!keywordInput || !statusSelect) return;
+
+      function applyFilter() {
+        var keyword = keywordInput.value.trim().toLowerCase();
+        var status = statusSelect.value;
+        var shown = 0;
+        rows.forEach(function (row) {
+          var blob = [
+            row.getAttribute("data-name") || "",
+            row.getAttribute("data-phone") || "",
+            row.getAttribute("data-address") || ""
+          ].join(" ");
+          var okKeyword = !keyword || blob.indexOf(keyword) !== -1;
+          var okStatus = !status || row.getAttribute("data-status") === status;
+          var ok = okKeyword && okStatus;
+          row.classList.toggle("is-hidden-by-filter", !ok);
+          if (ok) shown += 1;
+        });
+        if (empty) empty.hidden = shown !== 0 || rows.length === 0;
+      }
+
+      keywordInput.addEventListener("input", applyFilter);
+      statusSelect.addEventListener("change", applyFilter);
+    })();

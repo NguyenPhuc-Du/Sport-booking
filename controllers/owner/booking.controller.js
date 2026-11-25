@@ -1,5 +1,7 @@
 const systemConfig = require("../../config/system");
 const bookingService = require("../../services/owner/booking.service");
+const { taiExcel } = require("../../helpers/xuat-excel");
+const { xuatPhieu, tien } = require("../../helpers/xuat-pdf");
 
 function timelinePath(date) {
   return `${systemConfig.prefixOwner}/bookings${date ? `?date=${date}` : ""}`;
@@ -43,7 +45,7 @@ module.exports.index = async (req, res) => {
 
   const [year, month, day] = date.split("-");
   const ownerId = res.locals.user.id;
-  const [rows, priceRules] = await Promise.all([
+  const [timeline, priceRules] = await Promise.all([
     bookingService.getTimelineRows(ownerId, date),
     bookingService.listCourtPrices(ownerId, date),
   ]);
@@ -56,7 +58,8 @@ module.exports.index = async (req, res) => {
     dateValue: date,
     dateMin,
     dateMax,
-    rows,
+    rows: timeline.rows,
+    thongKe: timeline.thongKe,
     priceRules,
     walkIn: bookingService.walkInLimits(date),
   });
@@ -79,6 +82,70 @@ module.exports.list = async (req, res) => {
     pageTitle: "Danh sách đặt sân",
     activeMenu: "booking-list",
     ...data,
+  });
+};
+
+module.exports.exportList = async (req, res) => {
+  const rows = await bookingService.listBookingsForExport(res.locals.user.id, req.query);
+  await taiExcel(
+    res,
+    "dat-san.xlsx",
+    [
+      { header: "Mã đơn", key: "code", width: 22 },
+      { header: "Ngày", key: "date", width: 14 },
+      { header: "Giờ", key: "time", width: 16 },
+      { header: "Khách", key: "name", width: 24 },
+      { header: "Số điện thoại", key: "phone", width: 16 },
+      { header: "Sân", key: "court", width: 18 },
+      { header: "Cơ sở", key: "venue", width: 24 },
+      { header: "Trạng thái", key: "statusLabel", width: 16 },
+      { header: "Tổng tiền", key: "amountNumber", width: 14 },
+    ],
+    rows,
+  );
+};
+
+module.exports.bookingPdf = async (req, res) => {
+  const booking = await bookingService.findOwnedByCode(
+    res.locals.user.id,
+    req.params.code,
+  );
+  if (!booking) return res.status(404).type("text/plain").send("Không thấy đơn đặt sân");
+  const drinks = booking.drinks || [];
+  const phanTien = [["Tiền sân", tien(booking.courtPrice)]];
+  if (Number(booking.discount) > 0) phanTien.push(["Giảm giá", "− " + tien(booking.discount)]);
+  if (drinks.length) phanTien.push(["Tiền nước", tien(booking.drinkTotal)]);
+  const [year, month, day] = String(booking.date || "").split("-");
+  const ngay = year && month && day ? `${day}/${month}/${year}` : booking.date;
+  const trangThai = {
+    pending_payment: "Chờ thanh toán",
+    upcoming: "Đã đặt lịch",
+    completed: "Đã check-in",
+    cancelled: "Đã hủy",
+  };
+  xuatPhieu(res, `${booking.code}.pdf`, {
+    tieuDe: "Phiếu đặt sân",
+    thongTin: [
+      ["Mã đơn", booking.code],
+      ["Khách", booking.customerName],
+      ["Số điện thoại", booking.customerPhone],
+      ["Cơ sở", booking.facilityName],
+      ["Sân", booking.courtName],
+      ["Ngày", ngay],
+      ["Giờ", `${booking.timeStart} - ${booking.timeEnd}`],
+      ["Trạng thái", trangThai[booking.status] || booking.statusLabel || booking.status],
+    ],
+    tieuDeMon: drinks.length ? "Đồ uống" : undefined,
+    mon: drinks.length
+      ? drinks.map((line) => ({
+          ten: line.name,
+          sl: line.qty,
+          tien: tien((Number(line.price) || 0) * (Number(line.qty) || 0)),
+        }))
+      : undefined,
+    phanTien,
+    tongNhan: "Tổng tiền",
+    tong: tien(booking.amount),
   });
 };
 

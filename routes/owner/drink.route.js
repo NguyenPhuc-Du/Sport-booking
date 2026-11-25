@@ -26,11 +26,15 @@ router.patch("/suppliers/edit/:id", supplierValidate.editPatch, supplierControll
 router.patch("/suppliers/change-status/:id", supplierController.changeStatus);
 
 router.get("/receipts", receiptController.index);
+router.get("/receipts/export", receiptController.exportReceipts);
+router.get("/receipts/:id/pdf", receiptController.receiptPdf);
 router.get("/receipts/create", receiptController.create);
 router.post("/receipts/create", receiptValidate.createPost, receiptController.createPost);
 router.post("/receipts/:id/cancel", receiptController.cancel);
 
 router.get("/sales", controller.sales);
+router.get("/sales/export", controller.exportSales);
+router.get("/sales/:id/pdf", controller.salePdf);
 
 router.get("/sales/create", controller.createSale);
 

@@ -1,18 +1,16 @@
 const StockReceipt = require("../../models/stock-receipt.model");
-const Supplier = require("../../models/supplier.model");
 const Drink = require("../../models/drink.model");
 const facilityService = require("./facility.service");
+const drinkService = require("./drink.service");
+const supplierService = require("./supplier.service");
 const searchHelper = require("../../helpers/search");
+const { ganNgayVaTien, ganCoSo, lietKe, tongSoTien, timTheoCoSo } = require("../../helpers/loc-phieu");
 
 module.exports.getReceiptForm = async (ownerId) => {
-  const venues = await facilityService.getAllVenueByOwnerId(ownerId);
-  const venueIds = venues.map((item) => item._id);
-  const drinks = await Drink.find({ venueId: { $in: venueIds } })
-    .select("name price costPrice stock image venueId status")
-    .lean();
-  const suppliers = await Supplier.find({ ownerId, status: "active" })
-    .sort({ name: 1 })
-    .lean();
+  const { venues, drinks } = await drinkService.danhSachDaNho(ownerId);
+  const suppliers = (await supplierService.danhSachDaNho(ownerId))
+    .filter((item) => item.status === "active")
+    .sort((a, b) => String(a.name).localeCompare(String(b.name), "vi"));
 
   const catalog = drinks.map((item) => {
     return {
@@ -22,7 +20,7 @@ module.exports.getReceiptForm = async (ownerId) => {
       costPrice: Number(item.costPrice) || 0,
       stock: Number(item.stock) || 0,
       image: item.image || "",
-      venueId: String(item.venueId),
+      venueId: drinkService.venueIdOf(item.venueId),
       status: item.status,
     };
   });
@@ -75,13 +73,14 @@ module.exports.createReceipt = async (ownerId, body) => {
       );
     }
     throw error;
+  } finally {
+    drinkService.xoaBanNhoDoUong(ownerId);
   }
 };
 
 module.exports.buildReceiptFilter = (query, venueIds) => {
   const find = {};
 
-  // Xử lý tìm kiếm theo mã phiếu, nhà cung cấp
   const objectSearch = searchHelper(query);
   if (objectSearch.regex) {
     find.$or = [
@@ -90,36 +89,31 @@ module.exports.buildReceiptFilter = (query, venueIds) => {
     ];
   }
 
-  // Xử lý trạng thái
   const status = query.status;
   if (status === "received" || status === "cancelled") {
     find.status = status;
   }
 
-  // Xử lý lọc theo venueId
-  const venueIdQuery = query.venueId;
-  if (
-    venueIdQuery &&
-    venueIds.some((id) => String(id) === String(venueIdQuery))
-  ) {
-    find.venueId = venueIdQuery;
-  } else {
-    find.venueId = { $in: venueIds };
-  }
-
-  return find;
+  const venueId = ganCoSo(find, "venueId", venueIds, query.venueId);
+  const range = ganNgayVaTien(find, query, "receivedAt");
+  return {
+    find,
+    filter: {
+      keyword: objectSearch.keyword,
+      status: find.status || "",
+      venueId,
+      ...range,
+    },
+  };
 };
 
-module.exports.listReceipts = async (find, pagination) => {
-  return await StockReceipt.find(find)
-    .sort({ createdAt: -1 })
-    .skip(pagination.skipPage)
-    .limit(pagination.limitPage)
-    .lean();
-};
+module.exports.listReceipts = (find, pagination) => lietKe(StockReceipt, find, pagination);
+module.exports.listAllReceipts = (find) => lietKe(StockReceipt, find);
+module.exports.tongTheoLoc = (find) => tongSoTien(StockReceipt, find, "soPhieu");
 
-module.exports.countReceipts = async (find) => {
-  return await StockReceipt.countDocuments(find);
+module.exports.findOwnedReceipt = async (ownerId, receiptId) => {
+  const venues = await facilityService.getAllVenueByOwnerId(ownerId);
+  return timTheoCoSo(StockReceipt, receiptId, venues.map((item) => item._id));
 };
 
 module.exports.cancelReceipt = async (ownerId, receiptId) => {
@@ -162,5 +156,7 @@ module.exports.cancelReceipt = async (ownerId, receiptId) => {
       await Drink.updateOne({ _id: item.drinkId }, { $inc: { stock: item.qty } });
     }
     throw error;
+  } finally {
+    drinkService.xoaBanNhoDoUong(ownerId);
   }
 };

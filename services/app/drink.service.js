@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const Drink = require("../../models/drink.model");
 const Booking = require("../../models/booking.model");
+const { xoa } = require("../../helpers/nho-chu-san");
 
 const OBJECT_ID = /^[0-9a-fA-F]{24}$/;
 const MAX_QTY = 20;
@@ -89,28 +90,38 @@ async function snapshotDrinks(venueId, rawItems) {
 }
 
 async function decrementStock(drinks) {
+  if (!drinks || !drinks.length) return;
   const taken = [];
-  for (const line of drinks || []) {
-    const updated = await Drink.findOneAndUpdate(
-      { _id: line.drinkId, stock: { $gte: line.qty } },
-      { $inc: { stock: -line.qty } },
-      { returnDocument: "after" },
-    );
-    if (!updated) {
-      await restoreStock(taken);
-      throw httpError(409, `${line.name} vừa hết hàng`);
+  try {
+    for (const line of drinks) {
+      const updated = await Drink.findOneAndUpdate(
+        { _id: line.drinkId, stock: { $gte: line.qty } },
+        { $inc: { stock: -line.qty } },
+        { returnDocument: "after" },
+      );
+      if (!updated) {
+        await restoreStock(taken);
+        throw httpError(409, `${line.name} vừa hết hàng`);
+      }
+      taken.push(line);
     }
-    taken.push(line);
+  } finally {
+    xoa("owner:drinks:");
   }
 }
 
 async function restoreStock(drinks) {
-  for (const line of drinks || []) {
-    if (!line.drinkId || !line.qty) continue;
-    await Drink.updateOne(
-      { _id: line.drinkId },
-      { $inc: { stock: line.qty } },
-    );
+  const lines = (drinks || []).filter((line) => line.drinkId && line.qty);
+  if (!lines.length) return;
+  try {
+    for (const line of lines) {
+      await Drink.updateOne(
+        { _id: line.drinkId },
+        { $inc: { stock: line.qty } },
+      );
+    }
+  } finally {
+    xoa("owner:drinks:");
   }
 }
 

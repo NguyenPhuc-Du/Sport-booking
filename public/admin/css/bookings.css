@@ -574,6 +574,68 @@ body.bk-modal-open {
   font-size: 13px;
 }
 
+.bk-bill-filter {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px 14px;
+  align-items: end;
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.bk-bill-filter .bk-span-2 {
+  grid-column: span 2;
+}
+
+.bk-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .4px;
+  color: var(--muted);
+}
+
+.bk-bill-filter .sz-input {
+  width: 100%;
+  height: 42px;
+  min-width: 0;
+}
+
+.bk-filter-actions {
+  grid-column: 3 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.bk-filter-actions .sz-btn {
+  width: 100%;
+  height: 42px;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.bk-pdf-btn,
+.bk-modal-pdf {
+  display: flex;
+  justify-content: center;
+  margin-top: 12px;
+}
+
+@media (max-width: 991px) {
+  .bk-bill-filter {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .bk-bill-filter .bk-span-2,
+  .bk-filter-actions {
+    grid-column: 1 / -1;
+  }
+}
+
 .bk-day-count {
   color: var(--green-dark);
   font-size: 13px;

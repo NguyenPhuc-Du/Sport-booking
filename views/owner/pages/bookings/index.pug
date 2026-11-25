@@ -33,7 +33,9 @@ block main
 
   .sz-card.sz-panel
     .d-flex.justify-content-between.align-items-center.flex-wrap.gap-2.mb-3
-      h2.sz-panel-title Sơ đồ phân bổ khung giờ các sân ngày: #{dateLabel}
+      div
+        h2.sz-panel-title Sơ đồ phân bổ khung giờ các sân ngày: #{dateLabel}
+        p.sz-court-venue.mb-0 Ngày này có #{thongKe.soDon} đơn, tổng #{Number(thongKe.tongTien || 0).toLocaleString("vi-VN")}đ.
       .sz-status-legend
         span
           i.dot.is-paid
@@ -105,7 +107,7 @@ block main
                     i.bi.bi-plus-lg
                     i.bi.bi-check-lg
 
-  #bookingModal.bk-modal(aria-hidden="true")
+  #bookingModal.bk-modal(aria-hidden="true" data-pdf-base=`${prefixOwner}/bookings/`)
     .bk-modal-backdrop(data-close="true")
     .bk-modal-card(role="dialog" aria-modal="true" aria-labelledby="bookingModalTitle")
       button.bk-modal-close(type="button" data-close="true" aria-label="Đóng")
@@ -128,6 +130,7 @@ block main
         .bk-modal-row
           span Tổng tiền:
           strong.bk-modal-amount(data-field="amount")
+      a#bookingPdf.sz-btn.sz-btn-detail.bk-modal-pdf(href="#" target="_blank" rel="noopener") Xuất PDF đơn này
       form#checkInForm(action=`${prefixOwner}/bookings/check-in` method="POST")
         input(type="hidden" name="code")
         input(type="hidden" name="date" value=dateValue)
