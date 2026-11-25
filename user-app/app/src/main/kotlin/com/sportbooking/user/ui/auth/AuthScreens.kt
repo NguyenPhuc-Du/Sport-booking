@@ -181,7 +181,9 @@ fun LoginContent(
                 text = stringResource(R.string.login_continue_as_guest),
                 onClick = onContinueAsGuest,
                 enabled = !state.submitting,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
             )
         }
 
@@ -398,6 +400,7 @@ private fun LoginContentPreview() {
                 onPasswordChange = {},
                 onSubmit = {},
                 onRegister = {},
+                onContinueAsGuest = {},
             )
         }
     }

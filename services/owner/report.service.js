@@ -17,14 +17,6 @@ const VOUCHER_SCOPE_LABEL = {
 
 const CACHE_TTL = 7 * 60 * 1000; // 7 phút
 const PAID_BOOKING = ["upcoming", "completed"];
-const OPS = {
-  gt: "$gt",
-  gte: "$gte",
-  lt: "$lt",
-  lte: "$lte",
-  eq: "$eq",
-  ne: "$ne",
-};
 
 function asObjectIds(ids) {
   return [...new Set((ids || []).map((id) => String(id || "")).filter((id) => mongoose.Types.ObjectId.isValid(id)))].map(
@@ -59,34 +51,47 @@ function defaultRange() {
   };
 }
 
-function normalizeFilter(query = {}) {
+function resolvePeriod(query = {}) {
   const defaults = defaultRange();
+  const periodType = ["date", "quarter", "year"].includes(query.periodType)
+    ? query.periodType
+    : "date";
   const year = String(query.year || defaults.year).replace(/\D/g, "").slice(0, 4) || defaults.year;
+  const quarter = Math.min(4, Math.max(1, Number(query.quarter) || 1));
+  let dateFrom = String(query.dateFrom || defaults.dateFrom);
+  let dateTo = String(query.dateTo || defaults.dateTo);
+
+  if (periodType === "year") {
+    dateFrom = `${year}-01-01`;
+    dateTo = `${year}-12-31`;
+  } else if (periodType === "quarter") {
+    const startMonth = (quarter - 1) * 3 + 1;
+    const endMonth = startMonth + 2;
+    const lastDay = new Date(Date.UTC(Number(year), endMonth, 0)).getUTCDate();
+    dateFrom = `${year}-${String(startMonth).padStart(2, "0")}-01`;
+    dateTo = `${year}-${String(endMonth).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+  }
+
+  return { periodType, year, quarter, dateFrom, dateTo };
+}
+
+function normalizeFilter(query = {}) {
+  const period = resolvePeriod(query);
+  const amountMin =
+    query.amountMin === undefined || query.amountMin === "" ? "" : Number(query.amountMin);
+  const amountMax =
+    query.amountMax === undefined || query.amountMax === "" ? "" : Number(query.amountMax);
   return {
     venueId: String(query.venueId || ""),
-    dateFrom: String(query.dateFrom || defaults.dateFrom),
-    dateTo: String(query.dateTo || defaults.dateTo),
-    year,
-    q: String(query.q || "").trim(),
-    tab: ["overview", "invoices", "staff", "customers", "products"].includes(query.tab)
-      ? query.tab
-      : "overview",
-    amountOp: OPS[query.amountOp] ? query.amountOp : "",
-    amountValue: query.amountValue === undefined || query.amountValue === ""
-      ? ""
-      : Number(query.amountValue),
-    amountOp2: OPS[query.amountOp2] ? query.amountOp2 : "",
-    amountValue2: query.amountValue2 === undefined || query.amountValue2 === ""
-      ? ""
-      : Number(query.amountValue2),
-    amountLogic: String(query.amountLogic || "and").toLowerCase() === "or" ? "or" : "and",
-    customerLogic: String(query.customerLogic || "or").toLowerCase() === "and" ? "and" : "or",
-    customerA: String(query.customerA || "").trim(),
-    customerB: String(query.customerB || "").trim(),
-    voucherScope: ["court", "drink", "order", "none"].includes(query.voucherScope)
-      ? query.voucherScope
-      : "",
-    selectedCode: String(query.selectedCode || "").trim(),
+    ...period,
+    amountMin: Number.isFinite(amountMin) ? amountMin : "",
+    amountMax: Number.isFinite(amountMax) ? amountMax : "",
+    tab: ["overview", "customers", "products"].includes(query.tab) ? query.tab : "overview",
+    run: String(query.run || "") === "1",
+    expand: String(query.expand || "") === "1",
+    voucherScope: "",
+    q: "",
+    selectedCode: "",
   };
 }
 
@@ -108,29 +113,11 @@ async function ownerScope(ownerId, venueId) {
 }
 
 function amountClause(filter) {
-  const clauses = [];
-  if (filter.amountOp && Number.isFinite(filter.amountValue)) {
-    clauses.push({ amount: { [OPS[filter.amountOp]]: filter.amountValue } });
-  }
-  if (filter.amountOp2 && Number.isFinite(filter.amountValue2)) {
-    clauses.push({ amount: { [OPS[filter.amountOp2]]: filter.amountValue2 } });
-  }
-  if (!clauses.length) return null;
-  if (clauses.length === 1) return clauses[0];
-  return filter.amountLogic === "or" ? { $or: clauses } : { $and: clauses };
-}
-
-function customerNameClause(filter) {
-  const parts = [];
-  if (filter.customerA) {
-    parts.push({ guestName: new RegExp(filter.customerA.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i") });
-  }
-  if (filter.customerB) {
-    parts.push({ guestName: new RegExp(filter.customerB.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i") });
-  }
-  if (!parts.length) return null;
-  if (parts.length === 1) return parts[0];
-  return filter.customerLogic === "and" ? { $and: parts } : { $or: parts };
+  const range = {};
+  if (Number.isFinite(filter.amountMin)) range.$gte = filter.amountMin;
+  if (Number.isFinite(filter.amountMax)) range.$lte = filter.amountMax;
+  if (!Object.keys(range).length) return null;
+  return { amount: range };
 }
 
 async function loadInvoices(venueIds, filter) {
@@ -139,10 +126,6 @@ async function loadInvoices(venueIds, filter) {
   const from = parseDateInput(filter.dateFrom, false);
   const to = parseDateInput(filter.dateTo, true);
   const amount = amountClause(filter);
-  const customer = customerNameClause(filter);
-  const q = filter.q
-    ? new RegExp(filter.q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i")
-    : null;
 
   const bookingFilter = {
     facilityId: facilityMatch(venueIds),
@@ -154,21 +137,7 @@ async function loadInvoices(venueIds, filter) {
       $lte: filter.dateTo,
     };
   }
-  const bookingExtra = [];
-  if (amount) bookingExtra.push(amount);
-  if (q) {
-    bookingExtra.push({
-      $or: [
-        { code: q },
-        { facilityName: q },
-        { courtName: q },
-        { guestName: q },
-        { guestPhone: q },
-      ],
-    });
-  }
-  if (bookingExtra.length === 1) Object.assign(bookingFilter, bookingExtra[0].$and || bookingExtra[0].$or ? { $and: bookingExtra } : bookingExtra[0]);
-  else if (bookingExtra.length > 1) bookingFilter.$and = bookingExtra;
+  if (amount) Object.assign(bookingFilter, amount);
 
   const saleFilter = {
     venueId: { $in: venueIds },
@@ -177,27 +146,7 @@ async function loadInvoices(venueIds, filter) {
   if (from && to) {
     saleFilter.paidAt = { $gte: from, $lte: to };
   }
-  const saleExtra = [];
-  if (amount) saleExtra.push(amount);
-  if (customer) saleExtra.push(customer);
-  if (q) {
-    saleExtra.push({
-      $or: [
-        { code: q },
-        { guestName: q },
-        { guestPhone: q },
-        { venueName: q },
-        { "items.name": q },
-      ],
-    });
-  }
-  if (saleExtra.length === 1) {
-    const only = saleExtra[0];
-    if (only.$and || only.$or) saleFilter.$and = saleExtra;
-    else Object.assign(saleFilter, only);
-  } else if (saleExtra.length > 1) {
-    saleFilter.$and = saleExtra;
-  }
+  if (amount) Object.assign(saleFilter, amount);
 
   const [bookings, sales] = await Promise.all([
     Booking.find(bookingFilter)
@@ -525,14 +474,84 @@ function groupByProduct(invoices, year) {
   return { year: Number(year), rows, all };
 }
 
+function groupCustomersPeriod(invoices) {
+  const map = new Map();
+  invoices.forEach((inv) => {
+    const key = `${inv.customer}|${inv.phone}`.toLowerCase();
+    if (!map.has(key)) {
+      map.set(key, {
+        id: key,
+        name: inv.customer || "Khách",
+        phone: inv.phone || "",
+        total: 0,
+      });
+    }
+    map.get(key).total += Number(inv.amount || 0);
+  });
+  const rows = [...map.values()].sort((a, b) => b.total - a.total);
+  const all = {
+    id: "all",
+    name: "TẤT CẢ",
+    phone: "",
+    total: rows.reduce((sum, row) => sum + row.total, 0),
+  };
+  return { rows, all, totalCount: rows.length };
+}
+
+function groupProductsPeriod(invoices) {
+  const map = new Map();
+  invoices.forEach((inv) => {
+    (inv.lines || []).forEach((line) => {
+      const isDrink = Boolean(line.drinkId) || inv.type === "sale";
+      if (!isDrink && inv.type === "booking") return;
+      const key = line.drinkId || line.name || "sp";
+      if (!map.has(key)) {
+        map.set(key, { id: key, name: line.name || "Sản phẩm", total: 0 });
+      }
+      map.get(key).total += Number(line.lineTotal || 0);
+    });
+  });
+  const rows = [...map.values()].sort((a, b) => b.total - a.total);
+  const all = {
+    id: "all",
+    name: "Tất cả",
+    total: rows.reduce((sum, row) => sum + row.total, 0),
+  };
+  return { rows, all, totalCount: rows.length };
+}
+
 async function buildReport(ownerId, query) {
   const filter = normalizeFilter(query);
-  const cacheKey = `owner:report:${ownerId}:${JSON.stringify(filter)}`;
-  return cache.remember(cacheKey, CACHE_TTL, async () => {
-    const { venues, venueIds, selectedVenueId } = await ownerScope(ownerId, filter.venueId);
-    const yearNum = Number(filter.year);
-    const years = [yearNum - 2, yearNum - 1, yearNum].filter((y) => y > 2000);
+  const { venues, venueIds, selectedVenueId } = await ownerScope(ownerId, filter.venueId);
+  const base = {
+    filter: { ...filter, venueId: selectedVenueId },
+    venues: venues.map((v) => ({ _id: String(v._id), name: v.name })),
+    hasResults: false,
+    summary: {
+      invoiceCount: 0,
+      revenue: 0,
+      revenueText: formatMoney(0),
+      expense: 0,
+      expenseText: formatMoney(0),
+      profit: 0,
+      profitText: formatMoney(0),
+    },
+    quarterMatrix: {
+      year: Number(filter.year),
+      thu: { label: "Tổng thu (hóa đơn)", q1: 0, q2: 0, q3: 0, q4: 0, total: 0 },
+      chi: { label: "Tổng chi (nhập hàng)", q1: 0, q2: 0, q3: 0, q4: 0, total: 0 },
+      profit: { label: "Lợi nhuận", q1: 0, q2: 0, q3: 0, q4: 0, total: 0 },
+    },
+    customerStats: { rows: [], all: { name: "TẤT CẢ", phone: "", total: 0 }, totalCount: 0 },
+    productStats: { rows: [], all: { name: "Tất cả", total: 0 }, totalCount: 0 },
+    periodLabel: `${filter.dateFrom} → ${filter.dateTo}`,
+  };
 
+  if (!filter.run) return base;
+
+  const cacheKey = `owner:report:v2:${ownerId}:${JSON.stringify(filter)}`;
+  return cache.remember(cacheKey, CACHE_TTL, async () => {
+    const yearNum = Number(filter.year);
     const yearFilter = {
       ...filter,
       dateFrom: `${yearNum}-01-01`,
@@ -546,27 +565,9 @@ async function buildReport(ownerId, query) {
     ]);
 
     const rangeRevenue = invoices.reduce((sum, row) => sum + Number(row.amount || 0), 0);
-    const selected =
-      invoices.find((row) => row.code === filter.selectedCode) || invoices[0] || null;
-
     return {
-      filter: { ...filter, venueId: selectedVenueId },
-      venues: venues.map((v) => ({ _id: String(v._id), name: v.name })),
-      ops: [
-        { value: "gt", label: ">" },
-        { value: "gte", label: ">=" },
-        { value: "lt", label: "<" },
-        { value: "lte", label: "<=" },
-        { value: "eq", label: "==" },
-        { value: "ne", label: "!=" },
-      ],
-      voucherScopes: [
-        { value: "", label: "Tất cả loại voucher" },
-        { value: "court", label: "Voucher tiền sân" },
-        { value: "drink", label: "Voucher đồ uống" },
-        { value: "order", label: "Voucher hoá đơn" },
-        { value: "none", label: "Không dùng voucher" },
-      ],
+      ...base,
+      hasResults: true,
       summary: {
         invoiceCount: invoices.length,
         revenue: rangeRevenue,
@@ -576,15 +577,27 @@ async function buildReport(ownerId, query) {
         profit: rangeRevenue - rangeExpense,
         profitText: formatMoney(rangeRevenue - rangeExpense),
       },
-      invoices,
-      selected,
       quarterMatrix: buildQuarterMatrix(yearNum, yearInvoices, quarterExpense),
-      staffStats: groupByStaff(
-        yearInvoices.filter((i) => i.type === "sale"),
-        years,
-      ),
-      customerStats: groupByCustomer(yearInvoices, years),
-      productStats: groupByProduct(yearInvoices, yearNum),
+      customerStats: groupCustomersPeriod(invoices),
+      productStats:
+        filter.periodType === "date"
+          ? { ...groupProductsPeriod(invoices), showQuarters: false }
+          : (() => {
+              const byQuarter = groupByProduct(yearInvoices, yearNum);
+              return {
+                rows: byQuarter.rows,
+                all: byQuarter.all,
+                totalCount: byQuarter.rows.length,
+                showQuarters: true,
+                year: yearNum,
+              };
+            })(),
+      periodLabel:
+        filter.periodType === "year"
+          ? `Năm ${filter.year}`
+          : filter.periodType === "quarter"
+            ? `Quý ${filter.quarter}/${filter.year}`
+            : `${filter.dateFrom} → ${filter.dateTo}`,
     };
   });
 }
@@ -601,12 +614,13 @@ function styleHeader(row) {
 }
 
 async function exportExcel(ownerId, query) {
-  const data = await buildReport(ownerId, query);
+  const data = await buildReport(ownerId, { ...query, run: "1" });
   const wb = new ExcelJS.Workbook();
   wb.creator = "SportZone";
   wb.created = new Date();
 
   const overview = wb.addWorksheet("Tong hop");
+  overview.addRow(["Kỳ", data.periodLabel]);
   overview.addRow(["Từ ngày", data.filter.dateFrom, "Đến ngày", data.filter.dateTo]);
   overview.addRow(["Tổng hóa đơn", data.summary.invoiceCount]);
   overview.addRow(["Tổng thu", data.summary.revenue]);
@@ -619,50 +633,27 @@ async function exportExcel(ownerId, query) {
     overview.addRow([row.label, row.q1, row.q2, row.q3, row.q4, row.total]);
   });
 
-  const invSheet = wb.addWorksheet("Hoa don");
-  invSheet.addRow(["MaHD", "Loai", "Ngay", "Khach", "Co so", "Nhan vien", "Tong tien"]);
-  styleHeader(invSheet.lastRow);
-  data.invoices.forEach((inv) => {
-    invSheet.addRow([
-      inv.code,
-      inv.typeLabel,
-      inv.date,
-      inv.customer,
-      inv.venue,
-      inv.staffName,
-      inv.amount,
-    ]);
-  });
-
-  const staffSheet = wb.addWorksheet("Theo NV");
-  staffSheet.addRow(["NV", ...data.staffStats.years, "TONG"]);
-  styleHeader(staffSheet.lastRow);
-  [...data.staffStats.rows, data.staffStats.all].forEach((row) => {
-    staffSheet.addRow([
-      row.name,
-      ...data.staffStats.years.map((y) => row.years[y] || 0),
-      row.total,
-    ]);
-  });
-
   const custSheet = wb.addWorksheet("Theo KH");
-  custSheet.addRow(["Khach hang", "SDT", ...data.customerStats.years, "TONG"]);
+  custSheet.addRow(["Khach hang", "SDT", "Tong"]);
   styleHeader(custSheet.lastRow);
   [...data.customerStats.rows, data.customerStats.all].forEach((row) => {
-    custSheet.addRow([
-      row.name,
-      row.phone || "",
-      ...data.customerStats.years.map((y) => row.years[y] || 0),
-      row.total,
-    ]);
+    custSheet.addRow([row.name, row.phone || "", row.total]);
   });
 
   const spSheet = wb.addWorksheet("Theo SP");
-  spSheet.addRow(["San pham", "Q1", "Q2", "Q3", "Q4", "TONG"]);
-  styleHeader(spSheet.lastRow);
-  [...data.productStats.rows, data.productStats.all].forEach((row) => {
-    spSheet.addRow([row.name, row.q1, row.q2, row.q3, row.q4, row.total]);
-  });
+  if (data.productStats.showQuarters) {
+    spSheet.addRow(["San pham", "Q1", "Q2", "Q3", "Q4", "TONG"]);
+    styleHeader(spSheet.lastRow);
+    [...data.productStats.rows, data.productStats.all].forEach((row) => {
+      spSheet.addRow([row.name, row.q1 || 0, row.q2 || 0, row.q3 || 0, row.q4 || 0, row.total]);
+    });
+  } else {
+    spSheet.addRow(["San pham", "Tong"]);
+    styleHeader(spSheet.lastRow);
+    [...data.productStats.rows, data.productStats.all].forEach((row) => {
+      spSheet.addRow([row.name, row.total]);
+    });
+  }
 
   const buffer = await wb.xlsx.writeBuffer();
   return {
@@ -701,9 +692,13 @@ async function exportPdf(ownerId, query) {
   doc.fontSize(13).text("Top san pham theo quy");
   doc.fontSize(10);
   data.productStats.rows.slice(0, 15).forEach((row) => {
-    doc.text(
-      `${row.name}: Q1=${formatMoney(row.q1)} Q2=${formatMoney(row.q2)} Q3=${formatMoney(row.q3)} Q4=${formatMoney(row.q4)} Tong=${formatMoney(row.total)}`,
-    );
+    if (data.productStats.showQuarters) {
+      doc.text(
+        `${row.name}: Q1=${formatMoney(row.q1)} Q2=${formatMoney(row.q2)} Q3=${formatMoney(row.q3)} Q4=${formatMoney(row.q4)} Tong=${formatMoney(row.total)}`,
+      );
+    } else {
+      doc.text(`${row.name}: Tong=${formatMoney(row.total)}`);
+    }
   });
   doc.end();
   const buffer = await done;
@@ -714,27 +709,10 @@ async function exportPdf(ownerId, query) {
   };
 }
 
-async function importExcelPreview(ownerId, fileBuffer) {
-  const wb = new ExcelJS.Workbook();
-  await wb.xlsx.load(fileBuffer);
-  const sheet = wb.worksheets[0];
-  if (!sheet) return { rows: [], message: "File không có sheet" };
-  const rows = [];
-  sheet.eachRow((row, index) => {
-    if (index === 1) return;
-    rows.push(row.values.slice(1).map((v) => (v == null ? "" : String(v))));
-  });
-  return {
-    rows: rows.slice(0, 50),
-    message: `Đã đọc ${rows.length} dòng (xem trước 50). Import chỉ hỗ trợ đọc/đối chiếu, không ghi đè DB tự động.`,
-  };
-}
-
 module.exports = {
   buildReport,
   exportExcel,
   exportPdf,
-  importExcelPreview,
   normalizeFilter,
   formatMoney,
   moneyCell,
