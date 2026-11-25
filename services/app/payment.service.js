@@ -23,10 +23,16 @@ async function markPaidAndMail(txnRef, transactionNo) {
   if (!booking) return { ok: (await Booking.exists({ code: txnRef })) != null };
 
   if (booking.voucherCode) {
-    await Voucher.updateOne(
-      { code: booking.voucherCode },
-      { $inc: { used_count: 1 } },
-    );
+    const codes = String(booking.voucherCode)
+      .split(",")
+      .map((c) => c.trim().toUpperCase())
+      .filter(Boolean);
+    if (codes.length) {
+      await Voucher.updateMany(
+        { code: { $in: codes } },
+        { $inc: { used_count: 1 } },
+      );
+    }
   }
   try {
     await ledger.recordPaidBooking(booking);

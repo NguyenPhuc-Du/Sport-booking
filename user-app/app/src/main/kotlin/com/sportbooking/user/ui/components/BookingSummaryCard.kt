@@ -85,9 +85,24 @@ fun BookingSummaryCard(
                         value = (drink.price * drink.qty).toVnd(),
                     )
                 }
-                if (quote.discount > 0) {
+                if (quote.voucherDiscounts.isNotEmpty()) {
+                    quote.voucherDiscounts.forEach { item ->
+                        PriceRow(
+                            label = "Mã ${item.code}",
+                            value = "-${item.discount.toVnd()}",
+                            valueColor = MaterialTheme.colorScheme.tertiary,
+                        )
+                    }
+                } else if (quote.discount > 0) {
+                    val codes = quote.voucherCodes.ifEmpty {
+                        quote.voucherCode
+                            ?.split(",")
+                            ?.map { it.trim() }
+                            ?.filter { it.isNotEmpty() }
+                            .orEmpty()
+                    }
                     PriceRow(
-                        label = "Mã ưu đãi (${quote.voucherCode.orEmpty()})",
+                        label = if (codes.isEmpty()) "Mã ưu đãi" else "Mã ưu đãi (${codes.joinToString(", ")})",
                         value = "-${quote.discount.toVnd()}",
                         valueColor = MaterialTheme.colorScheme.tertiary,
                     )

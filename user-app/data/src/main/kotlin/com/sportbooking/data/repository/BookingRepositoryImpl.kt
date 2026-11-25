@@ -55,14 +55,23 @@ class BookingRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun BookingDraft.toRequest() = BookingRequest(
-        facilityId = facilityId,
-        courtId = courtId,
-        date = date,
-        time = time,
-        hours = hours,
-        voucherCode = voucherCode,
-        paymentMethod = paymentMethod,
-        drinks = drinks.map { DrinkOrderDto(it.drinkId, it.qty) },
-    )
+    private fun BookingDraft.toRequest(): BookingRequest {
+        val singleCode = voucherCode
+        val codes = when {
+            voucherCodes.isNotEmpty() -> voucherCodes.map { it.trim().uppercase() }.filter { it.isNotEmpty() }.distinct()
+            !singleCode.isNullOrBlank() -> listOf(singleCode.trim().uppercase())
+            else -> emptyList()
+        }
+        return BookingRequest(
+            facilityId = facilityId,
+            courtId = courtId,
+            date = date,
+            time = time,
+            hours = hours,
+            voucherCode = codes.firstOrNull(),
+            voucherCodes = codes,
+            paymentMethod = paymentMethod,
+            drinks = drinks.map { DrinkOrderDto(it.drinkId, it.qty) },
+        )
+    }
 }

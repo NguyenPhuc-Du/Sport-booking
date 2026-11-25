@@ -126,9 +126,38 @@ object PreviewData {
     )
 
     val vouchers = listOf(
-        Voucher(code = "SPORT30K", description = "Giảm 30.000đ cho đơn từ 150.000đ"),
-        Voucher(code = "NEWBIE", description = "Giảm 20% tối đa 50.000đ cho lần đầu đặt sân"),
-        Voucher(code = "WEEKEND", description = "Giảm 15.000đ khi đặt sân cuối tuần"),
+        Voucher(
+            code = "SPORT30K",
+            description = "Giảm 30.000đ cho đơn từ 150.000đ",
+            name = "Giảm tiền sân",
+            applyScope = "court",
+            discountType = "fixed",
+            discountValue = 30_000,
+            minOrderAmount = 150_000,
+            valueText = "Giảm 30.000đ",
+            remaining = 40,
+        ),
+        Voucher(
+            code = "DRINK10K",
+            description = "Giảm 10.000đ đồ uống",
+            name = "Ưu đãi nước",
+            applyScope = "drink",
+            discountType = "fixed",
+            discountValue = 10_000,
+            valueText = "Giảm 10.000đ",
+            remaining = 20,
+        ),
+        Voucher(
+            code = "ORDER15",
+            description = "Giảm 15% cả hoá đơn",
+            name = "Flash sale hoá đơn",
+            applyScope = "order",
+            discountType = "percent",
+            discountValue = 15,
+            maxDiscount = 50_000,
+            valueText = "Giảm 15%",
+            remaining = 15,
+        ),
     )
 
     val paymentMethods = listOf(
