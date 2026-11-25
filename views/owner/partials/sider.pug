@@ -33,6 +33,9 @@ aside.sz-sidebar(class=panelRole === "admin" ? "sz-sidebar-admin" : undefined)
       a.sz-menu-item(href=`${prefixAdmin}/dashboard` class={ active: activeMenu === "dashboard" })
         i.bi.bi-grid
         span.sz-menu-text Tổng quan & Thống kê
+      a.sz-menu-item(href=`${prefixAdmin}/dashboard/reports` class={ active: activeMenu === "reports" })
+        i.bi.bi-clipboard-data
+        span.sz-menu-text Báo cáo tài chính
       a.sz-menu-item(href=`${prefixAdmin}/facilities` class={ active: activeMenu === "facilities" })
         i.bi.bi-buildings
         span.sz-menu-text Quản lý Cơ sở & Sân
