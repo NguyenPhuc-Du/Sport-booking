@@ -13,6 +13,7 @@ import com.sportbooking.domain.model.Voucher
 import com.sportbooking.domain.usecase.CreateBookingUseCase
 import com.sportbooking.domain.usecase.GetCheckoutOptionsUseCase
 import com.sportbooking.domain.usecase.QuoteBookingUseCase
+import com.sportbooking.user.session.GuestSessionStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -49,6 +50,7 @@ class CheckoutViewModel @Inject constructor(
     private val getOptions: GetCheckoutOptionsUseCase,
     private val quoteBooking: QuoteBookingUseCase,
     private val createBooking: CreateBookingUseCase,
+    private val guestStore: GuestSessionStore,
 ) : ViewModel() {
     private val facilityId: String = checkNotNull(savedStateHandle["facilityId"])
     private val courtId: String = checkNotNull(savedStateHandle["courtId"])
@@ -65,20 +67,52 @@ class CheckoutViewModel @Inject constructor(
         viewModelScope.launch {
             when (val options = getOptions(facilityId)) {
                 is DomainResult.Success -> {
-                    val method = options.data.payments.firstOrNull()?.id ?: "vnpay"
+                    val snapshot = guestStore.checkoutSnapshot?.takeIf {
+                        it.facilityId == facilityId &&
+                            it.courtId == courtId &&
+                            it.date == date &&
+                            it.time == time &&
+                            it.hours == hours
+                    }
+                    val method = snapshot?.paymentMethod
+                        ?: options.data.payments.firstOrNull()?.id
+                        ?: "vnpay"
                     _state.update {
                         it.copy(
                             payments = options.data.payments,
                             vouchers = options.data.vouchers,
                             drinks = options.data.drinks,
                             paymentMethod = method,
+                            drinkQty = snapshot?.drinkQty.orEmpty(),
+                            selectedByScope = snapshot?.selectedByScope.orEmpty(),
                         )
                     }
+                    if (snapshot != null) guestStore.clearCheckout()
                     refreshQuote()
                 }
                 is DomainResult.Failure -> _state.update { it.copy(loading = false, error = options.message) }
             }
         }
+    }
+
+    fun snapshotForGuestLogin() {
+        val current = _state.value
+        guestStore.checkoutSnapshot = GuestSessionStore.CheckoutSnapshot(
+            facilityId = facilityId,
+            courtId = courtId,
+            date = date,
+            time = time,
+            hours = hours,
+            drinkQty = current.drinkQty,
+            selectedByScope = current.selectedByScope,
+            paymentMethod = current.paymentMethod,
+        )
+        guestStore.pendingReturnRoute = checkoutRoute()
+    }
+
+    fun checkoutRoute(): String {
+        val encodedTime = android.net.Uri.encode(time)
+        return "checkout?facilityId=$facilityId&courtId=$courtId&date=$date&time=$encodedTime&hours=$hours"
     }
 
     fun onPaymentSelected(id: String) = _state.update { it.copy(paymentMethod = id, error = null) }

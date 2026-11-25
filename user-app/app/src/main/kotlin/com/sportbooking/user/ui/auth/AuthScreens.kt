@@ -53,9 +53,12 @@ import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.res.stringResource
 import com.sportbooking.domain.model.User
+import com.sportbooking.user.R
 import com.sportbooking.user.ui.components.ErrorText
 import com.sportbooking.user.ui.components.PrimaryButton
+import com.sportbooking.user.ui.components.SecondaryButton
 import com.sportbooking.user.ui.theme.SportBookingTheme
 import com.sportbooking.user.ui.theme.spacing
 
@@ -64,6 +67,8 @@ fun LoginScreen(
     onLoggedIn: (User) -> Unit,
     onRegister: () -> Unit,
     onForgotPassword: () -> Unit = {},
+    onContinueAsGuest: (() -> Unit)? = null,
+    showGuestOption: Boolean = onContinueAsGuest != null,
     modifier: Modifier = Modifier,
     viewModel: LoginViewModel = hiltViewModel(),
 ) {
@@ -80,6 +85,7 @@ fun LoginScreen(
         onSubmit = viewModel::submit,
         onRegister = onRegister,
         onForgotPassword = onForgotPassword,
+        onContinueAsGuest = onContinueAsGuest?.takeIf { showGuestOption },
         modifier = modifier,
     )
 }
@@ -92,6 +98,7 @@ fun LoginContent(
     onSubmit: () -> Unit,
     onRegister: () -> Unit,
     onForgotPassword: () -> Unit = {},
+    onContinueAsGuest: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     var passwordVisible by remember { mutableStateOf(false) }
@@ -167,6 +174,16 @@ fun LoginContent(
             loading = state.submitting,
             onClick = onSubmit,
         )
+
+        if (onContinueAsGuest != null) {
+            Spacer(Modifier.height(MaterialTheme.spacing.small))
+            SecondaryButton(
+                text = stringResource(R.string.login_continue_as_guest),
+                onClick = onContinueAsGuest,
+                enabled = !state.submitting,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
 
         Spacer(Modifier.height(MaterialTheme.spacing.small))
 

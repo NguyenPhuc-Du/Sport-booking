@@ -108,6 +108,8 @@ sealed interface CheckoutUiEvent {
 fun CheckoutScreen(
     onBack: () -> Unit,
     onPaymentStarted: () -> Unit,
+    onRequireLogin: () -> Unit = {},
+    isGuest: Boolean = false,
     modifier: Modifier = Modifier,
     viewModel: CheckoutViewModel = hiltViewModel(),
 ) {
@@ -138,7 +140,14 @@ fun CheckoutScreen(
                 CheckoutUiEvent.ApplyTypedVoucher -> viewModel.applyTypedVoucherToSheet()
                 CheckoutUiEvent.ConfirmVoucherSheet -> viewModel.confirmVoucherSheet()
                 CheckoutUiEvent.ClearAllVouchers -> viewModel.clearAllVouchers()
-                CheckoutUiEvent.Confirm -> viewModel.confirm()
+                CheckoutUiEvent.Confirm -> {
+                    if (isGuest) {
+                        viewModel.snapshotForGuestLogin()
+                        onRequireLogin()
+                    } else {
+                        viewModel.confirm()
+                    }
+                }
             }
         },
         modifier = modifier,

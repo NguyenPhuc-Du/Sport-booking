@@ -6,6 +6,7 @@ import com.sportbooking.domain.common.DomainResult
 import com.sportbooking.domain.model.User
 import com.sportbooking.domain.usecase.GetSessionUseCase
 import com.sportbooking.domain.usecase.LogoutUseCase
+import com.sportbooking.user.session.GuestSessionStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,6 +16,7 @@ import kotlinx.coroutines.launch
 sealed interface SessionUiState {
     data object Loading : SessionUiState
     data object LoggedOut : SessionUiState
+    data object Guest : SessionUiState
     data class LoggedIn(val user: User) : SessionUiState
     data class Offline(val message: String) : SessionUiState
 }
@@ -23,6 +25,7 @@ sealed interface SessionUiState {
 class SessionViewModel @Inject constructor(
     private val getSession: GetSessionUseCase,
     private val logoutUseCase: LogoutUseCase,
+    private val guestStore: GuestSessionStore,
 ) : ViewModel() {
     private val _state = MutableStateFlow<SessionUiState>(SessionUiState.Loading)
     val state = _state.asStateFlow()
@@ -44,6 +47,11 @@ class SessionViewModel @Inject constructor(
         }
     }
 
+    fun enterGuest() {
+        guestStore.clearAll()
+        _state.value = SessionUiState.Guest
+    }
+
     fun onAuthenticated(user: User) {
         _state.value = SessionUiState.LoggedIn(user)
     }
@@ -51,6 +59,7 @@ class SessionViewModel @Inject constructor(
     fun logout() {
         viewModelScope.launch {
             logoutUseCase()
+            guestStore.clearAll()
             _state.value = SessionUiState.LoggedOut
         }
     }

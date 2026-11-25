@@ -12,12 +12,15 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -27,7 +30,9 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.sportbooking.domain.model.User
+import com.sportbooking.user.R
 import com.sportbooking.user.payment.PaymentResultBus
+import com.sportbooking.user.session.GuestSessionStore
 import com.sportbooking.user.ui.auth.ForgotPasswordScreen
 import com.sportbooking.user.ui.auth.LoginScreen
 import com.sportbooking.user.ui.auth.OTP_PURPOSE_REGISTER
@@ -40,33 +45,46 @@ import com.sportbooking.user.ui.bookings.BookingsScreen
 import com.sportbooking.user.ui.checkout.CheckoutScreen
 import com.sportbooking.user.ui.components.AppBottomNavBar
 import com.sportbooking.user.ui.components.LoadingScreen
+import com.sportbooking.user.ui.components.LoginRequiredDialog
 import com.sportbooking.user.ui.components.MessageScreen
 import com.sportbooking.user.ui.components.defaultBottomNavTabs
 import com.sportbooking.user.ui.facility.FacilityDetailScreen
 import com.sportbooking.user.ui.home.HomeScreen
+import com.sportbooking.user.ui.payment.PaymentResultScreen
 import com.sportbooking.user.ui.profile.MyReviewsScreen
 import com.sportbooking.user.ui.profile.ProfileScreen
-import com.sportbooking.user.ui.payment.PaymentResultScreen
 import com.sportbooking.user.ui.session.SessionUiState
 import com.sportbooking.user.ui.session.SessionViewModel
+import dagger.hilt.android.EntryPointAccessors
+import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.launch
+
+private val AUTH_REQUIRED_TABS = setOf("bookings", "account")
 
 @Composable
 fun SportBookingRoot(sessionViewModel: SessionViewModel = hiltViewModel()) {
     val session by sessionViewModel.state.collectAsStateWithLifecycle()
     when (val current = session) {
         SessionUiState.Loading -> LoadingScreen()
-        SessionUiState.LoggedOut -> AuthNavHost(onAuthenticated = sessionViewModel::onAuthenticated)
+        SessionUiState.LoggedOut -> AuthNavHost(
+            onAuthenticated = sessionViewModel::onAuthenticated,
+            onContinueAsGuest = sessionViewModel::enterGuest,
+        )
         is SessionUiState.Offline -> MessageScreen(current.message, "Thử lại", sessionViewModel::refresh)
-        is SessionUiState.LoggedIn -> MainNavHost(
+        SessionUiState.Guest, is SessionUiState.LoggedIn -> MainNavHost(
+            isGuest = current is SessionUiState.Guest,
             onLogout = sessionViewModel::logout,
             onUserUpdated = sessionViewModel::onAuthenticated,
+            onAuthenticated = sessionViewModel::onAuthenticated,
         )
     }
 }
 
 @Composable
-private fun AuthNavHost(onAuthenticated: (User) -> Unit) {
+private fun AuthNavHost(
+    onAuthenticated: (User) -> Unit,
+    onContinueAsGuest: () -> Unit,
+) {
     val navController = rememberNavController()
     NavHost(navController = navController, startDestination = "login") {
         composable("login") {
@@ -74,6 +92,7 @@ private fun AuthNavHost(onAuthenticated: (User) -> Unit) {
                 onLoggedIn = onAuthenticated,
                 onRegister = { navController.navigate("register") },
                 onForgotPassword = { navController.navigate("forgot_password") },
+                onContinueAsGuest = onContinueAsGuest,
             )
         }
         composable("forgot_password") {
@@ -121,8 +140,10 @@ private fun AuthNavHost(onAuthenticated: (User) -> Unit) {
 
 @Composable
 private fun MainNavHost(
+    isGuest: Boolean,
     onLogout: () -> Unit,
     onUserUpdated: (User) -> Unit,
+    onAuthenticated: (User) -> Unit,
 ) {
     val navController = rememberNavController()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -131,12 +152,36 @@ private fun MainNavHost(
     val route = backStack?.destination?.route
     val showBar = defaultBottomNavTabs.any { it.route == route }
     val paymentResult by PaymentResultBus.result.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val guestStore = remember {
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            GuestSessionEntryPoint::class.java,
+        ).guestSessionStore()
+    }
+
+    var loginGate by remember { mutableStateOf<LoginGate?>(null) }
 
     LaunchedEffect(paymentResult) {
         val result = paymentResult ?: return@LaunchedEffect
         PaymentResultBus.consume()
         val flag = if (result.success) "success" else "failed"
         navController.clearStack("payment_result/$flag/${Uri.encode(result.code)}")
+    }
+
+    loginGate?.let { gate ->
+        LoginRequiredDialog(
+            title = stringResource(R.string.guest_login_required_title),
+            message = stringResource(gate.messageRes),
+            onDismiss = { loginGate = null },
+            onConfirm = {
+                loginGate = null
+                if (gate.returnRoute != null) {
+                    guestStore.pendingReturnRoute = gate.returnRoute
+                }
+                navController.navigateOnce("login")
+            },
+        )
     }
 
     Scaffold(
@@ -149,6 +194,17 @@ private fun MainNavHost(
                 AppBottomNavBar(
                     currentRoute = route,
                     onNavigate = { targetRoute ->
+                        if (isGuest && targetRoute in AUTH_REQUIRED_TABS) {
+                            loginGate = LoginGate(
+                                returnRoute = targetRoute,
+                                messageRes = when (targetRoute) {
+                                    "bookings" -> R.string.guest_login_required_bookings
+                                    "account" -> R.string.guest_login_required_profile
+                                    else -> R.string.guest_login_required_message
+                                },
+                            )
+                            return@AppBottomNavBar
+                        }
                         navController.navigate(targetRoute) {
                             popUpTo(navController.graph.findStartDestination().id) {
                                 saveState = true
@@ -176,11 +232,84 @@ private fun MainNavHost(
                 ProfileScreen(
                     onUserUpdated = onUserUpdated,
                     onLogout = onLogout,
-                    onOpenReviews = { navController.navigateOnce("my_reviews") },
+                    onOpenReviews = {
+                        if (isGuest) {
+                            loginGate = LoginGate(
+                                returnRoute = "my_reviews",
+                                messageRes = R.string.guest_login_required_profile,
+                            )
+                        } else {
+                            navController.navigateOnce("my_reviews")
+                        }
+                    },
                 )
             }
             composable("my_reviews") {
                 MyReviewsScreen(onBack = { navController.popOnce() })
+            }
+            composable("login") {
+                LoginScreen(
+                    onLoggedIn = { user ->
+                        onAuthenticated(user)
+                        val pending = guestStore.pendingReturnRoute
+                        guestStore.clearPending()
+                        navController.popAuthRoutes()
+                        navController.restoreAfterLogin(pending)
+                    },
+                    onRegister = { navController.navigate("register") },
+                    onForgotPassword = { navController.navigate("forgot_password") },
+                    showGuestOption = false,
+                )
+            }
+            composable("forgot_password") {
+                ForgotPasswordScreen(
+                    onNavigateToOtp = { email ->
+                        navController.navigate("otp/$OTP_PURPOSE_RESET/${Uri.encode(email)}")
+                    },
+                    onBack = { navController.popBackStack() },
+                )
+            }
+            composable("register") {
+                RegisterScreen(
+                    onNavigateToOtp = { email ->
+                        navController.navigate("otp/$OTP_PURPOSE_REGISTER/${Uri.encode(email)}")
+                    },
+                    onBack = { navController.popBackStack() },
+                )
+            }
+            composable(
+                route = "otp/{purpose}/{email}",
+                arguments = listOf(
+                    navArgument("purpose") { type = NavType.StringType },
+                    navArgument("email") { type = NavType.StringType },
+                ),
+            ) { entry ->
+                val email = entry.arguments?.getString("email").orEmpty()
+                OtpScreen(
+                    onBack = { navController.popBackStack() },
+                    onRegistered = { user ->
+                        onAuthenticated(user)
+                        val pending = guestStore.pendingReturnRoute
+                        guestStore.clearPending()
+                        navController.popAuthRoutes()
+                        navController.restoreAfterLogin(pending)
+                    },
+                    onResetCodeEntered = { code ->
+                        navController.navigate("reset_password/${Uri.encode(email)}/$code")
+                    },
+                )
+            }
+            composable(
+                route = "reset_password/{email}/{code}",
+                arguments = listOf(
+                    navArgument("email") { type = NavType.StringType },
+                    navArgument("code") { type = NavType.StringType },
+                ),
+            ) {
+                ResetPasswordScreen(
+                    onBack = { navController.popBackStack() },
+                    onDone = { navController.popBackStack("login", inclusive = false) },
+                )
             }
             composable(
                 route = "payment_result/{success}/{code}",
@@ -191,7 +320,16 @@ private fun MainNavHost(
             ) {
                 PaymentResultScreen(
                     onGoHome = { navController.clearStack("home") },
-                    onViewBookings = { navController.clearStack("bookings") },
+                    onViewBookings = {
+                        if (isGuest) {
+                            loginGate = LoginGate(
+                                returnRoute = "bookings",
+                                messageRes = R.string.guest_login_required_bookings,
+                            )
+                        } else {
+                            navController.clearStack("bookings")
+                        }
+                    },
                 )
             }
             composable(
@@ -229,10 +367,19 @@ private fun MainNavHost(
                 ),
             ) {
                 CheckoutScreen(
+                    isGuest = isGuest,
                     onBack = { navController.popBackStack() },
+                    onRequireLogin = {
+                        loginGate = LoginGate(
+                            returnRoute = null, // snapshot already set pendingReturnRoute to checkout
+                            messageRes = R.string.guest_login_required_checkout,
+                        )
+                    },
                     onPaymentStarted = {
                         navController.clearStack("bookings")
-                        scope.launch { snackbarHostState.showSnackbar("Hoàn tất thanh toán trên VNPay trong 15 phút") }
+                        scope.launch {
+                            snackbarHostState.showSnackbar("Hoàn tất thanh toán trên VNPay trong 15 phút")
+                        }
                     },
                 )
             }
@@ -240,10 +387,59 @@ private fun MainNavHost(
     }
 }
 
+private data class LoginGate(
+    val returnRoute: String?,
+    val messageRes: Int,
+)
+
+@dagger.hilt.EntryPoint
+@dagger.hilt.InstallIn(dagger.hilt.components.SingletonComponent::class)
+interface GuestSessionEntryPoint {
+    fun guestSessionStore(): GuestSessionStore
+}
+
 private fun NavHostController.clearStack(route: String) {
     navigate(route) {
         popUpTo(graph.id) { inclusive = true }
         launchSingleTop = true
+    }
+}
+
+private fun isAuthRoute(route: String?): Boolean {
+    if (route == null) return false
+    return route == "login" ||
+        route == "register" ||
+        route == "forgot_password" ||
+        route.startsWith("otp/") ||
+        route.startsWith("reset_password/")
+}
+
+private fun NavHostController.popAuthRoutes() {
+    while (isAuthRoute(currentBackStackEntry?.destination?.route)) {
+        if (!popBackStack()) break
+    }
+}
+
+private fun NavHostController.restoreAfterLogin(pending: String?) {
+    when {
+        pending.isNullOrBlank() -> Unit
+        pending.startsWith("checkout") -> {
+            val onCheckout = currentBackStackEntry
+                ?.destination
+                ?.route
+                ?.startsWith("checkout") == true
+            if (!onCheckout) navigate(pending)
+        }
+        pending in AUTH_REQUIRED_TABS || pending == "my_reviews" -> {
+            navigate(pending) {
+                popUpTo(graph.findStartDestination().id) {
+                    saveState = true
+                }
+                launchSingleTop = true
+                restoreState = true
+            }
+        }
+        else -> navigate(pending)
     }
 }
 
