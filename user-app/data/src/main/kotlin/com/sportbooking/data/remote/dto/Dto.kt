@@ -120,6 +120,20 @@ data class PaymentMethodDto(
 data class VoucherDto(
     val code: String,
     val description: String,
+    val name: String? = null,
+    val applyScope: String? = null,
+    val discountType: String? = null,
+    val discountValue: Long? = null,
+    val maxDiscount: Long? = null,
+    val minOrderAmount: Long? = null,
+    val valueText: String? = null,
+    val remaining: Int? = null,
+)
+
+data class VoucherDiscountDto(
+    val code: String,
+    val applyScope: String,
+    val discount: Long,
 )
 
 data class DrinkDto(
@@ -154,7 +168,8 @@ data class BookingRequest(
     val date: String,
     val time: String,
     val hours: Int = 1,
-    val voucherCode: String?,
+    val voucherCode: String? = null,
+    val voucherCodes: List<String> = emptyList(),
     val paymentMethod: String?,
     val drinks: List<DrinkOrderDto> = emptyList(),
 )
@@ -172,6 +187,8 @@ data class BookingQuoteDto(
     val voucherCode: String?,
     val drinks: List<DrinkLineDto>? = null,
     val drinkTotal: Long? = null,
+    val voucherCodes: List<String>? = null,
+    val voucherDiscounts: List<VoucherDiscountDto>? = null,
 )
 
 data class BookingReviewSummaryDto(

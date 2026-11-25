@@ -149,10 +149,10 @@ function matchesTimeWindow(voucher, timeStart) {
 }
 
 function drinkEligibleTotal(drinks, productIds) {
-  const allowed = new Set((productIds || []).map(String));
-  if (!allowed.size) return 0;
+  // product_ids rỗng = áp dụng mọi đồ uống trong đơn
+  const allowed = new Set((productIds || []).map(String).filter(Boolean));
   return (drinks || []).reduce((sum, line) => {
-    if (!allowed.has(String(line.drinkId))) return sum;
+    if (allowed.size && !allowed.has(String(line.drinkId))) return sum;
     return sum + Number(line.price || 0) * Number(line.qty || 0);
   }, 0);
 }
@@ -170,15 +170,27 @@ function computeDiscount(voucher, base) {
   return Math.min(Math.max(discount, 0), base);
 }
 
+function normalizeVoucherCodes(input) {
+  const fromArr = Array.isArray(input?.voucherCodes) ? input.voucherCodes : [];
+  const fromSingle = input?.voucherCode ? [input.voucherCode] : [];
+  return [
+    ...new Set(
+      [...fromArr, ...fromSingle]
+        .map((c) => String(c || "").trim().toUpperCase())
+        .filter(Boolean),
+    ),
+  ];
+}
+
+function httpError(status, message) {
+  const err = new Error(message);
+  err.status = status;
+  return err;
+}
+
 /**
+ * Hỗ trợ nhiều voucher cộng dồn, mỗi apply_scope (court/drink/order) tối đa 1 mã.
  * @param {object} input
- * @param {number} input.courtPrice
- * @param {Array} [input.drinks]
- * @param {number} [input.drinkTotal]
- * @param {string} [input.date]
- * @param {string} [input.timeStart]
- * @param {string|null} input.voucherCode
- * @param {string|object} [input.venueId]
  */
 async function quotePrice(input) {
   // Backward compat: old call quotePrice({ price }, code, venueId)
@@ -187,8 +199,8 @@ async function quotePrice(input) {
   let drinkTotal = 0;
   let date = "";
   let timeStart = "";
-  let voucherCode;
   let venueId;
+  let codes = [];
 
   if (input && typeof input === "object" && "courtPrice" in input) {
     courtPrice = Number(input.courtPrice) || 0;
@@ -196,30 +208,30 @@ async function quotePrice(input) {
     drinkTotal = Number(input.drinkTotal) || 0;
     date = input.date || "";
     timeStart = input.timeStart || "";
-    voucherCode = input.voucherCode;
     venueId = input.venueId;
+    codes = normalizeVoucherCodes(input);
   } else {
     courtPrice = Number((input && input.price) || 0);
-    voucherCode = arguments[1];
+    codes = normalizeVoucherCodes({ voucherCode: arguments[1] });
     venueId = arguments[2];
   }
 
-  const code = (voucherCode || "").trim().toUpperCase();
   const orderTotal = courtPrice + drinkTotal;
-
-  if (!code) {
+  if (!codes.length) {
     return {
       courtPrice,
       drinkTotal,
       discount: 0,
       amount: orderTotal,
       voucherCode: null,
+      voucherCodes: [],
+      voucherDiscounts: [],
     };
   }
 
   const now = new Date();
-  const voucher = await Voucher.findOne({
-    code,
+  const vouchers = await Voucher.find({
+    code: { $in: codes },
     deleted: false,
     status: "active",
     start_date: { $lte: now },
@@ -227,55 +239,91 @@ async function quotePrice(input) {
     ...(venueId ? { venue_id: venueId } : {}),
   });
 
-  if (!voucher) {
-    const err = new Error("Mã giảm giá không hợp lệ hoặc đã hết hạn");
-    err.status = 400;
-    throw err;
-  }
-  if (voucher.quantity <= voucher.used_count) {
-    const err = new Error("Mã giảm giá đã hết lượt sử dụng");
-    err.status = 400;
-    throw err;
-  }
-  if (date && !matchesDayType(voucher, date)) {
-    const err = new Error("Mã không áp dụng cho ngày này");
-    err.status = 400;
-    throw err;
-  }
-  if (date && !matchesTimeWindow(voucher, timeStart)) {
-    const err = new Error("Mã không áp dụng cho khung giờ này");
-    err.status = 400;
-    throw err;
+  const byCode = new Map(vouchers.map((v) => [v.code, v]));
+  const missing = codes.filter((c) => !byCode.has(c));
+  if (missing.length) {
+    throw httpError(400, `Mã giảm giá không hợp lệ hoặc đã hết hạn: ${missing.join(", ")}`);
   }
 
-  const scope = voucher.apply_scope || "court";
-  let base = courtPrice;
-  if (scope === "drink") {
-    base = drinkEligibleTotal(drinks, voucher.product_ids);
-    if (base <= 0) {
-      const err = new Error("Đơn không có đồ uống đủ điều kiện áp mã");
-      err.status = 400;
-      throw err;
+  const byScope = new Map();
+  for (const code of codes) {
+    const voucher = byCode.get(code);
+    if (voucher.quantity <= voucher.used_count) {
+      throw httpError(400, `Mã ${code} đã hết lượt sử dụng`);
     }
-  } else if (scope === "order") {
-    base = orderTotal;
+    if (date && !matchesDayType(voucher, date)) {
+      throw httpError(400, `Mã ${code} không áp dụng cho ngày này`);
+    }
+    if (date && !matchesTimeWindow(voucher, timeStart)) {
+      throw httpError(400, `Mã ${code} không áp dụng cho khung giờ này`);
+    }
+    const scope = voucher.apply_scope || "court";
+    if (byScope.has(scope)) {
+      throw httpError(400, "Mỗi loại voucher chỉ được chọn 1 mã (sân / đồ uống / hoá đơn)");
+    }
+    byScope.set(scope, voucher);
   }
 
-  if (base < (voucher.min_order_amount || 0)) {
-    const err = new Error("Đơn chưa đủ điều kiện áp dụng mã");
-    err.status = 400;
-    throw err;
+  let courtDiscount = 0;
+  let drinkDiscount = 0;
+  let orderDiscount = 0;
+  const voucherDiscounts = [];
+
+  const courtVoucher = byScope.get("court");
+  if (courtVoucher) {
+    if (courtPrice < (courtVoucher.min_order_amount || 0)) {
+      throw httpError(400, `Đơn chưa đủ điều kiện áp dụng mã ${courtVoucher.code}`);
+    }
+    courtDiscount = computeDiscount(courtVoucher, courtPrice);
+    voucherDiscounts.push({
+      code: courtVoucher.code,
+      applyScope: "court",
+      discount: courtDiscount,
+    });
   }
 
-  const discount = computeDiscount(voucher, base);
+  const drinkVoucher = byScope.get("drink");
+  if (drinkVoucher) {
+    const base = drinkEligibleTotal(drinks, drinkVoucher.product_ids);
+    if (base <= 0) {
+      throw httpError(400, "Đơn không có đồ uống đủ điều kiện áp mã");
+    }
+    if (base < (drinkVoucher.min_order_amount || 0)) {
+      throw httpError(400, `Đơn chưa đủ điều kiện áp dụng mã ${drinkVoucher.code}`);
+    }
+    drinkDiscount = computeDiscount(drinkVoucher, base);
+    voucherDiscounts.push({
+      code: drinkVoucher.code,
+      applyScope: "drink",
+      discount: drinkDiscount,
+    });
+  }
+
+  const orderVoucher = byScope.get("order");
+  if (orderVoucher) {
+    if (orderTotal < (orderVoucher.min_order_amount || 0)) {
+      throw httpError(400, `Đơn chưa đủ điều kiện áp dụng mã ${orderVoucher.code}`);
+    }
+    const remaining = Math.max(orderTotal - courtDiscount - drinkDiscount, 0);
+    orderDiscount = computeDiscount(orderVoucher, remaining);
+    voucherDiscounts.push({
+      code: orderVoucher.code,
+      applyScope: "order",
+      discount: orderDiscount,
+    });
+  }
+
+  const discount = courtDiscount + drinkDiscount + orderDiscount;
+  const appliedCodes = voucherDiscounts.map((v) => v.code);
 
   return {
     courtPrice,
     drinkTotal,
     discount,
-    amount: orderTotal - discount,
-    voucherCode: voucher.code,
-    applyScope: scope,
+    amount: Math.max(orderTotal - discount, 0),
+    voucherCode: appliedCodes.length ? appliedCodes.join(",") : null,
+    voucherCodes: appliedCodes,
+    voucherDiscounts,
   };
 }
 

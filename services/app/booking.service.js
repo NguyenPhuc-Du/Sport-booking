@@ -90,6 +90,7 @@ async function resolveSelection(body) {
     date: body.date,
     timeStart: start,
     voucherCode: body.voucherCode,
+    voucherCodes: body.voucherCodes,
     venueId: pair.venue._id,
   });
   return {

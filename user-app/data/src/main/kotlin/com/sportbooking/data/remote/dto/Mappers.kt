@@ -23,6 +23,7 @@ import com.sportbooking.domain.model.Sport
 import com.sportbooking.domain.model.TimeSlot
 import com.sportbooking.domain.model.User
 import com.sportbooking.domain.model.Voucher
+import com.sportbooking.domain.model.VoucherDiscount
 
 fun UserDto.toDomain() = User(id, fullName, email, phone, avatarUrl, status)
 
@@ -76,8 +77,21 @@ fun DrinkDto.toDomain() = Drink(id, name, image.orEmpty(), price, stock)
 
 fun DrinkLineDto.toDomain() = DrinkLine(drinkId, name, price, qty)
 
+fun VoucherDto.toDomain() = Voucher(
+    code = code,
+    description = description,
+    name = name.orEmpty(),
+    applyScope = applyScope ?: "court",
+    discountType = discountType ?: "fixed",
+    discountValue = discountValue ?: 0,
+    maxDiscount = maxDiscount ?: 0,
+    minOrderAmount = minOrderAmount ?: 0,
+    valueText = valueText.orEmpty(),
+    remaining = remaining ?: 0,
+)
+
 fun CheckoutOptionsDto.toDomain() = CheckoutOptions(
-    vouchers = vouchers.map { Voucher(it.code, it.description) },
+    vouchers = vouchers.map { it.toDomain() },
     payments = payments.map { it.toDomain() },
     drinks = drinks.orEmpty().map { it.toDomain() },
 )
@@ -86,6 +100,11 @@ fun BookingQuoteDto.toDomain() = BookingQuote(
     facilityId, facilityName, courtId, courtName, date, time, courtPrice, discount, amount, voucherCode,
     drinks = drinks.orEmpty().map { it.toDomain() },
     drinkTotal = drinkTotal ?: 0,
+    voucherCodes = voucherCodes
+        ?: voucherCode?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }.orEmpty(),
+    voucherDiscounts = voucherDiscounts.orEmpty().map {
+        VoucherDiscount(it.code, it.applyScope, it.discount)
+    },
 )
 
 fun BookingDto.toDomain() = Booking(

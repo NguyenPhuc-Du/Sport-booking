@@ -184,7 +184,9 @@ async function listCheckoutOptions(facilityId) {
     start_date: { $lte: now },
     end_date: { $gte: now },
   })
-    .select("code name apply_scope day_type time_start time_end")
+    .select(
+      "code name apply_scope day_type time_start time_end discount_type discount_value max_discount min_order_amount quantity used_count",
+    )
     .lean();
 
   const scopeLabel = {
@@ -206,10 +208,24 @@ async function listCheckoutOptions(facilityId) {
         v.time_start && v.time_end
           ? `${v.time_start}-${v.time_end}`
           : "cả ngày";
+      const valueText =
+        v.discount_type === "percent"
+          ? `Giảm ${v.discount_value}%${v.max_discount ? ` tối đa ${Number(v.max_discount).toLocaleString("vi-VN")}đ` : ""}`
+          : `Giảm ${Number(v.discount_value || 0).toLocaleString("vi-VN")}đ`;
       return {
         code: v.code,
+        name: v.name,
         description: `${v.name} · giảm ${scopeLabel[scope] || scope} · ${day} · ${time}`,
         applyScope: scope,
+        discountType: v.discount_type,
+        discountValue: v.discount_value,
+        maxDiscount: v.max_discount || 0,
+        minOrderAmount: v.min_order_amount || 0,
+        dayType: v.day_type || "all",
+        timeStart: v.time_start || "",
+        timeEnd: v.time_end || "",
+        valueText,
+        remaining: Math.max((v.quantity || 0) - (v.used_count || 0), 0),
       };
     }),
     payments: [
