@@ -2,7 +2,6 @@ const asyncHandler = require("../../middlewares/admin/async-handler");
 const { action } = require("../../middlewares/admin/action");
 const userService = require("../../services/admin/user.service");
 const roleService = require("../../services/admin/role.service");
-const audit = require("../../services/admin/audit.service");
 const { ServiceError } = require("../../services/admin/auth.service");
 const { STATUSES } = require("../../services/admin/catalog");
 
@@ -13,16 +12,10 @@ function activeMenu(role) {
 }
 
 const index = asyncHandler(async (req, res) => {
-  const tab = req.query.tab === "audit" ? "audit" : "users";
-  const data =
-    tab === "audit"
-      ? { users: [], page: 1, pages: 1, total: 0, q: "", status: "", role: "", audits: await audit.list() }
-      : { ...(await userService.list(req.query)), audits: [] };
-
+  const data = await userService.list(req.query);
   res.render("admin/pages/platform/users", {
     pageTitle: "Quản lý Người dùng & Tài khoản",
     activeMenu: activeMenu(req.query.role),
-    tab,
     roles: await roleService.choices(),
     assignableRoles: await userService.rolesActorMayAssign(req.user._id),
     statuses: STATUSES,

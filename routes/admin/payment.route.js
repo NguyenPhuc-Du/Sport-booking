@@ -1,9 +1,8 @@
 const express = require("express");
-const controller = require("../../controllers/admin/audit.controller");
+const controller = require("../../controllers/admin/payment.controller");
 const authorize = require("../../middlewares/admin/authorize.middleware");
 
 const router = express.Router();
-
-router.get("/", authorize("audit_log:view"), controller.index);
+router.get("/", authorize("commission:payments"), controller.index);
 
 module.exports = router;

@@ -1,12 +1,16 @@
-const { ROLE_CODES, STATUS_CODES } = require("../../services/admin/catalog");
+const { STATUS_CODES } = require("../../services/admin/catalog");
 
 function back(req, res, message) {
   req.flash("error", message);
   return res.redirect("/admin/users");
 }
 
+function roleCodeOk(value) {
+  return /^[A-Z0-9_]+$/.test(String(value || ""));
+}
+
 function assignRole(req, res, next) {
-  if (!ROLE_CODES.includes(req.body.role))
+  if (!roleCodeOk(req.body.role))
     return back(req, res, "Chọn một vai trò hợp lệ");
   return next();
 }
@@ -25,7 +29,7 @@ function create(req, res, next) {
   if (!fullName || !email || !phone) {
     return back(req, res, "Nhập đủ họ tên, email và số điện thoại");
   }
-  if (!ROLE_CODES.includes(req.body.role))
+  if (!roleCodeOk(req.body.role))
     return back(req, res, "Chọn một vai trò hợp lệ");
   if (password.length < 6) return back(req, res, "Mật khẩu tối thiểu 6 ký tự");
   return next();

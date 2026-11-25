@@ -4,13 +4,14 @@ const User = require("../../models/user.model");
 const Ledger = require("../../models/ledger-entry.model");
 const { ServiceError } = require("./auth.service");
 const rate = require("./rate.service");
-const audit = require("./audit.service");
 const { formatVnd, percentLabel } = require("./present");
 const {
   ROLES,
   CHARTS,
   LEDGER_TYPES,
   LEDGER_CODES,
+  LEDGER_PAGE_SIZE,
+  LEDGER_FLOW_LABEL,
   byCode,
   startOfDay,
   startOfWeek,
@@ -18,7 +19,6 @@ const {
   addUnit,
 } = require("./catalog");
 
-const PAGE_SIZE = 8;
 
 function nextCode() {
   return `LG${Date.now()}${Math.floor(Math.random() * 900 + 100)}`;
@@ -466,18 +466,67 @@ function buildFilter(input) {
   return { $and: parts };
 }
 
+// Tách ngày và giờ để bảng hiện đủ trên một hàng. Vào: mốc thời gian. Ra: { whenDate, whenTime }.
+function clockOf(value) {
+  if (!value) return { whenDate: "—", whenTime: "" };
+  const date = new Date(value);
+  return {
+    whenDate: date.toLocaleDateString("vi-VN"),
+    whenTime: date.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
+  };
+}
+
+// Hướng tiền của một dòng. effect > 0 là tiền vào, < 0 là tiền ra, = 0 là quỹ không đổi.
+function flowOf(effect) {
+  if (effect > 0) return "in";
+  if (effect < 0) return "out";
+  return "flat";
+}
+
+// Đổi một dòng database thành chữ để bảng hiển thị. Vào: document sổ cái. Ra: object cho một hàng.
 function presentLine(row) {
   const kind = byCode(LEDGER_TYPES, row.type);
   const account = row.user_id && row.user_id.fullName ? row.user_id.fullName : "—";
+  const effect = Number(row.effect) || 0;
+  const flow = flowOf(effect);
+  const signed = flow === "flat" ? formatVnd(row.amount) : `${flow === "in" ? "+" : "−"}${formatVnd(Math.abs(effect))}`;
   return {
     when: row.created_at ? new Date(row.created_at).toLocaleString("vi-VN") : "—",
+    ...clockOf(row.created_at),
     code: row.code,
     account,
     type: row.type,
     typeLabel: kind ? kind.label : row.type,
-    amountLabel: formatVnd(row.amount),
+    icon: kind && kind.icon ? kind.icon : "bi-dot",
+    flow,
+    flowLabel: LEDGER_FLOW_LABEL[flow],
+    amountLabel: signed,
     balanceLabel: formatVnd(row.balance_after),
     note: row.note || "",
+  };
+}
+
+async function summarize(filter) {
+  const latest = await Ledger.findOne().sort({ created_at: -1, _id: -1 }).select("balance_after").lean();
+  const grouped = filter
+    ? await Ledger.aggregate([
+        { $match: filter },
+        {
+          $group: {
+            _id: null,
+            moneyIn: { $sum: { $cond: [{ $gt: ["$effect", 0] }, "$effect", 0] } },
+            moneyOut: { $sum: { $cond: [{ $lt: ["$effect", 0] }, { $abs: "$effect" }, 0] } },
+          },
+        },
+      ])
+    : [];
+  const row = grouped[0] || { moneyIn: 0, moneyOut: 0 };
+  const fund = latest ? latest.balance_after : 0;
+  return {
+    fundBalance: fund,
+    fundLabel: formatVnd(fund),
+    moneyInLabel: formatVnd(row.moneyIn),
+    moneyOutLabel: formatVnd(row.moneyOut),
   };
 }
 
@@ -502,19 +551,22 @@ async function list(query) {
     to: input.to,
   };
   const filter = buildFilter(input);
-  if (!filter) return { ...view, items: [], page: 1, pages: 1, total: 0 };
+  const summary = await summarize(filter);
+  if (!filter) {
+    return { ...view, ...summary, items: [], page: 1, pages: 1, total: 0, pageSize: LEDGER_PAGE_SIZE };
+  }
 
   const total = await Ledger.countDocuments(filter);
-  const pages = Math.max(Math.ceil(total / PAGE_SIZE), 1);
+  const pages = Math.max(Math.ceil(total / LEDGER_PAGE_SIZE), 1);
   const page = Math.min(input.page, pages);
   const rows = await Ledger.find(filter)
     .populate("user_id", "fullName")
     .sort({ created_at: -1, _id: -1 })
-    .skip((page - 1) * PAGE_SIZE)
-    .limit(PAGE_SIZE)
+    .skip((page - 1) * LEDGER_PAGE_SIZE)
+    .limit(LEDGER_PAGE_SIZE)
     .lean();
 
-  return { ...view, items: rows.map(presentLine), page, pages, total };
+  return { ...view, ...summary, items: rows.map(presentLine), page, pages, total, pageSize: LEDGER_PAGE_SIZE };
 }
 
 function csvCell(value) {
@@ -557,11 +609,6 @@ async function adjust(actorId, body, ip) {
     amount,
     effect: amount,
     note,
-  });
-  await audit.write(actorId, "ledger.adjust", user._id, `${user.fullName} · ${amount} · ${note}`, {
-    ip,
-    targetType: "ledger",
-    after: { amount, note },
   });
 }
 

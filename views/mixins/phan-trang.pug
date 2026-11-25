@@ -1,0 +1,19 @@
+//- Phân trang dùng chung. pagination đã có href giữ bộ lọc.
+mixin phanTrang(pagination)
+  if pagination && pagination.total
+    nav.ad-pager(aria-label="Phân trang")
+      p.ad-pager-meta Hiển thị #{pagination.from}-#{pagination.to} / #{pagination.total} dòng
+      .ad-pager-nav
+        if pagination.hasPrev
+          a.ad-page-btn(href=pagination.prevHref) ‹ Trước
+        else
+          span.ad-page-btn.is-off ‹ Trước
+        each link in pagination.links
+          if link.gap
+            span.ad-page-gap …
+          else
+            a.ad-page-num(href=link.href class=(link.active ? "is-on" : undefined))= link.label
+        if pagination.hasNext
+          a.ad-page-btn(href=pagination.nextHref) Sau ›
+        else
+          span.ad-page-btn.is-off Sau ›

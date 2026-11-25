@@ -1,3 +1,1 @@
-module.exports = (handler) => (req, res, next) => {
-  Promise.resolve(handler(req, res, next)).catch(next);
-};
+module.exports = require("../../helpers/boBatLoi");

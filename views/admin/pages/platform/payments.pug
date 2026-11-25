@@ -1,0 +1,42 @@
+extends ../../layouts/admin.pug
+include ../../../mixins/phan-trang.pug
+
+block main
+  header.ad-page
+    h1 Giao dịch thanh toán
+  .ad-stats
+    each the in stats
+      article
+        span= the.nhan
+        strong= the.giaTri
+  form.ad-filters(method="get" action="/admin/payments")
+    input(type="search" name="q" value=q placeholder="Mã, mã đơn hoặc ghi chú" aria-label="Tìm giao dịch")
+    label Từ
+      input(type="date" name="from" value=from)
+    label Đến
+      input(type="date" name="to" value=to)
+    button.ad-btn(type="submit") Lọc
+    a.ad-btn.is-ghost(href="/admin/payments") Xóa lọc
+  if items.length
+    .ad-table-wrap
+      table.ad-table
+        thead
+          tr
+            th Thời gian
+            th Mã
+            th Mã đơn
+            th Liên quan đến
+            th.ad-num Số tiền
+            th Ghi chú
+        tbody
+          each row in items
+            tr
+              td= row.when
+              td.ad-mono= row.code
+              td.ad-mono= row.booking
+              td= row.account
+              td.ad-num= row.amount
+              td= row.note
+    +phanTrang(pagination)
+  else
+    p.ad-empty Không có dữ liệu phù hợp

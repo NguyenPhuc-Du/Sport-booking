@@ -61,6 +61,8 @@ const venueSchema = new mongoose.Schema(
   },
 );
 
+venueSchema.index({ owner_id: 1 });
+
 const Venue = mongoose.model("Venue", venueSchema, "venues");
 
 module.exports = Venue;

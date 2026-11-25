@@ -1,17 +1,24 @@
-extends ../../../owner/layouts/default.pug
+extends ../../layouts/admin.pug
 include ../../../mixins/alert.pug
 
 block main
   -
     const pmPermissions = []
+    let granted = 0
     groups.forEach(function (group) {
       group.items.forEach(function (item) {
+        if (item.checked) granted += 1
         pmPermissions.push({
           code: item.code,
           description: item.description || "",
+          label: item.label || item.description || item.code,
+          sentence: item.sentence || "",
+          caution: item.caution || "",
+          dangerous: !!item.dangerous,
           checked: !!item.checked,
           group: group.key,
           groupLabel: group.label,
+          icon: group.icon || "bi-dot",
         })
       })
     })
@@ -19,6 +26,8 @@ block main
       roleId: String(role._id),
       readOnly: !!role.is_system,
       nameLocked: !!role.is_protected,
+      groupOrder: groupOrder || [],
+      menu: menu || [],
       permissions: pmPermissions,
     }
 
@@ -28,14 +37,9 @@ block main
   header.pf-head
     div
       p.pf-kicker
-        a(href="/admin/roles") Về danh sách vai trò
+        a(href="/admin/roles") Vai trò
       h1.pf-title= role.name
-      p.pf-sub Một chỗ để xem vai trò này được làm những gì.
-
-  if role.is_system
-    p.pm-banner(role="status")
-      i.bi.bi-lock(aria-hidden="true")
-      span Vai trò hệ thống không thể chỉnh sửa quyền. Hãy tạo vai trò tùy chỉnh nếu cần một bộ quyền khác.
+      p.pf-sub= role.description || "Chưa có câu mô tả."
 
   section.sz-card.sz-panel.pm-profile
     .pm-badges
@@ -43,8 +47,19 @@ block main
         span.pm-badge.is-system Vai trò hệ thống
       else
         span.pm-badge Vai trò tùy chỉnh
-      span.pm-badge #{userCount} tài khoản đang dùng
-      span.pm-badge.is-code= role.code
+      if can("user:view")
+        a.pm-badge(href=`/admin/users?role=${role.code}`) #{userCount} tài khoản đang dùng
+      else
+        span.pm-badge #{userCount} tài khoản đang dùng
+      span.pm-badge
+        | Đã cấp 
+        strong#pm-count #{granted}/#{pmPermissions.length}
+        |  quyền
+    p#pm-menu.pm-menu-line Vai trò này thấy: đang đọc menu.
+    if role.is_system
+      p.pm-hint Đây là vai trò có sẵn. Không sửa quyền tại đây. Hãy tạo vai trò mới nếu cần bộ việc khác.
+        |
+        a(href="/admin/roles?tao=1")  Tạo vai trò tùy chỉnh
     .pm-profile-grid
       label
         span Tên
@@ -55,16 +70,15 @@ block main
 
   section.sz-card.sz-panel.pm-board
     #pm-tools
-    #pm-matrix
+    #pm-list
       .pm-skel
       .pm-skel
-      .pm-skel
-      .pm-skel
+    p#pm-empty.pm-hint(hidden) Không có quyền nào khớp chữ bạn tìm.
     #pm-error(hidden)
-      strong Không tải được ma trận quyền.
+      strong Không tải được danh sách quyền.
       button#pm-retry.sz-btn(type="button") Thử lại
     noscript
-      p.pm-hint Bật JavaScript để xem và sửa ma trận quyền.
+      p.pm-hint Bật JavaScript để xem và sửa quyền.
 
   .pm-savebar#pm-save(hidden)
     p#pm-save-text(aria-live="polite") Có 0 thay đổi chưa lưu
@@ -88,15 +102,15 @@ block main
       form(method="post" action=`/admin/roles/${role._id}/delete` data-confirm=`Xóa vai trò ${role.name}?`)
         p.sz-muted Xóa được ngay nếu không còn tài khoản. Nếu còn, chọn vai trò để chuyển họ sang.
         label Chuyển tài khoản sang
-        select.sz-select(name="transfer_role_id")
-          option(value="") Không chuyển
-          each item in otherRoles
-            if String(item._id) !== String(role._id)
-              option(value=item._id)= item.label
+          select.sz-select(name="transfer_role_id")
+            option(value="") Không chuyển
+            each item in otherRoles
+              if String(item._id) !== String(role._id)
+                option(value=item._id)= item.label
         button.sz-btn.sz-btn-outline-danger(type="submit") Xóa vai trò
 
   script#pm-data(type="application/json")!= JSON.stringify(pmPayload).replace(/</g, "\\u003c")
 
 block script
   script(src="/admin/js/permission-map.js")
-  script(src="/admin/js/permission-matrix.js")
+  script(src="/admin/js/permission-list.js")

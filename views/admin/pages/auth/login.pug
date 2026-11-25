@@ -53,8 +53,7 @@ html(lang="vi")
               span = messages.error
           
           form(method="post" action="/admin/auth/login" autocomplete="on")
-
-            //- CSRF (bật nếu dùng csurf): input(type="hidden" name="_csrf" value=csrfToken)
+            input(type="hidden" name="_csrf" value=csrfToken || "")
 
             div.field
               label(for="email") Email quản trị

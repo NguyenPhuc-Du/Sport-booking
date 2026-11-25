@@ -4,13 +4,26 @@ const User = require("../../models/user.model");
 const UserRole = require("../../models/user-role.model");
 const Role = require("../../models/role.model");
 const { ServiceError } = require("./auth.service");
-const audit = require("./audit.service");
 const ledger = require("./ledger.service");
 const { STATUS_CODES } = require("./catalog");
 const policy = require("./rbac-policy");
 const rbac = require("./rbac.service");
+const { huyCache, nho } = require("./bo-nho");
 
-const PAGE_SIZE = 8;
+const { phanTrang, ganLink } = require("../../helpers/phanTrang");
+const ADMIN_ROLE_CODES = ["SUPER_ADMIN", "ADMIN", "ACCOUNT_ADMIN", "COMMISSION_ADMIN"];
+const USER_ROLE_ENUM = ["OWNER", "ADMIN", "USER", "SUPER_ADMIN"];
+
+/**
+ * Đổi mã vai trò console sang giá trị cột users.role.
+ * Schema user dùng chung chỉ có OWNER, ADMIN, USER, SUPER_ADMIN.
+ * Vai trò thật (Quản trị tài khoản, hoa hồng) vẫn lưu ở user_roles.
+ * @param {string} code Mã trong collection roles.
+ * @returns {string}
+ */
+function vaiTroLuuUser(code) {
+  return USER_ROLE_ENUM.includes(code) ? code : "ADMIN";
+}
 
 function escapeRegex(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -43,27 +56,8 @@ function readProfile(body) {
   return { fullName, email, phone };
 }
 
-function accountView(user) {
-  return {
-    fullName: user.fullName,
-    email: user.email,
-    phone: user.phone,
-    role: user.role,
-    status: user.status,
-  };
-}
-
 function endOldSessions(user) {
   user.token_version = (Number(user.token_version) || 0) + 1;
-}
-
-async function note(actorId, action, targetId, detail, meta, before, after) {
-  await audit.write(actorId, action, targetId, detail, {
-    ip: meta && meta.ip,
-    targetType: "user",
-    before,
-    after,
-  });
 }
 
 async function mustFindUser(id) {
@@ -99,28 +93,80 @@ function rethrowDuplicate(error) {
   throw error;
 }
 
-async function list(query) {
-  const page = Math.max(parseInt(query.page, 10) || 1, 1);
+/**
+ * Danh sách tài khoản có phân trang. roleCode ép từ route, không tin query khi đã ép.
+ * @param {object} query Query đã được controller làm sạch.
+ * @param {string|string[]|null} forcedRole Vai trò cố định của trang.
+ * @returns {Promise<object>} users và pagination.
+ */
+async function list(query, forcedRole) {
   const q = String(query.q || "").trim();
   const status = STATUS_CODES.includes(query.status) ? query.status : "";
-  const roleCode = /^[A-Z0-9_]+$/.test(query.role || "") ? query.role : "";
+  const roleCode = forcedRole || (/^[A-Z0-9_]+$/.test(query.role || "") ? query.role : "");
   const filter = {};
+  if (query.ids) filter._id = { $in: query.ids };
   if (status) filter.status = status;
-  if (roleCode) filter.role = roleCode;
+  if (roleCode && !Array.isArray(roleCode)) filter.role = roleCode;
+  filter.deleted_at = null;
   if (q) {
     const regex = new RegExp(escapeRegex(q), "i");
     filter.$or = [{ fullName: regex }, { email: regex }, { phone: regex }];
   }
+  const sortField = ["fullName", "email", "createdAt"].includes(query.sort) ? query.sort : "createdAt";
+  const dir = query.dir === "asc" ? 1 : -1;
+  const idKey = Array.isArray(query.ids) ? query.ids.map(String).sort().join(".") : "";
+  const data = await nho(
+    `users:${query.path || ""}:${roleCode}:${status}:${q}:${query.page}:${query.pageSize}:${sortField}:${dir}:${idKey}`,
+    20000,
+    () =>
+      phanTrang({
+        model: User,
+        filter,
+        sort: { [sortField]: dir },
+        page: query.page,
+        pageSize: query.pageSize,
+        select: "fullName email phone role status createdAt",
+      }),
+  );
+  const path = query.path || "/admin/users";
+  return {
+    users: data.items,
+    page: data.page,
+    pages: data.totalPages,
+    total: data.total,
+    q,
+    status,
+    role: Array.isArray(roleCode) ? "" : roleCode,
+    pagination: ganLink(data, path, {
+      q,
+      status,
+      role: Array.isArray(roleCode) ? "" : roleCode,
+      sort: query.sort || "",
+      dir: query.dir || "",
+    }),
+  };
+}
 
-  const total = await User.countDocuments(filter);
-  const users = await User.find(filter)
-    .select("-password_hash")
-    .sort({ createdAt: -1 })
-    .skip((page - 1) * PAGE_SIZE)
-    .limit(PAGE_SIZE)
+/**
+ * Danh sách người có vai trò quản trị. Không nhận id từ query.
+ * @param {object} query Bộ lọc tìm kiếm và trang.
+ * @returns {Promise<object>}
+ */
+async function listAdmins(query) {
+  const roles = await Role.find({ code: { $in: ADMIN_ROLE_CODES } }).select("_id").lean();
+  const links = await UserRole.find({ role_id: { $in: roles.map((item) => item._id) } })
+    .select("user_id")
     .lean();
-
-  return { users, page, pages: Math.max(Math.ceil(total / PAGE_SIZE), 1), total, q, status, role: roleCode };
+  const data = await list({ ...query, ids: links.map((item) => item.user_id), path: "/admin/admins" });
+  const named = await UserRole.find({ user_id: { $in: data.users.map((item) => item._id) } })
+    .populate("role_id", "name code")
+    .lean();
+  const byUser = new Map(named.map((item) => [String(item.user_id), item.role_id]));
+  data.users = data.users.map((item) => {
+    const role = byUser.get(String(item._id));
+    return { ...item, roleName: role ? role.name : item.role, roleCode: role ? role.code : item.role };
+  });
+  return data;
 }
 
 async function create(actorId, body, meta) {
@@ -138,14 +184,11 @@ async function create(actorId, body, meta) {
     const user = await User.create({
       ...profile,
       password_hash: await bcrypt.hash(password, 10),
-      role: role.code,
+      role: vaiTroLuuUser(role.code),
       status: "active",
     });
     await UserRole.create({ user_id: user._id, role_id: role._id });
-    await note(actorId, "user.create", user._id, `${profile.fullName} · ${role.code}`, meta, null, {
-      ...profile,
-      role: role.code,
-    });
+    huyCache();
   } catch (error) {
     rethrowDuplicate(error);
   }
@@ -155,25 +198,24 @@ async function updateProfile(actorId, targetId, body, meta) {
   const profile = readProfile(body);
   const target = await mustFindUser(targetId);
   await ensureUnique(profile, targetId);
-  const before = accountView(target);
   target.fullName = profile.fullName;
   target.email = profile.email;
   target.phone = profile.phone;
   try {
     await target.save();
+    huyCache();
   } catch (error) {
     rethrowDuplicate(error);
   }
-  await note(actorId, "user.update", target._id, profile.fullName, meta, before, accountView(target));
 }
 
 async function resetPassword(actorId, targetId, password, meta) {
-  if (String(password || "").length < 6) throw new ServiceError("Mật khẩu tối thiểu 6 ký tự");
+  if (String(password || "").length < 8) throw new ServiceError("Mật khẩu mới tối thiểu 8 ký tự");
   const target = await mustFindUser(targetId);
   target.password_hash = await bcrypt.hash(password, 10);
   endOldSessions(target);
   await target.save();
-  await note(actorId, "user.password", target._id, target.fullName, meta);
+  huyCache();
 }
 
 async function changeRole(actorId, targetId, roleCode, meta) {
@@ -192,19 +234,15 @@ async function changeRole(actorId, targetId, roleCode, meta) {
     protectedCount: await rbac.countProtectedUsers(),
   });
 
-  const beforeRole = current ? current.code : target.role;
   await UserRole.findOneAndUpdate(
     { user_id: target._id },
     { user_id: target._id, role_id: next._id },
     { upsert: true },
   );
-  target.role = next.code;
+  target.role = vaiTroLuuUser(next.code);
   endOldSessions(target);
   await target.save();
-
-  const reason = meta && meta.reason ? String(meta.reason).slice(0, 300) : "";
-  const detail = reason ? `${beforeRole} → ${next.code} · ${reason}` : `${beforeRole} → ${next.code}`;
-  await note(actorId, "user.role", target._id, detail, meta, { role: beforeRole }, { role: next.code });
+  huyCache();
 }
 
 async function changeStatus(actorId, targetId, status, meta) {
@@ -224,19 +262,10 @@ async function changeStatus(actorId, targetId, status, meta) {
     });
   }
 
-  const before = target.status;
   target.status = status;
   endOldSessions(target);
   await target.save();
-  await note(
-    actorId,
-    "user.status",
-    target._id,
-    status === "inactive" ? "Khóa" : "Mở khóa",
-    meta,
-    { status: before },
-    { status },
-  );
+  huyCache();
 }
 
 async function rolesActorMayAssign(actorId) {
@@ -248,7 +277,9 @@ async function rolesActorMayAssign(actorId) {
   return roles
     .filter((role) => {
       const codes = codesOf.get(String(role._id)) || [];
-      const tooHigh = !policy.includesAll(actor.permissions, codes);
+      const tooHigh =
+        !actor.permissions.includes("system:override") &&
+        !policy.includesAll(actor.permissions, codes);
       const hiddenProtected =
         role.is_protected && !actor.permissions.includes("system:override");
       return !tooHigh && !hiddenProtected;
@@ -261,12 +292,89 @@ async function detail(id) {
   const user = await User.findById(id).select("-password_hash").lean();
   if (!user) throw new ServiceError("Không có tài khoản này");
   const position = user.role === "OWNER" ? await ledger.ownerPosition(user._id) : null;
-  const audits = await audit.list({ target_id: user._id });
-  return { user, position, audits };
+  return { user, position };
+}
+
+/**
+ * Hồ sơ của chính người đang đăng nhập.
+ * @param {string} userId Id user.
+ * @returns {Promise<object|null>}
+ */
+async function profileOf(userId) {
+  return User.findById(userId).select("-password_hash").lean();
+}
+
+/**
+ * Sửa tên, email, số điện thoại của chính mình.
+ * @param {string} userId Id user.
+ * @param {object} body Dữ liệu form.
+ * @returns {Promise<object>}
+ */
+/**
+ * Đặt mật khẩu mới cho chính người đang đăng nhập.
+ * Không tăng token_version, để phiên hiện tại không bị đá ra.
+ * @param {string} userId Id user.
+ * @param {object} body currentPassword và newPassword.
+ * @returns {Promise<void>}
+ */
+async function changeOwnPassword(userId, body) {
+  const current = String(body.currentPassword || "");
+  const next = String(body.newPassword || "");
+  if (next.length < 8) throw new ServiceError("Mật khẩu mới tối thiểu 8 ký tự");
+  const user = await mustFindUser(userId);
+  const matched = await bcrypt.compare(current, user.password_hash || "");
+  if (!matched) throw new ServiceError("Mật khẩu hiện tại không đúng");
+  user.password_hash = await bcrypt.hash(next, 10);
+  await user.save();
+  huyCache();
+}
+
+/**
+ * Xóa một quản trị viên. Không xóa chính mình và không xóa Super Admin cuối cùng.
+ * @param {string} actorId Người đang đăng nhập.
+ * @param {string} targetId Tài khoản bị xóa.
+ * @returns {Promise<void>}
+ */
+async function removeAdmin(actorId, targetId) {
+  policy.assertSelf(actorId, targetId, "Không thể xóa chính mình");
+  const target = await mustFindUser(targetId);
+  const current = await roleOf(targetId);
+  if (!current || !ADMIN_ROLE_CODES.includes(current.code)) {
+    throw new ServiceError("Chỉ xóa được tài khoản quản trị");
+  }
+  await actorMayTouch(actorId, current);
+  if (current.is_protected) {
+    policy.assertKeepLastProtected({
+      wasProtected: true,
+      willBeProtected: false,
+      protectedCount: await rbac.countProtectedUsers(),
+    });
+  }
+  await UserRole.deleteOne({ user_id: target._id });
+  await User.deleteOne({ _id: target._id });
+  huyCache();
+}
+
+async function updateSelf(userId, body) {
+  const profile = readProfile(body);
+  await ensureUnique(profile, userId);
+  const user = await mustFindUser(userId);
+  user.fullName = profile.fullName;
+  user.email = profile.email;
+  user.phone = profile.phone;
+  await user.save();
+  huyCache();
+  return user;
 }
 
 module.exports = {
+  vaiTroLuuUser,
   list,
+  listAdmins,
+  profileOf,
+  updateSelf,
+  changeOwnPassword,
+  removeAdmin,
   create,
   updateProfile,
   resetPassword,

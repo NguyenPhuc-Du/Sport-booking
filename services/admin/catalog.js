@@ -11,12 +11,22 @@ const STATUSES = [
 ];
 
 const LEDGER_TYPES = [
-  { code: "payment", label: "Thanh toán" },
-  { code: "commission", label: "Hoa hồng" },
-  { code: "refund", label: "Hoàn tiền" },
-  { code: "withdrawal", label: "Rút tiền" },
-  { code: "adjustment", label: "Điều chỉnh" },
+  { code: "payment", label: "Thanh toán", icon: "bi-cash-coin" },
+  { code: "commission", label: "Hoa hồng", icon: "bi-percent" },
+  { code: "refund", label: "Hoàn tiền", icon: "bi-arrow-counterclockwise" },
+  { code: "withdrawal", label: "Rút tiền", icon: "bi-box-arrow-up" },
+  { code: "adjustment", label: "Điều chỉnh", icon: "bi-arrow-left-right" },
 ];
+
+// Mỗi trang sổ cái hiện bao nhiêu dòng. Đổi số này là cả phân trang đổi theo.
+const LEDGER_PAGE_SIZE = 8;
+
+// Câu nhỏ dưới số tiền. Khóa là hướng tiền, không phải mã loại giao dịch.
+const LEDGER_FLOW_LABEL = {
+  in: "Quỹ tăng",
+  out: "Quỹ giảm",
+  flat: "Không đổi quỹ",
+};
 
 const CYCLES = [
   { code: "weekly", label: "Hàng tuần", days: 7 },
@@ -69,13 +79,6 @@ const ADMIN_MENU = [
         text: "Vai trò & Phân quyền",
         permission: "role:manage",
       },
-      {
-        href: "/admin/audit",
-        key: "audit",
-        icon: "bi-journal-text",
-        text: "Nhật ký thao tác",
-        permission: "audit_log:view",
-      },
     ],
   },
   {
@@ -88,24 +91,28 @@ const ADMIN_MENU = [
         text: "Hoa hồng",
         permission: "commission:view",
       },
-      {
-        href: "/admin/ledger",
-        key: "ledger",
-        icon: "bi-journal-bookmark",
-        text: "Sổ cái",
-        permission: "ledger:view",
-      },
     ],
   },
 ];
 
 const PERMISSION_GROUPS = {
-  dashboard: "Tổng quan",
-  user: "Tài khoản",
-  role: "Vai trò",
-  commission: "Hoa hồng",
-  ledger: "Sổ cái",
-  audit_log: "Nhật ký thao tác",
+  dashboard: { label: "Tổng quan", icon: "bi-grid" },
+  user: { label: "Tài khoản", icon: "bi-people" },
+  role: { label: "Vai trò", icon: "bi-shield-lock" },
+  commission: { label: "Hoa hồng", icon: "bi-percent" },
+  ledger: { label: "Sổ cái", icon: "bi-journal-bookmark" },
+};
+
+// Hậu tố sau dấu hai chấm. Những hậu tố này là quyền nhạy cảm trên mọi nhóm.
+const DANGEROUS_ACTIONS = ["delete", "adjust", "change_role", "manage", "override"];
+
+// Câu giải thích ngắn, chỉ cho quyền nhạy cảm. Tên quyền lấy từ mô tả trong database.
+const PERMISSION_CAUTION = {
+  "user:change_role": "Đổi vai trò làm đổi toàn bộ việc người đó được làm.",
+  "user:delete": "Xóa dữ liệu thì khó lấy lại.",
+  "ledger:adjust": "Dòng đã ghi không sửa và không xóa được.",
+  "role:manage": "Người này có thể trao hoặc gỡ quyền của người khác.",
+  "system:override": "Quyền này đụng tới tài khoản quản trị cao nhất.",
 };
 
 const ADMIN_PERMISSION_CODES = [
@@ -120,9 +127,10 @@ const ADMIN_PERMISSION_CODES = [
   "system:override",
   "commission:view",
   "commission:update",
-  "ledger:view",
-  "ledger:adjust",
-  "audit_log:view",
+  "commission:payments",
+  "commission:reconcile",
+  "commission:report",
+  "account:profile",
 ];
 
 function visibleMenu(can) {
@@ -130,6 +138,53 @@ function visibleMenu(can) {
     title: group.title,
     items: group.items.filter((item) => can(item.permission)),
   })).filter((group) => group.items.length > 0);
+}
+
+// Lấy phần sau dấu hai chấm của mã quyền. Vào: "user:view". Ra: "view".
+function permissionAction(code) {
+  const text = String(code || "");
+  const cut = text.indexOf(":");
+  return cut === -1 ? "" : text.slice(cut + 1);
+}
+
+// Nhóm hiển thị của một mã quyền. "system" gom vào nhóm Vai trò vì đó là quyền của vai trò.
+function permissionGroupKey(code) {
+  const resource = String(code || "").split(":")[0];
+  if (resource === "system") return "role";
+  return resource || "other";
+}
+
+// Gắn tên, câu mô tả, cờ nhạy cảm cho một quyền lấy từ database.
+// Vào: { code, description, checked }. Ra: object đủ cho trang vai trò. Gọi khi dựng trang chi tiết.
+function decoratePermission(item) {
+  const code = String(item.code || "");
+  const action = permissionAction(code);
+  const description = String(item.description || "").trim();
+  const groupKey = item.group || permissionGroupKey(code);
+  const group = PERMISSION_GROUPS[groupKey] || { label: groupKey, icon: "bi-dot" };
+  return {
+    code,
+    description,
+    label: String(item.name || description || code),
+    sentence: description,
+    caution: PERMISSION_CAUTION[code] || (action === "delete" ? PERMISSION_CAUTION["user:delete"] : ""),
+    dangerous: Boolean(item.isSensitive) || DANGEROUS_ACTIONS.includes(action),
+    checked: Boolean(item.checked),
+    group: groupKey,
+    groupLabel: group.label,
+    icon: group.icon,
+  };
+}
+
+// Danh sách menu phẳng để trang vai trò nói "vai trò này thấy gì". Lấy từ ADMIN_MENU, không chép tay.
+function menuEntries() {
+  const rows = [];
+  ADMIN_MENU.forEach((group) => {
+    group.items.forEach((item) => {
+      rows.push({ text: item.text, icon: item.icon, permission: item.permission });
+    });
+  });
+  return rows;
 }
 
 const AUDIT_ACTIONS = [
@@ -216,5 +271,12 @@ module.exports = {
   addUnit,
   ADMIN_PERMISSION_CODES,
   PERMISSION_GROUPS,
+  DANGEROUS_ACTIONS,
+  LEDGER_PAGE_SIZE,
+  LEDGER_FLOW_LABEL,
   visibleMenu,
+  permissionAction,
+  permissionGroupKey,
+  decoratePermission,
+  menuEntries,
 };

@@ -1,26 +1,32 @@
+const { nho } = require("./bo-nho");
 const Role = require("../../models/role.model");
 const Permission = require("../../models/permission.model");
 const RolePermission = require("../../models/role-permission.model");
 const UserRole = require("../../models/user-role.model");
 
-async function accessOf(userId) {
-  const link = await UserRole.findOne({ user_id: userId }).lean();
-  if (!link) {
-    return { role: null, permissions: [] };
-  }
-  const role = await Role.findById(link.role_id).lean();
-  if (!role) {
-    return { role: null, permissions: [] };
-  }
-  const joins = await RolePermission.find({ role_id: role._id }).lean();
-  const ids = joins.map((row) => row.permission_id);
-  const rows = await Permission.find({ _id: { $in: ids } })
+async function docQuyen(roleId) {
+  const [role, joins] = await Promise.all([
+    Role.findById(roleId).lean(),
+    RolePermission.find({ role_id: roleId }).select("permission_id").lean(),
+  ]);
+  if (!role) return { role: null, permissions: [] };
+  const rows = await Permission.find({ _id: { $in: joins.map((row) => row.permission_id) } })
     .select("code")
     .lean();
-  return {
-    role,
-    permissions: rows.map((row) => row.code),
-  };
+  return { role, permissions: rows.map((row) => row.code) };
+}
+
+/**
+ * Quyền của user. Bản theo vai trò được nhớ 60 giây.
+ * @param {string} userId Id user.
+ * @returns {Promise<{role: object|null, permissions: string[]}>}
+ */
+async function accessOf(userId) {
+  return nho(`phien:${userId}`, 60000, async () => {
+    const link = await UserRole.findOne({ user_id: userId }).select("role_id").lean();
+    if (!link) return { role: null, permissions: [] };
+    return docQuyen(link.role_id);
+  });
 }
 
 function can(permissions, code) {
