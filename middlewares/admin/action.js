@@ -2,7 +2,11 @@ const asyncHandler = require("./async-handler");
 const { ServiceError } = require("../../services/admin/auth.service");
 
 function errorText(error) {
-  return error instanceof ServiceError ? error.message : "Thao tác thất bại";
+  if (error instanceof ServiceError) return error.message;
+  if (error && error.name === "ValidationError") {
+    return "Dữ liệu không khớp cấu trúc tài khoản, chưa được ghi";
+  }
+  return "Thao tác thất bại";
 }
 
 function destination(req, where, result) {

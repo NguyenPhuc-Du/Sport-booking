@@ -1,4 +1,5 @@
 const express = require("express");
+const compression = require("compression");
 require("dotenv").config();
 const bodyParser = require("body-parser");
 const methodOverride = require("method-override");
@@ -13,6 +14,7 @@ const database = require("./config/database");
 database.connect();
 
 const app = express();
+app.use(compression());
 const port = process.env.PORT;
 
 app.use(methodOverride("_method"));
@@ -36,7 +38,13 @@ app.use(
 app.use(flash());
 //End Flash
 
-app.use(express.static(`${__dirname}/public`));
+app.use(
+  express.static(`${__dirname}/public`, {
+    maxAge: process.env.NODE_ENV === "production" ? "7d" : 0,
+    etag: true,
+  }),
+);
+if (process.env.NODE_ENV === "production") app.set("view cache", true);
 
 app.get("/", (req, res) => {
   res.json({

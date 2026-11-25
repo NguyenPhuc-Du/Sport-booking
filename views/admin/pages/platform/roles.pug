@@ -1,4 +1,4 @@
-extends ../../../owner/layouts/default.pug
+extends ../../layouts/admin.pug
 include ../../../mixins/alert.pug
 
 block main
@@ -7,49 +7,79 @@ block main
 
   header.pf-head
     div
-      p.pf-kicker Quản trị hệ thống / Vai trò
-      h1.pf-title Vai trò & Phân quyền
+      p.pf-kicker Quản trị / Vai trò
+      h1.pf-title Vai trò
+      p.pf-sub Mỗi tài khoản mang một vai trò. Vai trò quyết định người đó được làm gì trên trang quản trị.
     button.sz-btn.sz-btn-green(type="button" data-open="dialog-role") Thêm vai trò
 
-  section.sz-card.sz-panel
-    if roles.length
-      .table-responsive
-        table.sz-table
-          thead
-            tr
-              th Tên
-              th Mã
-              th Mô tả
-              th Số tài khoản
-              th Loại
-              th
-          tbody
-            each role in roles
-              tr
-                td
-                  strong= role.name
-                td= role.code
-                td= role.description || "—"
-                td= role.userCount
-                td= role.kind
-                td
-                  a.sz-btn.sz-btn-sm(href=`/admin/roles/${role._id}`) Sửa quyền
-    else
-      .pf-empty
-        strong Chưa có vai trò
-        p Chạy script seed để có 4 vai trò mặc định.
+  details.pm-guide
+    summary Cách hoạt động
+    ol.pm-steps
+      li
+        i.bi.bi-person(aria-hidden="true")
+        div
+          strong Tài khoản
+          span Người đăng nhập vào trang quản trị.
+      li
+        i.bi.bi-person-badge(aria-hidden="true")
+        div
+          strong Vai trò
+          span Tấm thẻ người đó đang mang, ví dụ Hỗ trợ hoặc Quản trị.
+      li
+        i.bi.bi-check2-square(aria-hidden="true")
+        div
+          strong Quyền
+          span Những việc tấm thẻ đó được phép làm.
+    p.pm-hint Ví dụ: vai trò Hỗ trợ chỉ được xem sổ cái. Nhân viên mang vai trò này mở được sổ cái, nhưng không thấy nút ghi dòng điều chỉnh.
+
+  if roles.length
+    .pm-role-grid
+      each role in roles
+        article.pm-role-card
+          .pm-badges
+            span.pm-badge(class=role.is_system ? "is-system" : "")= role.kind
+            button.pm-help(type="button" aria-expanded="false" aria-controls=`tip-${role._id}` aria-label=`Mã nội bộ của ${role.name}`) ?
+            span.pm-tip(id=`tip-${role._id}` hidden) Mã nội bộ: #{role.code}. Mã này dùng khi lọc tài khoản, không cần nhớ.
+          h2= role.name
+          p= role.description || "Chưa có câu mô tả."
+          if can("user:view")
+            a.pm-count-link(href=`/admin/users?role=${role.code}`) #{role.userCount} tài khoản đang dùng
+          else
+            p.pm-count-link #{role.userCount} tài khoản đang dùng
+          if role.highlights.length
+            ul.pm-highlights
+              each label in role.highlights
+                li= label
+              if role.more
+                li.pm-more và #{role.more} việc khác
+          else
+            p.pm-hint Chưa được làm gì trên trang quản trị.
+          a.sz-btn.sz-btn-sm(href=`/admin/roles/${role._id}`) Xem và sửa quyền
+  else
+    .pf-empty
+      strong Chưa có vai trò nào
+      p Bấm Thêm vai trò để tạo một vai trò mới cho nhân viên.
 
   dialog.pf-dialog#dialog-role
     form(method="post" action="/admin/roles")
       .pf-dialog-head
         h2 Tạo vai trò tùy chỉnh
         button(type="button" data-close aria-label="Đóng") ×
+      p.pm-hint Vai trò tùy chỉnh do bạn đặt tên và chọn việc được làm. Bốn vai trò có sẵn của hệ thống không sửa quyền được.
       label Mã
-      input.sz-input(type="text" name="code" required maxlength="40" placeholder="SUPPORT" pattern="[A-Za-z][A-Za-z0-9_]{1,40}")
+      input.sz-input(type="text" name="code" required maxlength="40" placeholder="HOTRO" pattern="[A-Za-z][A-Za-z0-9_]{1,40}" aria-describedby="role-code-help")
+      small#role-code-help.pm-hint Viết liền, không dấu, ví dụ HOTRO. Mã không đổi được sau khi tạo.
       label Tên
       input.sz-input(type="text" name="name" required maxlength="80" placeholder="Hỗ trợ")
       label Mô tả
-      textarea.sz-input(name="description" maxlength="300")
+      textarea.sz-input(name="description" maxlength="300" placeholder="Một câu về việc vai trò này làm")
       .pf-dialog-actions
         button.sz-btn(type="button" data-close) Hủy
         button.sz-btn.sz-btn-green(type="submit") Tạo
+
+block script
+  script.
+    if (new URLSearchParams(location.search).get("tao") === "1") {
+      const dialog = document.getElementById("dialog-role");
+      if (dialog && !dialog.open) dialog.showModal();
+    }

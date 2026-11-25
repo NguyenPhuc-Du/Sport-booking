@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const User = require("../../models/user.model");
+const { nho } = require("../../services/admin/bo-nho");
 
 const COOKIE = "admin_access_token";
 
@@ -22,9 +23,9 @@ module.exports = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.id)
-      .select("-password_hash")
-      .lean();
+    const user = await nho(`user:${decoded.id}:${decoded.tv || 0}`, 60000, () =>
+      User.findById(decoded.id).select("-password_hash").lean(),
+    );
     const version = Number(user && user.token_version) || 0;
     const tokenVersion = Number(decoded.tv) || 0;
     if (!user || user.status !== "active" || tokenVersion !== version) {

@@ -1,4 +1,4 @@
-extends ../../../owner/layouts/default.pug
+extends ../../layouts/admin.pug
 include ../../../mixins/alert.pug
 
 block main
@@ -36,36 +36,3 @@ block main
         span.pf-stat-label Công nợ hoa hồng
         strong.pf-stat-value= position.debtLabel
         span.pf-stat-note Hoa hồng chưa chốt
-
-  section.sz-card.sz-panel
-    .pf-split-head
-      div
-        h2.sz-panel-title Nhật ký tài khoản
-        p.sz-panel-sub Thao tác quản trị trên tài khoản này
-      span.sz-muted #{audits.length} sự kiện
-    if audits.length
-      .table-responsive
-        table.sz-table.pf-table
-          thead
-            tr
-              th Thời gian
-              th Người thực hiện
-              th Việc
-              th Chi tiết
-              th IP
-              th Trước
-              th Sau
-          tbody
-            each row in audits
-              tr
-                td= row.when
-                td= row.actorName
-                td= row.actionLabel
-                td= row.detail
-                td= row.ip
-                td= row.beforeText
-                td= row.afterText
-    else
-      .pf-empty
-        strong Chưa có nhật ký cho tài khoản này
-        p Chưa có thao tác khóa hoặc đổi vai trò trên tài khoản này

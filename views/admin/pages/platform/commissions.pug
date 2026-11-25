@@ -1,4 +1,4 @@
-extends ../../../owner/layouts/default.pug
+extends ../../layouts/admin.pug
 include ../../../mixins/alert.pug
 
 block main
@@ -9,7 +9,7 @@ block main
     div
       p.pf-kicker Quản trị hệ thống / Hoa hồng
       h1.pf-title Hoa hồng và đối soát
-      p.pf-sub Tỷ lệ mặc định #{rateLabel}. Mỗi dòng dùng tỷ lệ đã khóa lúc thanh toán. Bấm Chốt giá để khóa kỳ.
+      p.pf-sub Tỷ lệ mặc định #{rateLabel}. Mỗi dòng dùng tỷ lệ đã khóa lúc thanh toán. Có thể đánh dấu đã thu hoặc chốt kỳ.
 
   form.pf-filters(method="get" action="/admin/commissions")
     select.sz-select(name="cycle")
@@ -46,12 +46,18 @@ block main
                   if row.closed
                     button.sz-btn.sz-btn-sm(type="button" disabled) Đã chốt
                   else
-                    form(method="post" action="/admin/commissions/close" data-confirm=`Chốt giá kỳ này của ${row.ownerName}?`)
+                    form(method="post" action="/admin/commissions/collect")
                       input(type="hidden" name="ownerId" value=row.ownerId)
                       input(type="hidden" name="from" value=period.fromInput)
                       input(type="hidden" name="to" value=period.toInput)
                       input(type="hidden" name="cycle" value=period.cycle)
-                      button.sz-btn.sz-btn-green.sz-btn-sm(type="submit") Chốt giá
+                      button.sz-btn.sz-btn-sm(type="submit") Đánh dấu đã thu
+                    form(method="post" action="/admin/commissions/close" data-confirm=`Chốt kỳ của ${row.ownerName}?`)
+                      input(type="hidden" name="ownerId" value=row.ownerId)
+                      input(type="hidden" name="from" value=period.fromInput)
+                      input(type="hidden" name="to" value=period.toInput)
+                      input(type="hidden" name="cycle" value=period.cycle)
+                      button.sz-btn.sz-btn-green.sz-btn-sm(type="submit") Chốt kỳ
     else
       .pf-empty
         strong Chưa có hoa hồng trong kỳ

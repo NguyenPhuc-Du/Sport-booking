@@ -1,0 +1,21 @@
+aside.ad-sider(id="admin-nav")
+  .ad-sider-head
+    strong SPORTZONE ADMIN
+    span= accessRole && accessRole.name ? accessRole.name : ""
+  nav
+    each item in menu || []
+      if item.children && item.children.length
+        .ad-node(data-code=item.code)
+          button.ad-parent(type="button" aria-expanded="true")
+            i.bi(class=item.icon aria-hidden="true")
+            span= item.label
+          .ad-children
+            each child in item.children
+              a(href=child.path class=(child.path === currentPath ? "is-on" : undefined))
+                span= child.label
+      else if item.path
+        a.ad-link(href=item.path class=(item.path === currentPath ? "is-on" : undefined))
+          i.bi(class=item.icon aria-hidden="true")
+          span= item.label
+  button.ad-collapse(type="button" data-collapse-nav aria-label="Thu gọn menu")
+    i.bi.bi-layout-sidebar

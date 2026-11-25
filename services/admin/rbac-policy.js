@@ -26,7 +26,10 @@ function assertCanTouchProtected(actorPermissions, targetIsProtected) {
 }
 
 function assertCanGrant(actorPermissions, rolePermissions) {
-  if (includesAll(actorPermissions, rolePermissions)) return;
+  const owned = actorPermissions || [];
+  // Super Admin có system:override nên được gán cả vai trò có quyền mà mình không dùng, ví dụ trang hồ sơ.
+  if (owned.includes("system:override")) return;
+  if (includesAll(owned, rolePermissions)) return;
   deny("Không được cấp quyền cao hơn quyền của bạn");
 }
 

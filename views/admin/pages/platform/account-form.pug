@@ -1,0 +1,23 @@
+extends ../../layouts/admin.pug
+include ../../../mixins/alert.pug
+
+block main
+  +alert-error(5000)
+  header.ad-page
+    div
+      p.ad-crumb
+        a(href=`/admin/accounts/${loai}`)= title
+      h1= user ? "Sửa thông tin" : "Thêm " + title.toLowerCase()
+  form.ad-form.ad-form-grid(method="post" action=user ? `/admin/accounts/${loai}/${user._id}` : `/admin/accounts/${loai}`)
+    label Họ và tên
+      input(type="text" name="fullName" required value=user ? user.fullName : "")
+    label Email
+      input(type="email" name="email" required value=user ? user.email : "")
+    label Số điện thoại
+      input(type="tel" name="phone" required value=user ? user.phone : "" placeholder="0912345678")
+    if !user
+      label Mật khẩu
+        input(type="password" name="password" required minlength="8" autocomplete="new-password")
+    .ad-modal-actions
+      a.ad-btn.is-ghost(href=`/admin/accounts/${loai}`) Hủy
+      button.ad-btn(type="submit") Lưu

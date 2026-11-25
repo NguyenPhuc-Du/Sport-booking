@@ -17,7 +17,8 @@ aside.sz-sidebar(class=panelRole === "admin" ? "sz-sidebar-admin" : undefined)
             span.sz-menu-text= item.text
     .sz-sidebar-bottom
       .sz-copy Hệ thống SportZone
-      .sz-copy 8 mục quản trị sàn
+      - const menuCount = (adminMenu || []).reduce(function (sum, group) { return sum + group.items.length }, 0)
+      .sz-copy #{menuCount} mục quản trị sàn
 
 
 

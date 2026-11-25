@@ -33,11 +33,16 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    last_login_at: { type: Date, default: null },
+    deleted_at: { type: Date, default: null },
   },
   {
     timestamps: true,
   },
 );
+
+userSchema.index({ role: 1, status: 1, createdAt: -1 });
+userSchema.index({ deleted_at: 1, role: 1, createdAt: -1 });
 
 const User = mongoose.model("User", userSchema, "users");
 

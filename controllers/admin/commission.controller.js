@@ -33,4 +33,14 @@ const close = asyncHandler(async (req, res) => {
   return res.redirect(`/admin/commissions?${query.toString()}`);
 });
 
-module.exports = { index, close };
+const collect = asyncHandler(async (req, res) => {
+  try {
+    const count = await commission.danhDauDaThu(req.body.ownerId, req.body);
+    req.flash("success", count ? `Đã đánh dấu đã thu ${count} dòng` : "Không còn dòng nào cần đánh dấu");
+  } catch (error) {
+    return fail(req, res, error);
+  }
+  return res.redirect("/admin/reconciliation");
+});
+
+module.exports = { index, close, collect };

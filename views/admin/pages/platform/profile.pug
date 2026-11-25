@@ -1,0 +1,27 @@
+extends ../../layouts/admin.pug
+include ../../../mixins/alert.pug
+
+block main
+  +alert-success(3000)
+  header.ad-page
+    h1 Thông tin tài khoản
+  if error
+    p.ad-error= error
+  form.ad-form(method="post" action="/admin/profile")
+    input(type="hidden" name="_csrf" value=csrfToken)
+    label Họ và tên
+      input(type="text" name="fullName" required value=profile.fullName)
+    label Email
+      input(type="email" name="email" required value=profile.email)
+    label Số điện thoại
+      input(type="tel" name="phone" required value=profile.phone)
+    button.ad-btn(type="submit") Lưu
+  form.ad-form(method="post" action="/admin/profile/password")
+    h2 Đổi mật khẩu
+    label Mật khẩu hiện tại
+      input(type="password" name="currentPassword" required autocomplete="current-password")
+    label Mật khẩu mới
+      input(type="password" name="newPassword" required minlength="8" autocomplete="new-password")
+    label Nhập lại mật khẩu mới
+      input(type="password" name="confirm" required minlength="8" autocomplete="new-password")
+    button.ad-btn(type="submit") Đổi mật khẩu

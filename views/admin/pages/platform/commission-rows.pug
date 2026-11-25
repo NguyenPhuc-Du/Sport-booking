@@ -1,0 +1,60 @@
+extends ../../layouts/admin.pug
+
+block main
+  header.ad-page
+    div
+      h1= title
+      if period
+        p Kỳ #{period.fromInput} đến #{period.toInput}
+    if csvHref
+      a.ad-btn(href=csvHref) Xuất CSV
+  .ad-stats
+    each the in stats
+      article
+        span= the.nhan
+        strong= the.giaTri
+  form.ad-filters(method="get" action=basePath)
+    if cycles
+      select(name="cycle" aria-label="Kỳ")
+        each item in cycles
+          option(value=item.code selected=period.cycle === item.code)= item.label
+    input(type="date" name="from" value=period.fromInput aria-label="Từ ngày")
+    input(type="date" name="to" value=period.toInput aria-label="Đến ngày")
+    button.ad-btn(type="submit") Lọc
+    a.ad-btn.is-ghost(href=basePath) Xóa lọc
+  if rows.length
+    .ad-table-wrap
+      table.ad-table
+        thead
+          tr
+            th Chủ sân
+            th.ad-num Doanh thu
+            th Tỷ lệ
+            th.ad-num Hoa hồng
+            th.ad-num Đã thu
+            th.ad-num Còn mở
+            th Trạng thái
+        tbody
+          each row in rows
+            tr
+              td= row.ownerName
+              td.ad-num= row.revenueLabel
+              td= row.rateLabel
+              td.ad-num= row.feeLabel
+              td.ad-num= row.collectedLabel
+              td.ad-num= row.openLabel
+              td
+                span.ad-badge(class=row.closed ? "is-ok" : "is-wait")= row.closed ? "Đã chốt" : "Còn mở"
+          tr.ad-total
+            td Tổng
+            td.ad-num= tong.revenueLabel
+            td
+            td.ad-num= tong.feeLabel
+            td.ad-num= tong.collectedLabel
+            td.ad-num= tong.openLabel
+            td
+  else
+    .ad-empty
+      i.bi.bi-inbox
+      strong Không có dữ liệu phù hợp
+      p Đổi khoảng ngày hoặc chọn kỳ khác.
