@@ -4,10 +4,17 @@ const RolePermission = require("../../models/role-permission.model");
 const UserRole = require("../../models/user-role.model");
 const User = require("../../models/user.model");
 const { ServiceError } = require("./auth.service");
-const { PERMISSION_GROUPS } = require("./catalog");
+const {
+  ADMIN_PERMISSION_CODES,
+  PERMISSION_GROUPS,
+  decoratePermission,
+  menuEntries,
+  permissionGroupKey,
+} = require("./catalog");
 const policy = require("./rbac-policy");
 const rbac = require("./rbac.service");
-const audit = require("./audit.service");
+const { vaiTroLuuUser } = require("./user.service");
+const { huyCache, nho } = require("./bo-nho");
 
 const CODE_PATTERN = /^[A-Z][A-Z0-9_]{1,40}$/;
 
@@ -28,9 +35,16 @@ function asList(value) {
   return (Array.isArray(value) ? value : [value]).map(String);
 }
 
-function groupKey(code) {
-  const resource = code.split(":")[0];
-  return resource === "system" ? "role" : resource;
+// Sắp mã quyền theo thứ tự trong catalog. Mã lạ đứng cuối. Vào: mảng mã. Ra: mảng mã đã sắp.
+function sortCodes(codes) {
+  const rank = new Map(ADMIN_PERMISSION_CODES.map((code, index) => [code, index]));
+  return [...codes].sort((a, b) => (rank.get(a) ?? 999) - (rank.get(b) ?? 999));
+}
+
+// Lấy tối đa 4 tên quyền để hiện trên thẻ vai trò. Tên lấy từ mô tả trong database.
+function highlightsOf(codes, labelOf) {
+  const labels = sortCodes(codes).map((code) => labelOf.get(code) || code);
+  return { highlights: labels.slice(0, 4), more: Math.max(labels.length - 4, 0) };
 }
 
 async function mustFind(id) {
@@ -45,13 +59,32 @@ async function choices() {
 }
 
 async function list() {
-  const roles = await Role.find().sort({ is_system: -1, name: 1 }).lean();
-  const counts = await UserRole.aggregate([{ $group: { _id: "$role_id", total: { $sum: 1 } } }]);
+  return nho("roles", 30000, docDanhSachVaiTro);
+}
+
+async function docDanhSachVaiTro() {
+  const [roles, counts, links, permissions] = await Promise.all([
+    Role.find().sort({ is_system: -1, name: 1 }).lean(),
+    UserRole.aggregate([{ $group: { _id: "$role_id", total: { $sum: 1 } } }]),
+    RolePermission.find().select("role_id permission_id").lean(),
+    Permission.find().select("code description").lean(),
+  ]);
   const totalOf = new Map(counts.map((row) => [String(row._id), row.total]));
+  const codeOf = new Map(permissions.map((item) => [String(item._id), item.code]));
+  const labelOf = new Map(permissions.map((item) => [item.code, item.description || item.code]));
+  const codesOf = new Map();
+  links.forEach((link) => {
+    const key = String(link.role_id);
+    const code = codeOf.get(String(link.permission_id));
+    if (!code) return;
+    if (!codesOf.has(key)) codesOf.set(key, []);
+    codesOf.get(key).push(code);
+  });
   return roles.map((role) => ({
     ...role,
     userCount: totalOf.get(String(role._id)) || 0,
     kind: role.is_system ? "Hệ thống" : "Tùy chỉnh",
+    ...highlightsOf(codesOf.get(String(role._id)) || [], labelOf),
   }));
 }
 
@@ -63,24 +96,32 @@ async function matrix(roleId) {
   const buckets = new Map();
 
   permissions.forEach((item) => {
-    const key = groupKey(item.code);
+    if (String(item.code || "").startsWith("ledger:")) return;
+    const view = decoratePermission({ ...item, checked: owned.has(item.code) });
+    const key = permissionGroupKey(item.code);
     if (!buckets.has(key)) buckets.set(key, []);
-    buckets.get(key).push({
-      code: item.code,
-      description: item.description,
-      checked: owned.has(item.code),
-    });
+    buckets.get(key).push(view);
   });
 
   const userCount = await UserRole.countDocuments({ role_id: role._id });
+  const order = Object.keys(PERMISSION_GROUPS);
+  const groups = [...buckets.entries()]
+    .map(([key, items]) => {
+      const meta = PERMISSION_GROUPS[key] || { label: key, icon: "bi-dot" };
+      return { key, label: meta.label, icon: meta.icon, items };
+    })
+    .sort((a, b) => {
+      const ia = order.indexOf(a.key);
+      const ib = order.indexOf(b.key);
+      return (ia === -1 ? order.length : ia) - (ib === -1 ? order.length : ib);
+    });
   return {
     role,
     userCount,
-    groups: [...buckets.entries()].map(([key, items]) => ({
-      key,
-      label: PERMISSION_GROUPS[key] || key,
-      items,
-    })),
+    groups,
+    menu: menuEntries(),
+    groupOrder: order,
+    permissionTotal: permissions.length,
   };
 }
 
@@ -89,11 +130,7 @@ async function create(actorId, body, ip) {
   const existed = await Role.findOne({ code: input.code }).lean();
   if (existed) throw new ServiceError("Mã vai trò đã có");
   const role = await Role.create({ ...input, is_system: false, is_protected: false });
-  await audit.write(actorId, "role.create", role._id, input.name, {
-    ip,
-    targetType: "role",
-    after: { code: input.code, name: input.name },
-  });
+  huyCache();
   return role;
 }
 
@@ -102,16 +139,10 @@ async function update(actorId, roleId, body, ip) {
   const actor = await rbac.accessOf(actorId);
   policy.assertCanTouchProtected(actor.permissions, role.is_protected);
   const input = readRole(body, false);
-  const before = { name: role.name, description: role.description };
   role.name = input.name;
   role.description = input.description;
   await role.save();
-  await audit.write(actorId, "role.update", role._id, input.name, {
-    ip,
-    targetType: "role",
-    before,
-    after: input,
-  });
+  huyCache();
 }
 
 async function savePermissions(actorId, roleId, rawCodes, ip) {
@@ -124,23 +155,16 @@ async function savePermissions(actorId, roleId, rawCodes, ip) {
   const known = await Permission.find({ code: { $in: wanted } }).lean();
   if (known.length !== wanted.length) throw new ServiceError("Có mã quyền không tồn tại");
 
-  const before = await rbac.permissionsOfRole(role._id);
   await RolePermission.deleteMany({ role_id: role._id });
   if (known.length) {
     await RolePermission.insertMany(
       known.map((item) => ({ role_id: role._id, permission_id: item._id })),
     );
   }
-  await audit.write(actorId, "role.permissions", role._id, role.name, {
-    ip,
-    targetType: "role",
-    before: { permissions: before },
-    after: { permissions: wanted },
-  });
-
   const holders = await UserRole.find({ role_id: role._id }).select("user_id").lean();
   const ids = holders.map((row) => row.user_id);
   if (ids.length) await User.updateMany({ _id: { $in: ids } }, { $inc: { token_version: 1 } });
+  huyCache();
 }
 
 async function remove(actorId, roleId, transferRoleId, ip) {
@@ -164,17 +188,13 @@ async function remove(actorId, roleId, transferRoleId, ip) {
     await UserRole.updateMany({ role_id: role._id }, { role_id: next._id });
     await User.updateMany(
       { _id: { $in: ids } },
-      { $set: { role: next.code }, $inc: { token_version: 1 } },
+      { $set: { role: vaiTroLuuUser(next.code) }, $inc: { token_version: 1 } },
     );
   }
 
   await RolePermission.deleteMany({ role_id: role._id });
   await role.deleteOne();
-  await audit.write(actorId, "role.delete", roleId, role.name, {
-    ip,
-    targetType: "role",
-    before: { code: role.code, name: role.name, userCount: holders.length },
-  });
+  huyCache();
 }
 
 module.exports = { choices, list, matrix, create, update, savePermissions, remove };

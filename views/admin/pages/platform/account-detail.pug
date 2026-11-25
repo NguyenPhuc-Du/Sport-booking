@@ -1,0 +1,98 @@
+extends ../../layouts/admin.pug
+include ../../../mixins/alert.pug
+
+block main
+  +alert-success(4000)
+  +alert-error(5000)
+  header.ad-page
+    div.ad-person
+      span.ad-avatar.ad-avatar-lg= user.fullName.trim().charAt(0).toUpperCase()
+      div
+        p.ad-crumb
+          a(href=`/admin/accounts/${loai}`)= meta.title
+        h1= user.fullName
+        p.ad-lead= user.email
+        span.ad-badge= nhanVaiTro(user.role)
+        span.ad-badge(class=user.status === "active" ? "is-ok" : "is-off")= nhanTrangThai(user.status)
+    .ad-actions
+      if can("user:update")
+        a.ad-btn(href=`/admin/accounts/${loai}/${user._id}/edit`) Sửa
+      if can("user:reset_password")
+        button.ad-btn.is-ghost(type="button" data-open-pass data-action=`/admin/accounts/${loai}/${user._id}/password` data-name=user.fullName) Đặt lại mật khẩu
+      if can("user:lock")
+        form(method="post" action=`/admin/accounts/${loai}/${user._id}/status`)
+          input(type="hidden" name="status" value=(user.status === "active" ? "inactive" : "active"))
+          button.ad-btn.is-ghost(type="submit")= user.status === "active" ? "Khóa" : "Mở"
+      if can("user:update")
+        button.ad-btn.is-danger(type="button" data-open-delete data-action=`/admin/accounts/${loai}/${user._id}/delete` data-name=user.fullName) Xóa
+  .ad-split
+    article.ad-card
+      h2 Thông tin cá nhân
+      p Họ tên: #{user.fullName}
+      p Email: #{user.email}
+      p Điện thoại: #{user.phone}
+    article.ad-card
+      h2 Tài khoản
+      p Trạng thái: #{nhanTrangThai(user.status)}
+      p Ngày tạo: #{user.createdAt ? new Date(user.createdAt).toLocaleString("vi-VN") : "Chưa có"}
+      p Đăng nhập cuối: #{user.last_login_at ? new Date(user.last_login_at).toLocaleString("vi-VN") : "Chưa ghi nhận"}
+  if user.role === "OWNER"
+    article.ad-card
+      h2 Sân
+      if venues.length
+        ul
+          each san in venues
+            li #{san.name} — #{san.address}
+      else
+        p.ad-lead Chưa có sân.
+    article.ad-card
+      h2 Doanh thu và hoa hồng
+      if money.length
+        ul
+          each dong in money
+            li #{dong._id}: #{dong.total}
+      else
+        p.ad-lead Chưa có dòng tiền.
+  else
+    article.ad-card
+      h2 Lịch sử đặt sân gần đây
+      if bookings.length
+        .ad-table-wrap
+          table.ad-table
+            thead
+              tr
+                th Mã
+                th Sân
+                th Ngày
+                th Số tiền
+            tbody
+              each don in bookings
+                tr
+                  td.ad-mono= don.code
+                  td= don.facilityName
+                  td #{don.date} #{don.time}
+                  td.ad-num= don.amount
+      else
+        p.ad-lead Chưa có lượt đặt.
+
+  dialog.ad-modal#modal-pass
+    form(method="post" action="")
+      h2 Đặt lại mật khẩu
+      p(data-pass-name)
+      label Mật khẩu mới
+        input(type="password" name="password" required minlength="8")
+      label Nhập lại mật khẩu
+        input(type="password" name="confirm" required minlength="8")
+      .ad-modal-actions
+        button.ad-btn.is-ghost(type="button" data-toggle-pass) Hiện
+        button.ad-btn.is-ghost(type="button" data-random-pass) Tạo ngẫu nhiên
+        button.ad-btn.is-ghost(type="button" data-close-modal) Hủy
+        button.ad-btn(type="submit") Lưu mật khẩu
+  dialog.ad-modal#modal-delete
+    form(method="post" action="")
+      h2 Xóa tài khoản
+      p
+        strong(data-delete-name)
+      .ad-modal-actions
+        button.ad-btn.is-ghost(type="button" data-close-modal) Hủy
+        button.ad-btn.is-danger(type="submit") Xóa

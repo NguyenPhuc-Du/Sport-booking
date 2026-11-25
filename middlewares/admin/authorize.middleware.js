@@ -3,9 +3,8 @@ function authorize(permission) {
     const allowed = req.access && req.access.permissions.includes(permission);
     if (allowed) return next();
     if (req.accepts("html")) {
-      return res.status(403).render("admin/pages/platform/forbidden", {
+      return res.status(403).render("admin/pages/errors/403", {
         pageTitle: "Không có quyền",
-        activeMenu: "",
       });
     }
     return res

@@ -1,0 +1,125 @@
+extends ../../layouts/admin.pug
+include ../../../mixins/alert.pug
+include ../../../mixins/phan-trang.pug
+
+block main
+  +alert-success(4000)
+  +alert-error(5000)
+  header.ad-page
+    div
+      p.ad-crumb Quản trị / #{title}
+      h1= title
+      if moTa
+        p.ad-lead= moTa
+    if loai && can("user:create")
+      a.ad-btn(href=`${basePath}/new`) + Thêm #{title.toLowerCase()}
+    else if showCreate && can("user:create")
+      a.ad-btn(href="#tao-admin") Thêm quản trị viên
+  if stats
+    .ad-stats
+      each the in stats
+        article
+          span= the.nhan
+          strong= the.giaTri
+  if showCreate && can("user:create")
+    form.ad-form#tao-admin(method="post" action="/admin/admins")
+      h2 Thêm quản trị viên
+      label Họ và tên
+        input(type="text" name="fullName" required maxlength="80")
+      label Email
+        input(type="email" name="email" required maxlength="120")
+      label Số điện thoại
+        input(type="tel" name="phone" required placeholder="0912345678")
+      label Mật khẩu
+        input(type="password" name="password" required minlength="6" autocomplete="new-password")
+      label Vai trò
+        select(name="role" required)
+          each item in consoleRoles
+            option(value=item.code)= item.label
+      button.ad-btn(type="submit") Tạo quản trị viên
+  form.ad-filters(method="get" action=basePath)
+    input(type="search" name="q" value=q placeholder="Tên, email hoặc số điện thoại" aria-label="Tìm tài khoản")
+    select(name="status" aria-label="Trạng thái")
+      option(value="") Tất cả trạng thái
+      option(value="active" selected=status === "active") Hoạt động
+      option(value="inactive" selected=status === "inactive") Đã khóa
+    button.ad-btn(type="submit") Lọc
+    a.ad-btn.is-ghost(href=basePath) Xóa lọc
+  if users.length
+    .ad-table-wrap
+      table.ad-table
+        thead
+          tr
+            th Tài khoản
+            th Số điện thoại
+            th Vai trò
+            th Trạng thái
+            th Ngày tạo
+            th
+        tbody
+          each item in users
+            - const href = loai ? `/admin/accounts/${loai}/${item._id}` : `/admin/users/${item._id}`
+            - const passAction = loai ? `/admin/accounts/${loai}/${item._id}/password` : `/admin/users/${item._id}/password`
+            - const statusAction = loai ? `/admin/accounts/${loai}/${item._id}/status` : `/admin/users/${item._id}/status`
+            - const deleteAction = loai ? `/admin/accounts/${loai}/${item._id}/delete` : `/admin/admins/${item._id}/delete`
+            tr
+              td
+                a.ad-person(href=href)
+                  span.ad-avatar= item.fullName ? item.fullName.trim().charAt(0).toUpperCase() : "?"
+                  span
+                    strong= item.fullName
+                    small= item.email
+              td.ad-mono= item.phone
+              td
+                span.ad-badge= item.roleName || nhanVaiTro(item.roleCode || item.role)
+              td
+                span.ad-badge(class=item.status === "active" ? "is-ok" : "is-off")= nhanTrangThai(item.status)
+              td= item.createdAt ? new Date(item.createdAt).toLocaleDateString("vi-VN") : ""
+              td.ad-actions
+                a.ad-btn.is-ghost(href=href) Xem
+                if loai && can("user:update")
+                  a.ad-btn.is-ghost(href=`/admin/accounts/${loai}/${item._id}/edit`) Sửa
+                details.ad-more
+                  summary ⋯
+                  if can("user:lock")
+                    form(method="post" action=statusAction)
+                      input(type="hidden" name="status" value=(item.status === "active" ? "inactive" : "active"))
+                      button(type="submit")= item.status === "active" ? "Khóa" : "Mở"
+                  if can("user:reset_password")
+                    button(type="button" data-open-pass data-action=passAction data-name=item.fullName) Đặt lại mật khẩu
+                  if loai && can("user:update")
+                    button.ad-danger(type="button" data-open-delete data-action=deleteAction data-name=item.fullName) Xóa
+                  else if showCreate && can("system:override")
+                    form(method="post" action=deleteAction data-confirm=`Xóa ${item.fullName}?`)
+                      button.ad-danger(type="submit") Xóa
+    +phanTrang(pagination)
+  else
+    .ad-empty
+      i.bi.bi-people
+      strong Không có dữ liệu phù hợp
+      if loai && can("user:create")
+        a.ad-btn(href=`${basePath}/new`) + Thêm #{title.toLowerCase()}
+
+  dialog.ad-modal#modal-pass
+    form(method="post" action="")
+      h2 Đặt lại mật khẩu
+      p(data-pass-name)
+      label Mật khẩu mới
+        input(type="password" name="password" required minlength="8" autocomplete="new-password")
+      label Nhập lại mật khẩu
+        input(type="password" name="confirm" required minlength="8" autocomplete="new-password")
+      .ad-modal-actions
+        button.ad-btn.is-ghost(type="button" data-toggle-pass) Hiện
+        button.ad-btn.is-ghost(type="button" data-random-pass) Tạo ngẫu nhiên
+        button.ad-btn.is-ghost(type="button" data-close-modal) Hủy
+        button.ad-btn(type="submit") Lưu mật khẩu
+  dialog.ad-modal#modal-delete
+    form(method="post" action="")
+      h2 Xóa tài khoản
+      p
+        | Xóa
+        strong(data-delete-name)
+        | ? Nếu đã có đặt sân hoặc thanh toán, tài khoản chỉ được ẩn.
+      .ad-modal-actions
+        button.ad-btn.is-ghost(type="button" data-close-modal) Hủy
+        button.ad-btn.is-danger(type="submit") Xóa

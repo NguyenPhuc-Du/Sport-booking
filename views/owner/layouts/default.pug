@@ -17,7 +17,7 @@ html(lang="vi")
 
     block head
 
-  body.sz-body
+  body.sz-body(class=panelRole === "admin" ? "is-admin" : undefined)
     include ../partials/header.pug
 
     .sz-wrap

@@ -46,6 +46,20 @@ document.addEventListener("submit", (event) => {
   button.textContent = "Đang lưu...";
 });
 
+document.addEventListener("click", (event) => {
+  const help = event.target.closest(".pm-help");
+  if (!help) return;
+  const tip = document.getElementById(help.getAttribute("aria-controls"));
+  if (!tip) return;
+  const willOpen = tip.hidden;
+  document.querySelectorAll(".pm-tip").forEach((item) => {
+    item.hidden = true;
+  });
+  document.querySelectorAll(".pm-help").forEach((item) => item.setAttribute("aria-expanded", "false"));
+  tip.hidden = !willOpen;
+  help.setAttribute("aria-expanded", willOpen ? "true" : "false");
+});
+
 document.addEventListener("change", (event) => {
   const box = event.target;
   if (!(box instanceof HTMLInputElement)) return;

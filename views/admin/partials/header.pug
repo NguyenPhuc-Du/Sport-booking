@@ -1,0 +1,12 @@
+header.ad-header
+  button.ad-icon-btn(type="button" data-open-nav aria-label="Mở menu")
+    i.bi.bi-list
+  a.ad-brand(href="/admin/dashboard")
+    span Sport
+    span.ad-brand-mark Zone
+  .ad-header-user
+    span.ad-avatar= user && user.fullName ? user.fullName.trim().charAt(0).toUpperCase() : "?"
+    div
+      strong= user && user.fullName ? user.fullName : "Chưa đăng nhập"
+      small= accessRole && accessRole.name ? accessRole.name : ""
+    a.ad-logout(href="/admin/auth/logout") Thoát

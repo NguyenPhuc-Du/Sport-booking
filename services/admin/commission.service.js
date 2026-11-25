@@ -1,11 +1,11 @@
 const User = require("../../models/user.model");
 const Ledger = require("../../models/ledger-entry.model");
 const { ServiceError } = require("./auth.service");
-const audit = require("./audit.service");
 const ledger = require("./ledger.service");
 const rate = require("./rate.service");
 const { formatVnd, percentLabel } = require("./present");
 const { CYCLES, byCode, isoDate } = require("./catalog");
+const { nho, huyCache } = require("./bo-nho");
 
 function endOfDay(date) {
   const copy = new Date(date);
@@ -122,7 +122,9 @@ function reportRow(owner, lines, marks) {
     rateLabel: rateLabelOf(alive),
     fee,
     feeLabel: formatVnd(fee),
+    collected: sumBy(collected, (row) => row.amount),
     collectedLabel: formatVnd(sumBy(collected, (row) => row.amount)),
+    open: sumBy(open, (row) => row.amount),
     openLabel: formatVnd(sumBy(open, (row) => row.amount)),
     closed: parts.debt <= 0 && parts.payout <= 0,
   };
@@ -173,11 +175,13 @@ async function report(period) {
 
 async function page(query) {
   const period = periodOf(query, "weekly");
+  const key = `hh:${period.fromInput}:${period.toInput}:${period.cycle}`;
+  const rows = await nho(key, 45000, () => report(period));
   return {
     period,
     cycles: CYCLES,
     rateLabel: percentLabel(rate.resolveRate()),
-    rows: await report(period),
+    rows,
   };
 }
 
@@ -215,13 +219,59 @@ async function closePeriod(actorId, body) {
       note: `Trả chủ sân phần đã thu qua sàn ${period.fromInput} → ${period.toInput}`,
     });
   }
-
-  await audit.write(
-    actorId,
-    "commission.close",
-    owner._id,
-    `${owner.fullName} · nộp ${parts.debt} · trả ${parts.payout} · ${period.fromInput} → ${period.toInput}`,
-  );
+  huyCache();
 }
 
-module.exports = { page, closePeriod };
+/**
+ * Cộng các cột số của báo cáo.
+ * @param {object[]} rows Dòng reportRow.
+ * @returns {object} Tổng đã format.
+ */
+function tongHop(rows) {
+  const sum = (key) => rows.reduce((total, row) => total + Number(row[key] || 0), 0);
+  return {
+    revenueLabel: formatVnd(sum("revenue")),
+    feeLabel: formatVnd(sum("fee")),
+    collectedLabel: formatVnd(sum("collected")),
+    openLabel: formatVnd(sum("open")),
+  };
+}
+
+/**
+ * Xuất CSV báo cáo hoa hồng.
+ * @param {object[]} rows Dòng báo cáo.
+ * @returns {string}
+ */
+function csv(rows) {
+  const esc = (value) => `"${String(value == null ? "" : value).replace(/"/g, '""')}"`;
+  const header = ["Chủ sân", "Doanh thu", "Tỷ lệ", "Hoa hồng", "Đã thu", "Còn mở", "Trạng thái"];
+  const lines = rows.map((row) =>
+    [row.ownerName, row.revenue, row.rateLabel, row.fee, row.collected, row.open, row.closed ? "Đã chốt" : "Còn mở"]
+      .map(esc)
+      .join(","),
+  );
+  return `\uFEFF${[header.join(","), ...lines].join("\n")}`;
+}
+
+/**
+ * Đánh dấu các dòng hoa hồng trong kỳ là đã thu.
+ * @param {string} ownerId Id chủ sân.
+ * @param {object} query from, to, cycle.
+ * @returns {Promise<number>} Số dòng vừa cập nhật.
+ */
+async function danhDauDaThu(ownerId, query) {
+  const period = periodOf(query, "weekly");
+  const result = await Ledger.updateMany(
+    {
+      owner_id: ownerId,
+      type: "commission",
+      collected: { $ne: true },
+      created_at: { $gte: period.from, $lte: period.to },
+    },
+    { $set: { collected: true } },
+  );
+  huyCache();
+  return result.modifiedCount || 0;
+}
+
+module.exports = { page, closePeriod, tongHop, csv, danhDauDaThu };
