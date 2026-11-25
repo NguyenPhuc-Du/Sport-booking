@@ -1,0 +1,323 @@
+extends ../../layouts/default.pug
+
+block head
+  link(rel="stylesheet" href="/admin/css/drinks.css")
+  link(rel="stylesheet" href="/admin/css/drink-index.css")
+  link(rel="stylesheet" href="/admin/css/dashboard-bookings.css")
+  style.
+    .rp-ops { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+    .rp-ops select, .rp-ops input { max-width: 140px; }
+    .rp-table td, .rp-table th { white-space: nowrap; }
+    .rp-detail { background:#f8fafc; border-radius:12px; padding:14px; min-height:180px; }
+    .rp-row.active { outline:2px solid #0ea5e9; background:#f0f9ff; }
+    .rp-note { font-size:12px; color:#64748b; }
+    .rp-actions { display:flex; flex-wrap:wrap; gap:8px; }
+
+block main
+  - const f = typeof filter !== "undefined" ? filter : {}
+  - const s = typeof summary !== "undefined" ? summary : { invoiceCount: 0, revenueText: "0đ", expenseText: "0đ", profitText: "0đ" }
+  - const list = typeof invoices !== "undefined" ? invoices : []
+  - const qm = typeof quarterMatrix !== "undefined" ? quarterMatrix : { year: f.year, thu: {}, chi: {}, profit: {} }
+  - const staff = typeof staffStats !== "undefined" ? staffStats : { years: [], rows: [], all: { years: {}, total: 0, name: "TẤT CẢ" } }
+  - const cust = typeof customerStats !== "undefined" ? customerStats : { years: [], rows: [], all: { years: {}, total: 0, name: "TẤT CẢ" } }
+  - const prod = typeof productStats !== "undefined" ? productStats : { year: f.year, rows: [], all: { q1:0,q2:0,q3:0,q4:0,total:0,name:"Tất cả" } }
+  - const money = (n) => `${Number(n || 0).toLocaleString("vi-VN")}đ`
+  - const qs = (o = {}) => { const p = Object.assign({}, f, o); return Object.keys(p).filter((k) => p[k] !== undefined && p[k] !== "").map((k) => k + "=" + encodeURIComponent(p[k])).join("&"); }
+  - const tab = f.tab || "overview"
+
+  .d-flex.justify-content-between.align-items-start.flex-wrap.gap-3.mb-4
+    div
+      h1.sz-title Báo cáo tài chính
+      p.sz-subtitle Lọc · duyệt hóa đơn · thống kê quý/năm · xuất Excel/PDF
+      p.rp-note DB: #{dbNote.connection} · Query: #{dbNote.queries} · Cache #{dbNote.cacheTtlMinutes} phút
+    .rp-actions
+      a.sz-btn.sz-btn-dark(href=`${prefixOwner}/dashboard/reports/export.xlsx?${qs()}`)
+        i.bi.bi-file-earmark-excel
+        |  Xuất Excel
+      a.sz-btn(href=`${prefixOwner}/dashboard/reports/export.pdf?${qs()}`)
+        i.bi.bi-file-earmark-pdf
+        |  Xuất PDF
+      a.sz-link(href=`${prefixOwner}/dashboard`) ← Tổng quan
+
+  .row.g-3.mb-3
+    .col-12.col-md-3
+      .sz-card.sz-stat
+        span.sz-stat-label Số hóa đơn
+        .sz-stat-value= s.invoiceCount
+    .col-12.col-md-3
+      .sz-card.sz-stat
+        span.sz-stat-label Tổng thu
+        .sz-stat-value= s.revenueText
+    .col-12.col-md-3
+      .sz-card.sz-stat
+        span.sz-stat-label Tổng chi
+        .sz-stat-value= s.expenseText
+    .col-12.col-md-3
+      .sz-card.sz-stat
+        span.sz-stat-label Lợi nhuận
+        .sz-stat-value= s.profitText
+
+  .sz-card.sz-panel.mb-3
+    form#report-filter.sz-filter(method="GET" action=`${prefixOwner}/dashboard/reports`)
+      input(type="hidden" name="tab" value=tab)
+      select.sz-input.sz-filter-select(name="venueId")
+        option(value="") Tất cả cơ sở
+        each v in (venues || [])
+          option(value=v._id selected=(String(f.venueId) === String(v._id)))= v.name
+      input.sz-input(type="date" name="dateFrom" value=f.dateFrom)
+      input.sz-input(type="date" name="dateTo" value=f.dateTo)
+      input.sz-input(type="number" name="year" value=f.year min="2020" max="2100" style="max-width:110px")
+      .sz-search
+        i.bi.bi-search
+        input#report-q.sz-input(type="search" name="q" placeholder="Mã HĐ, khách, sân..." value=f.q autocomplete="off")
+      button.sz-btn.sz-btn-dark(type="submit") Lọc
+      a.sz-link(href=`${prefixOwner}/dashboard/reports`) Xóa lọc
+
+      .w-100.mt-2
+        .rp-note.mb-1 Tìm kiếm nâng cao — toán tử so sánh &amp; logic And/Or
+        .rp-ops
+          span Tổng tiền
+          select.sz-input(name="amountOp")
+            option(value="") —
+            each op in (ops || [])
+              option(value=op.value selected=(f.amountOp === op.value))= op.label
+          input.sz-input(type="number" name="amountValue" placeholder="VD 1000000" value=(f.amountValue === "" ? "" : f.amountValue))
+          select.sz-input(name="amountLogic")
+            option(value="and" selected=(f.amountLogic !== "or")) And
+            option(value="or" selected=(f.amountLogic === "or")) Or
+          select.sz-input(name="amountOp2")
+            option(value="") —
+            each op in (ops || [])
+              option(value=op.value selected=(f.amountOp2 === op.value))= op.label
+          input.sz-input(type="number" name="amountValue2" placeholder="VD 2000000" value=(f.amountValue2 === "" ? "" : f.amountValue2))
+        .rp-ops.mt-2
+          span Khách hàng
+          input.sz-input(type="text" name="customerA" placeholder="VD TPHCM / tên KH" value=f.customerA)
+          select.sz-input(name="customerLogic")
+            option(value="or" selected=(f.customerLogic !== "and")) Or
+            option(value="and" selected=(f.customerLogic === "and")) And
+          input.sz-input(type="text" name="customerB" placeholder="VD HN / tên KH 2" value=f.customerB)
+
+    form.mt-3.rp-ops(method="POST" action=`${prefixOwner}/dashboard/reports/import` enctype="multipart/form-data")
+      input(type="file" name="file" accept=".xlsx,.xls" required)
+      button.sz-btn(type="submit") Đọc Excel
+
+  .sz-tabs.mb-3
+    a.sz-tab(href=`?${qs({ tab: "overview" })}` class=(tab === "overview" ? "active" : undefined)) Tổng hợp quý
+    a.sz-tab(href=`?${qs({ tab: "invoices" })}` class=(tab === "invoices" ? "active" : undefined)) Duyệt hóa đơn
+    a.sz-tab(href=`?${qs({ tab: "staff" })}` class=(tab === "staff" ? "active" : undefined)) Theo nhân viên
+    a.sz-tab(href=`?${qs({ tab: "customers" })}` class=(tab === "customers" ? "active" : undefined)) Theo khách hàng
+    a.sz-tab(href=`?${qs({ tab: "products" })}` class=(tab === "products" ? "active" : undefined)) Theo sản phẩm
+
+  if tab === "overview"
+    .sz-card.sz-panel
+      h2.sz-title(style="font-size:1.15rem") Thống kê thu / chi / lợi nhuận năm #{qm.year}
+      .sz-table-wrap
+        table.sz-table.rp-table
+          thead
+            tr
+              th #{qm.year}
+              th Q1
+              th Q2
+              th Q3
+              th Q4
+              th Tổng
+          tbody
+            tr
+              td= qm.thu.label
+              td= money(qm.thu.q1)
+              td= money(qm.thu.q2)
+              td= money(qm.thu.q3)
+              td= money(qm.thu.q4)
+              td
+                strong= money(qm.thu.total)
+            tr
+              td= qm.chi.label
+              td= money(qm.chi.q1)
+              td= money(qm.chi.q2)
+              td= money(qm.chi.q3)
+              td= money(qm.chi.q4)
+              td
+                strong= money(qm.chi.total)
+            tr
+              td
+                strong= qm.profit.label
+              td
+                strong= money(qm.profit.q1)
+              td
+                strong= money(qm.profit.q2)
+              td
+                strong= money(qm.profit.q3)
+              td
+                strong= money(qm.profit.q4)
+              td
+                strong= money(qm.profit.total)
+      p.rp-note.mt-2 a) Tổng tiền hóa đơn từ ngày A→B nằm ở thẻ tổng thu phía trên (theo bộ lọc ngày).
+
+  else if tab === "invoices"
+    .sz-card.sz-panel
+      h2.sz-title(style="font-size:1.15rem") Danh sách hóa đơn
+      if list.length
+        .sz-table-wrap
+          table.sz-table.db-bookings-table#report-invoice-table
+            thead
+              tr
+                th MaHD
+                th Loại
+                th Ngày
+                th.db-col-fold Khách
+                th Tổng tiền
+                th.db-col-action
+                th.db-detail-head Chi tiết hóa đơn
+            tbody
+              each inv, index in list
+                tr.db-row.rp-row(class=(selected && selected.code === inv.code ? "active" : undefined) data-code=inv.code tabindex="0")
+                  td
+                    strong= inv.code
+                  td= inv.typeLabel
+                  td= inv.date
+                  td.db-col-fold
+                    div= inv.customer
+                    .sz-muted= inv.phone
+                  td
+                    strong.sz-price= inv.amountText
+                  td.db-col-action
+                    a.db-view-btn(href=`?${qs({ tab: "invoices", selectedCode: inv.code })}`) Xem
+                  if index === 0
+                    td.db-detail-cell(rowspan=list.length)
+                      .rp-detail#invoice-detail
+                        if selected
+                          h3.mb-2= selected.code
+                          p.sz-muted #{selected.typeLabel} · #{selected.date} · #{selected.venue}
+                          p Khách: #{selected.customer} #{selected.phone ? "(" + selected.phone + ")" : ""}
+                          p NV: #{selected.staffName}
+                          hr
+                          each line in selected.lines
+                            .d-flex.justify-content-between.mb-1
+                              span #{line.name} × #{line.qty}
+                              strong= money(line.lineTotal)
+                          hr
+                          .d-flex.justify-content-between
+                            strong Tổng
+                            strong.sz-price= selected.amountText
+                        else
+                          .sz-empty
+                            p Chọn một hóa đơn để xem chi tiết
+      else
+        .sz-empty
+          i.bi.bi-receipt
+          h3 Không có hóa đơn
+          p Thử đổi khoảng ngày hoặc bỏ điều kiện lọc nâng cao.
+
+  else if tab === "staff"
+    .sz-card.sz-panel
+      h2.sz-title(style="font-size:1.15rem") Thống kê theo nhân viên &amp; năm
+      .sz-table-wrap
+        table.sz-table.rp-table
+          thead
+            tr
+              th NV
+              each y in staff.years
+                th= y
+              th TỔNG
+          tbody
+            each row in staff.rows
+              tr
+                td= row.name
+                each y in staff.years
+                  td= money(row.years[y])
+                td
+                  strong= money(row.total)
+            tr
+              td
+                strong= staff.all.name
+              each y in staff.years
+                td
+                  strong= money(staff.all.years[y])
+              td
+                strong= money(staff.all.total)
+      p.rp-note NV lấy từ người tạo đơn bán nước (Sale.createdBy). Đơn đặt sân qua app ghi “Hệ thống / App”.
+
+  else if tab === "customers"
+    .sz-card.sz-panel
+      h2.sz-title(style="font-size:1.15rem") Thống kê theo khách hàng &amp; năm
+      .sz-table-wrap
+        table.sz-table.rp-table
+          thead
+            tr
+              th Khách hàng
+              th SĐT
+              each y in cust.years
+                th= y
+              th TỔNG
+          tbody
+            each row in cust.rows
+              tr
+                td= row.name
+                td= row.phone || "—"
+                each y in cust.years
+                  td= money(row.years[y])
+                td
+                  strong= money(row.total)
+            tr
+              td(colspan="2")
+                strong= cust.all.name
+              each y in cust.years
+                td
+                  strong= money(cust.all.years[y])
+              td
+                strong= money(cust.all.total)
+
+  else if tab === "products"
+    .sz-card.sz-panel
+      h2.sz-title(style="font-size:1.15rem") Thống kê theo sản phẩm · quý #{prod.year}
+      p.rp-note
+        strong Bảng này quan trọng nhất để năm sau tính kế hoạch kinh doanh.
+      .sz-table-wrap
+        table.sz-table.rp-table
+          thead
+            tr
+              th Sản phẩm
+              th Q1
+              th Q2
+              th Q3
+              th Q4
+              th TỔNG
+          tbody
+            each row in prod.rows
+              tr
+                td= row.name
+                td= money(row.q1)
+                td= money(row.q2)
+                td= money(row.q3)
+                td= money(row.q4)
+                td
+                  strong= money(row.total)
+            tr
+              td
+                strong= prod.all.name
+              td
+                strong= money(prod.all.q1)
+              td
+                strong= money(prod.all.q2)
+              td
+                strong= money(prod.all.q3)
+              td
+                strong= money(prod.all.q4)
+              td
+                strong= money(prod.all.total)
+
+block scripts
+  script.
+    (function () {
+      var input = document.getElementById("report-q");
+      var form = document.getElementById("report-filter");
+      if (!input || !form) return;
+      var timer = null;
+      input.addEventListener("input", function () {
+        clearTimeout(timer);
+        timer = setTimeout(function () {
+          form.requestSubmit ? form.requestSubmit() : form.submit();
+        }, 450);
+      });
+    })();

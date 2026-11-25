@@ -47,6 +47,7 @@ function forget(prefix) {
 function clearCatalog() {
   forget("owner:venues:");
   forget("owner:courts:");
+  forget("owner:report:");
   forget("catalog:");
   forget("price:");
   forget("app:");

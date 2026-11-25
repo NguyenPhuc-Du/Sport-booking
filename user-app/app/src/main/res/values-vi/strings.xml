@@ -137,6 +137,13 @@
 
     <!-- Forgot Password Screen -->
     <string name="login_forgot_password">Quên mật khẩu?</string>
+    <string name="login_continue_as_guest">Tiếp tục với tư cách khách</string>
+    <string name="guest_login_required_title">Cần đăng nhập</string>
+    <string name="guest_login_required_message">Vui lòng đăng nhập để dùng tính năng này. Sau khi đăng nhập bạn sẽ quay lại đúng màn hình hiện tại.</string>
+    <string name="guest_login_required_confirm">Đăng nhập</string>
+    <string name="guest_login_required_checkout">Vui lòng đăng nhập để thanh toán. Đơn và các lựa chọn của bạn sẽ được giữ lại.</string>
+    <string name="guest_login_required_profile">Vui lòng đăng nhập để xem hồ sơ và quản lý tài khoản.</string>
+    <string name="guest_login_required_bookings">Vui lòng đăng nhập để xem lịch đặt sân của bạn.</string>
     <string name="forgot_password_title">Quên mật khẩu?</string>
     <string name="forgot_password_subtitle">Nhập email hoặc số điện thoại liên kết với tài khoản SportZone của bạn để nhận mã khôi phục.</string>
     <string name="forgot_password_input_label">Email hoặc số điện thoại</string>
