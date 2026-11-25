@@ -5,13 +5,196 @@ block head
   link(rel="stylesheet" href="/admin/css/drink-index.css")
   link(rel="stylesheet" href="/admin/css/dashboard-bookings.css")
   style.
-    .rp-ops { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
-    .rp-ops select, .rp-ops input { max-width: 140px; }
+    .rp-hero {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .rp-hero h1 { margin-bottom: 4px; }
+    .rp-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+    .rp-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 12px;
+      padding: 11px 16px;
+      font-weight: 700;
+      font-size: 14px;
+      text-decoration: none;
+      border: 1px solid transparent;
+      transition: .15s ease;
+      line-height: 1.2;
+    }
+    .rp-btn i { font-size: 16px; }
+    .rp-btn-primary {
+      background: #0f172a;
+      color: #fff;
+      box-shadow: 0 8px 18px rgba(15, 23, 42, .18);
+    }
+    .rp-btn-primary:hover { background: #1e293b; color: #fff; }
+    .rp-btn-outline {
+      background: #fff;
+      color: #0f172a;
+      border-color: #cbd5e1;
+    }
+    .rp-btn-outline:hover {
+      border-color: #0f766e;
+      color: #0f766e;
+      background: #f0fdfa;
+    }
+    .rp-btn-soft {
+      background: #ecfdf5;
+      color: #0f766e;
+      border-color: #99f6e4;
+    }
+    .rp-btn-soft:hover { background: #ccfbf1; color: #115e59; }
+    .rp-stat {
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 16px 18px;
+      background: linear-gradient(180deg, #fff 0%, #f8fafc 100%);
+      height: 100%;
+    }
+    .rp-stat-label {
+      display: block;
+      color: #64748b;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .rp-stat-value {
+      font-size: 1.45rem;
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1.2;
+    }
+    .rp-stat.is-profit .rp-stat-value { color: #0f766e; }
+    .rp-panel {
+      border: 1px solid #e2e8f0;
+      border-radius: 18px;
+      background: #fff;
+      padding: 18px;
+      margin-bottom: 16px;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, .04);
+    }
+    .rp-panel-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 12px;
+    }
+    .rp-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .rp-grid-2 {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 12px;
+    }
+    .rp-field label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: #64748b;
+      margin-bottom: 6px;
+    }
+    .rp-field .sz-input,
+    .rp-field select.sz-input {
+      width: 100%;
+      max-width: none;
+    }
+    .rp-advanced {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px dashed #e2e8f0;
+    }
+    .rp-ops {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-top: 8px;
+    }
+    .rp-ops select,
+    .rp-ops input { max-width: 150px; }
+    .rp-ops-label {
+      min-width: 84px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #334155;
+    }
+    .rp-note { font-size: 12px; color: #64748b; }
+    .rp-import {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-top: 14px;
+      padding: 12px;
+      border-radius: 12px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+    }
+    .rp-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .rp-tab {
+      display: inline-flex;
+      align-items: center;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid #e2e8f0;
+      background: #fff;
+      color: #475569;
+      font-weight: 700;
+      font-size: 13px;
+      text-decoration: none;
+    }
+    .rp-tab:hover { border-color: #99f6e4; color: #0f766e; }
+    .rp-tab.active {
+      background: #0f766e;
+      border-color: #0f766e;
+      color: #fff;
+      box-shadow: 0 8px 16px rgba(15, 118, 110, .22);
+    }
+    .rp-detail {
+      background: #f8fafc;
+      border-radius: 14px;
+      padding: 16px;
+      min-height: 200px;
+      border: 1px solid #e2e8f0;
+    }
+    .rp-row.active { outline: 2px solid #14b8a6; background: #f0fdfa; }
+    .rp-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: #ecfdf5;
+      color: #0f766e;
+      font-size: 11px;
+      font-weight: 700;
+      margin-right: 4px;
+    }
     .rp-table td, .rp-table th { white-space: nowrap; }
-    .rp-detail { background:#f8fafc; border-radius:12px; padding:14px; min-height:180px; }
-    .rp-row.active { outline:2px solid #0ea5e9; background:#f0f9ff; }
-    .rp-note { font-size:12px; color:#64748b; }
-    .rp-actions { display:flex; flex-wrap:wrap; gap:8px; }
+    @media (max-width: 992px) {
+      .rp-grid, .rp-grid-2 { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 640px) {
+      .rp-grid, .rp-grid-2 { grid-template-columns: 1fr; }
+    }
 
 block main
   - const f = typeof filter !== "undefined" ? filter : {}
@@ -25,57 +208,77 @@ block main
   - const qs = (o = {}) => { const p = Object.assign({}, f, o); return Object.keys(p).filter((k) => p[k] !== undefined && p[k] !== "").map((k) => k + "=" + encodeURIComponent(p[k])).join("&"); }
   - const tab = f.tab || "overview"
 
-  .d-flex.justify-content-between.align-items-start.flex-wrap.gap-3.mb-4
+  .rp-hero
     div
       h1.sz-title Báo cáo tài chính
       p.sz-subtitle Lọc nâng cao · duyệt hóa đơn · thống kê quý/năm · xuất Excel/PDF
     .rp-actions
-      a.sz-btn.sz-btn-dark(href=`${prefixOwner}/dashboard/reports/export.xlsx?${qs()}`)
+      a.rp-btn.rp-btn-primary(href=`${prefixOwner}/dashboard/reports/export.xlsx?${qs()}`)
         i.bi.bi-file-earmark-excel
-        |  Xuất Excel
-      a.sz-btn(href=`${prefixOwner}/dashboard/reports/export.pdf?${qs()}`)
+        span Xuất Excel
+      a.rp-btn.rp-btn-outline(href=`${prefixOwner}/dashboard/reports/export.pdf?${qs()}`)
         i.bi.bi-file-earmark-pdf
-        |  Xuất PDF
-      a.sz-link(href=`${prefixOwner}/dashboard`) ← Tổng quan
+        span Xuất PDF
 
   .row.g-3.mb-3
     .col-12.col-md-3
-      .sz-card.sz-stat
-        span.sz-stat-label Số hóa đơn
-        .sz-stat-value= s.invoiceCount
+      .rp-stat
+        span.rp-stat-label Số hóa đơn
+        .rp-stat-value= s.invoiceCount
     .col-12.col-md-3
-      .sz-card.sz-stat
-        span.sz-stat-label Tổng thu
-        .sz-stat-value= s.revenueText
+      .rp-stat
+        span.rp-stat-label Tổng thu
+        .rp-stat-value= s.revenueText
     .col-12.col-md-3
-      .sz-card.sz-stat
-        span.sz-stat-label Tổng chi
-        .sz-stat-value= s.expenseText
+      .rp-stat
+        span.rp-stat-label Tổng chi
+        .rp-stat-value= s.expenseText
     .col-12.col-md-3
-      .sz-card.sz-stat
-        span.sz-stat-label Lợi nhuận
-        .sz-stat-value= s.profitText
+      .rp-stat.is-profit
+        span.rp-stat-label Lợi nhuận
+        .rp-stat-value= s.profitText
 
-  .sz-card.sz-panel.mb-3
-    form#report-filter.sz-filter(method="GET" action=`${prefixOwner}/dashboard/reports`)
+  .rp-panel
+    .rp-panel-title Bộ lọc báo cáo
+    form#report-filter(method="GET" action=`${prefixOwner}/dashboard/reports`)
       input(type="hidden" name="tab" value=tab)
-      select.sz-input.sz-filter-select(name="venueId")
-        option(value="") Tất cả cơ sở
-        each v in (venues || [])
-          option(value=v._id selected=(String(f.venueId) === String(v._id)))= v.name
-      input.sz-input(type="date" name="dateFrom" value=f.dateFrom)
-      input.sz-input(type="date" name="dateTo" value=f.dateTo)
-      input.sz-input(type="number" name="year" value=f.year min="2020" max="2100" style="max-width:110px")
-      .sz-search
-        i.bi.bi-search
-        input#report-q.sz-input(type="search" name="q" placeholder="Mã HĐ, khách, sân..." value=f.q autocomplete="off")
-      button.sz-btn.sz-btn-dark(type="submit") Lọc
-      a.sz-link(href=`${prefixOwner}/dashboard/reports`) Xóa lọc
+      .rp-grid
+        .rp-field
+          label Cơ sở
+          select.sz-input(name="venueId")
+            option(value="") Tất cả cơ sở
+            each v in (venues || [])
+              option(value=v._id selected=(String(f.venueId) === String(v._id)))= v.name
+        .rp-field
+          label Từ ngày
+          input.sz-input(type="date" name="dateFrom" value=f.dateFrom)
+        .rp-field
+          label Đến ngày
+          input.sz-input(type="date" name="dateTo" value=f.dateTo)
+        .rp-field
+          label Năm thống kê
+          input.sz-input(type="number" name="year" value=f.year min="2020" max="2100")
+      .rp-grid-2
+        .rp-field
+          label Tìm kiếm
+          .sz-search
+            i.bi.bi-search
+            input#report-q.sz-input(type="search" name="q" placeholder="Mã HĐ, khách, sân..." value=f.q autocomplete="off")
+        .rp-field
+          label Loại voucher
+          select.sz-input(name="voucherScope")
+            each vs in (voucherScopes || [])
+              option(value=vs.value selected=(String(f.voucherScope || "") === String(vs.value)))= vs.label
+      .d-flex.flex-wrap.gap-2.mt-3
+        button.rp-btn.rp-btn-primary(type="submit")
+          i.bi.bi-funnel
+          span Áp dụng lọc
+        a.rp-btn.rp-btn-soft(href=`${prefixOwner}/dashboard/reports`) Xóa lọc
 
-      .w-100.mt-2
+      .rp-advanced
         .rp-note.mb-1 Tìm kiếm nâng cao — toán tử so sánh &amp; logic And/Or
         .rp-ops
-          span Tổng tiền
+          span.rp-ops-label Tổng tiền
           select.sz-input(name="amountOp")
             option(value="") —
             each op in (ops || [])
@@ -89,29 +292,30 @@ block main
             each op in (ops || [])
               option(value=op.value selected=(f.amountOp2 === op.value))= op.label
           input.sz-input(type="number" name="amountValue2" placeholder="VD 2000000" value=(f.amountValue2 === "" ? "" : f.amountValue2))
-        .rp-ops.mt-2
-          span Khách hàng
-          input.sz-input(type="text" name="customerA" placeholder="VD TPHCM / tên KH" value=f.customerA)
+        .rp-ops
+          span.rp-ops-label Khách hàng
+          input.sz-input(type="text" name="customerA" placeholder="VD tên / khu vực" value=f.customerA)
           select.sz-input(name="customerLogic")
             option(value="or" selected=(f.customerLogic !== "and")) Or
             option(value="and" selected=(f.customerLogic === "and")) And
-          input.sz-input(type="text" name="customerB" placeholder="VD HN / tên KH 2" value=f.customerB)
+          input.sz-input(type="text" name="customerB" placeholder="VD tên / khu vực 2" value=f.customerB)
 
-    form.mt-3.rp-ops(method="POST" action=`${prefixOwner}/dashboard/reports/import` enctype="multipart/form-data")
-      span.rp-note Xem trước file Excel đối chiếu
+    form.rp-import(method="POST" action=`${prefixOwner}/dashboard/reports/import` enctype="multipart/form-data")
+      i.bi.bi-file-earmark-arrow-up
+      span.rp-note Xem trước file Excel để đối chiếu
       input(type="file" name="file" accept=".xlsx,.xls" required)
-      button.sz-btn(type="submit") Đọc file Excel
+      button.rp-btn.rp-btn-outline(type="submit") Đọc file Excel
 
-  .sz-tabs.mb-3
-    a.sz-tab(href=`?${qs({ tab: "overview" })}` class=(tab === "overview" ? "active" : undefined)) Tổng hợp quý
-    a.sz-tab(href=`?${qs({ tab: "invoices" })}` class=(tab === "invoices" ? "active" : undefined)) Duyệt hóa đơn
-    a.sz-tab(href=`?${qs({ tab: "staff" })}` class=(tab === "staff" ? "active" : undefined)) Theo nhân viên
-    a.sz-tab(href=`?${qs({ tab: "customers" })}` class=(tab === "customers" ? "active" : undefined)) Theo khách hàng
-    a.sz-tab(href=`?${qs({ tab: "products" })}` class=(tab === "products" ? "active" : undefined)) Theo sản phẩm
+  .rp-tabs
+    a.rp-tab(href=`?${qs({ tab: "overview" })}` class=(tab === "overview" ? "active" : undefined)) Tổng hợp quý
+    a.rp-tab(href=`?${qs({ tab: "invoices" })}` class=(tab === "invoices" ? "active" : undefined)) Duyệt hóa đơn
+    a.rp-tab(href=`?${qs({ tab: "staff" })}` class=(tab === "staff" ? "active" : undefined)) Theo nhân viên
+    a.rp-tab(href=`?${qs({ tab: "customers" })}` class=(tab === "customers" ? "active" : undefined)) Theo khách hàng
+    a.rp-tab(href=`?${qs({ tab: "products" })}` class=(tab === "products" ? "active" : undefined)) Theo sản phẩm
 
   if tab === "overview"
-    .sz-card.sz-panel
-      h2.sz-title(style="font-size:1.15rem") Thống kê thu / chi / lợi nhuận năm #{qm.year}
+    .rp-panel
+      h2.sz-title(style="font-size:1.15rem;margin-bottom:12px") Thu / chi / lợi nhuận năm #{qm.year}
       .sz-table-wrap
         table.sz-table.rp-table
           thead
@@ -152,11 +356,10 @@ block main
                 strong= money(qm.profit.q4)
               td
                 strong= money(qm.profit.total)
-      p.rp-note.mt-2 a) Tổng tiền hóa đơn từ ngày A→B nằm ở thẻ tổng thu phía trên (theo bộ lọc ngày).
 
   else if tab === "invoices"
-    .sz-card.sz-panel
-      h2.sz-title(style="font-size:1.15rem") Danh sách hóa đơn
+    .rp-panel
+      h2.sz-title(style="font-size:1.15rem;margin-bottom:12px") Danh sách hóa đơn
       if list.length
         .sz-table-wrap
           table.sz-table.db-bookings-table#report-invoice-table
@@ -165,7 +368,7 @@ block main
                 th MaHD
                 th Loại
                 th Ngày
-                th.db-col-fold Khách
+                th.db-col-fold Khách / Voucher
                 th Tổng tiền
                 th.db-col-action
                 th.db-detail-head Chi tiết hóa đơn
@@ -179,6 +382,10 @@ block main
                   td.db-col-fold
                     div= inv.customer
                     .sz-muted= inv.phone
+                    if inv.vouchers && inv.vouchers.length
+                      .mt-1
+                        each v in inv.vouchers
+                          span.rp-chip #{v.scopeLabel}: #{v.code}
                   td
                     strong.sz-price= inv.amountText
                   td.db-col-action
@@ -191,6 +398,14 @@ block main
                           p.sz-muted #{selected.typeLabel} · #{selected.date} · #{selected.venue}
                           p Khách: #{selected.customer} #{selected.phone ? "(" + selected.phone + ")" : ""}
                           p NV: #{selected.staffName}
+                          if selected.vouchers && selected.vouchers.length
+                            p
+                              | Voucher:
+                              each v in selected.vouchers
+                                span.rp-chip #{v.scopeLabel}: #{v.code}
+                            if selected.discount
+                              p Giảm giá: 
+                                strong= selected.discountText
                           hr
                           each line in selected.lines
                             .d-flex.justify-content-between.mb-1
@@ -210,8 +425,8 @@ block main
           p Thử đổi khoảng ngày hoặc bỏ điều kiện lọc nâng cao.
 
   else if tab === "staff"
-    .sz-card.sz-panel
-      h2.sz-title(style="font-size:1.15rem") Thống kê theo nhân viên &amp; năm
+    .rp-panel
+      h2.sz-title(style="font-size:1.15rem;margin-bottom:12px") Thống kê theo nhân viên &amp; năm
       .sz-table-wrap
         table.sz-table.rp-table
           thead
@@ -236,11 +451,10 @@ block main
                   strong= money(staff.all.years[y])
               td
                 strong= money(staff.all.total)
-      p.rp-note NV lấy từ người tạo đơn bán nước (Sale.createdBy). Đơn đặt sân qua app ghi “Hệ thống / App”.
 
   else if tab === "customers"
-    .sz-card.sz-panel
-      h2.sz-title(style="font-size:1.15rem") Thống kê theo khách hàng &amp; năm
+    .rp-panel
+      h2.sz-title(style="font-size:1.15rem;margin-bottom:12px") Thống kê theo khách hàng &amp; năm
       .sz-table-wrap
         table.sz-table.rp-table
           thead
@@ -269,10 +483,9 @@ block main
                 strong= money(cust.all.total)
 
   else if tab === "products"
-    .sz-card.sz-panel
-      h2.sz-title(style="font-size:1.15rem") Thống kê theo sản phẩm · quý #{prod.year}
-      p.rp-note
-        strong Bảng này quan trọng nhất để năm sau tính kế hoạch kinh doanh.
+    .rp-panel
+      h2.sz-title(style="font-size:1.15rem;margin-bottom:8px") Thống kê theo sản phẩm · quý #{prod.year}
+      p.rp-note.mb-3 Bảng này dùng để lập kế hoạch kinh doanh năm sau.
       .sz-table-wrap
         table.sz-table.rp-table
           thead
@@ -307,7 +520,7 @@ block main
               td
                 strong= money(prod.all.total)
 
-block scripts
+block script
   script.
     (function () {
       var input = document.getElementById("report-q");

@@ -4,6 +4,8 @@ aside.sz-sidebar
       small.sz-facility-label CƠ SỞ ĐANG QUẢN LÝ
       span.sz-dot-green(aria-hidden="true")
     .sz-facility-name= sidebarVenueName || "Cơ sở của bạn"
+    if sidebarVenueExtra
+      .sz-facility-plan= sidebarVenueExtra
 
   .sz-menu-title PHÂN HỆ CHỦ SÂN
   nav.sz-menu(aria-label="Menu chủ sân")

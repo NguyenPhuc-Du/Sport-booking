@@ -24,16 +24,16 @@ module.exports = async (req, res, next) => {
   res.locals.panelHome = systemConfig.prefixOwner + "/dashboard";
   res.locals.activeMenu = resolveActiveMenu(req.path || "");
   res.locals.sidebarVenueName = "Cơ sở của bạn";
+  res.locals.sidebarVenueExtra = "";
 
   try {
     const ownerId = res.locals.user && res.locals.user.id;
     if (ownerId) {
       const venues = await facilityService.getAllVenueByOwnerId(ownerId);
       if (venues && venues.length) {
-        res.locals.sidebarVenueName =
-          venues.length === 1
-            ? venues[0].name
-            : `${venues[0].name} (+${venues.length - 1})`;
+        res.locals.sidebarVenueName = venues[0].name;
+        res.locals.sidebarVenueExtra =
+          venues.length > 1 ? `+${venues.length - 1} cơ sở khác` : "";
       }
     }
   } catch (error) {

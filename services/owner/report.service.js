@@ -5,8 +5,15 @@ const Booking = require("../../models/booking.model");
 const Sale = require("../../models/sale.model");
 const StockReceipt = require("../../models/stock-receipt.model");
 const User = require("../../models/user.model");
+const Voucher = require("../../models/finance.model");
 const facilityService = require("./facility.service");
 const cache = require("../../helpers/memory-cache");
+
+const VOUCHER_SCOPE_LABEL = {
+  court: "Tiền sân",
+  drink: "Đồ uống",
+  order: "Hoá đơn",
+};
 
 const CACHE_TTL = 7 * 60 * 1000; // 7 phút
 const PAID_BOOKING = ["upcoming", "completed"];
@@ -76,6 +83,9 @@ function normalizeFilter(query = {}) {
     customerLogic: String(query.customerLogic || "or").toLowerCase() === "and" ? "and" : "or",
     customerA: String(query.customerA || "").trim(),
     customerB: String(query.customerB || "").trim(),
+    voucherScope: ["court", "drink", "order", "none"].includes(query.voucherScope)
+      ? query.voucherScope
+      : "",
     selectedCode: String(query.selectedCode || "").trim(),
   };
 }
@@ -198,12 +208,50 @@ async function loadInvoices(venueIds, filter) {
     Sale.find(saleFilter).sort({ paidAt: -1 }).limit(500).lean(),
   ]);
 
+  const voucherCodes = [
+    ...new Set(
+      bookings
+        .flatMap((b) =>
+          String(b.voucherCode || "")
+            .split(",")
+            .map((c) => c.trim().toUpperCase())
+            .filter(Boolean),
+        ),
+    ),
+  ];
+  const voucherDocs = voucherCodes.length
+    ? await Voucher.find({ code: { $in: voucherCodes } })
+        .select("code apply_scope name")
+        .lean()
+    : [];
+  const voucherMap = new Map(
+    voucherDocs.map((v) => [
+      String(v.code).toUpperCase(),
+      {
+        code: v.code,
+        scope: v.apply_scope || "court",
+        scopeLabel: VOUCHER_SCOPE_LABEL[v.apply_scope || "court"] || v.apply_scope,
+        name: v.name || "",
+      },
+    ]),
+  );
+
   const bookingRows = bookings.map((b) => {
     const user = b.userId || {};
     const customerLabel =
       String(b.guestName || "").trim() ||
       String(user.fullName || "").trim() ||
       "Khách";
+    const codes = String(b.voucherCode || "")
+      .split(",")
+      .map((c) => c.trim().toUpperCase())
+      .filter(Boolean);
+    const vouchers = codes.map((code) => voucherMap.get(code) || {
+      code,
+      scope: "court",
+      scopeLabel: "Tiền sân",
+      name: "",
+    });
     return {
       code: b.code,
       type: "booking",
@@ -214,6 +262,11 @@ async function loadInvoices(venueIds, filter) {
       venue: b.facilityName || "",
       amount: Number(b.amount || 0),
       amountText: formatMoney(b.amount),
+      discount: Number(b.discount || 0),
+      discountText: formatMoney(b.discount || 0),
+      voucherCode: codes.join(", ") || "",
+      vouchers,
+      voucherScopes: [...new Set(vouchers.map((v) => v.scope))],
       staffId: "",
       staffName: "Hệ thống / App",
       lines: [
@@ -245,6 +298,11 @@ async function loadInvoices(venueIds, filter) {
     venue: s.venueName || "",
     amount: Number(s.amount || 0),
     amountText: formatMoney(s.amount),
+    discount: 0,
+    discountText: formatMoney(0),
+    voucherCode: "",
+    vouchers: [],
+    voucherScopes: [],
     staffId: s.createdBy ? String(s.createdBy) : "",
     staffName: "",
     lines: (s.items || []).map((item) => ({
@@ -266,7 +324,13 @@ async function loadInvoices(venueIds, filter) {
     row.staffName = staffMap.get(row.staffId) || "Nhân viên";
   });
 
-  return [...bookingRows, ...saleRows].sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  let rows = [...bookingRows, ...saleRows].sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  if (filter.voucherScope === "none") {
+    rows = rows.filter((row) => !row.vouchers.length);
+  } else if (filter.voucherScope) {
+    rows = rows.filter((row) => row.voucherScopes.includes(filter.voucherScope));
+  }
+  return rows;
 }
 
 async function loadExpense(venueIds, filter) {
@@ -495,6 +559,13 @@ async function buildReport(ownerId, query) {
         { value: "lte", label: "<=" },
         { value: "eq", label: "==" },
         { value: "ne", label: "!=" },
+      ],
+      voucherScopes: [
+        { value: "", label: "Tất cả loại voucher" },
+        { value: "court", label: "Voucher tiền sân" },
+        { value: "drink", label: "Voucher đồ uống" },
+        { value: "order", label: "Voucher hoá đơn" },
+        { value: "none", label: "Không dùng voucher" },
       ],
       summary: {
         invoiceCount: invoices.length,
