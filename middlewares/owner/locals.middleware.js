@@ -7,6 +7,7 @@ function resolveActiveMenu(path) {
   if (path.startsWith("/drinks")) return "drinks";
   if (path.startsWith("/reviews")) return "reviews";
   if (path.startsWith("/profile")) return "profile";
+  if (path.startsWith("/dashboard/reports")) return "reports";
   if (path.startsWith("/dashboard") || path === "/" || path === "") {
     return "dashboard";
   }
