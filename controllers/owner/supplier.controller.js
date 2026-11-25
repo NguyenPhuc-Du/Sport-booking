@@ -6,12 +6,11 @@ function suppliersPath(suffix = "") {
 }
 
 module.exports.index = async (req, res) => {
-  const suppliers = await supplierService.listSuppliers(res.locals.user.id, req.query);
+  const suppliers = await supplierService.danhSachDaNho(res.locals.user.id);
   res.render("owner/pages/drinks/suppliers", {
     pageTitle: "Nhà cung cấp",
     activeMenu: "drinks",
     suppliers,
-    filter: req.query,
   });
 };
 

@@ -344,6 +344,10 @@
     fields.court.textContent = show(slot.dataset.court);
     fields.time.textContent = show(slot.dataset.time);
     fields.amount.textContent = show(slot.dataset.amount);
+    var pdf = document.getElementById("bookingPdf");
+    if (pdf) {
+      pdf.href = (modal.dataset.pdfBase || "") + encodeURIComponent(slot.dataset.code || "") + "/pdf";
+    }
     checkInCode.value = slot.dataset.code || "";
     cancelCode.value = slot.dataset.code || "";
     checkInForm.hidden = slot.dataset.status === "completed";

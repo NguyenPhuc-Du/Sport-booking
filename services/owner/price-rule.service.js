@@ -4,6 +4,7 @@ const Court = require("../../models/court.model");
 const searchHelper = require("../../helpers/search");
 const facilityService = require("./facility.service");
 const cache = require("../../helpers/memory-cache");
+const { nho } = require("../../helpers/nho-chu-san");
 
 module.exports.createPriceRule = async (body) => {
   const { venueId, court, dayType } = body;
@@ -82,7 +83,7 @@ module.exports.updatePriceRule = async (priceRuleId, body) => {
   return updated;
 };
 
-module.exports.getPriceRuleIndex = async (ownerId, query) => {
+async function taiTrangBangGia(ownerId, query) {
   const limit = 10;
   const { court, dayType, status, facility } = query;
 
@@ -167,6 +168,20 @@ module.exports.getPriceRuleIndex = async (ownerId, query) => {
     },
     pagination: { currentPage, totalPages },
   };
+}
+
+module.exports.getPriceRuleIndex = (ownerId, query) => {
+  const key = [
+    "owner:price-rules",
+    String(ownerId),
+    query.page || "1",
+    query.keyword || "",
+    query.facility || "",
+    query.court || "",
+    query.dayType || "",
+    query.status || "",
+  ].join(":");
+  return nho(key, () => taiTrangBangGia(ownerId, query));
 };
 
 module.exports.changeStatusPriceRule = async (priceRuleId, status) => {

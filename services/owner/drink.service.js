@@ -1,8 +1,28 @@
 const Drink = require("../../models/drink.model");
-const searchHelper = require("../../helpers/search");
+const facilityService = require("./facility.service");
+const { nho, xoa } = require("../../helpers/nho-chu-san");
 
-module.exports.createDrink = async (data) => {
-  return await Drink.create({
+function xoaBanNhoDoUong(ownerId) {
+  xoa(ownerId ? `owner:drinks:${ownerId}` : "owner:drinks:");
+}
+
+function venueIdOf(value) {
+  return String(value && value._id ? value._id : value || "");
+}
+
+function danhSachDaNho(ownerId) {
+  return nho(`owner:drinks:${ownerId}`, async () => {
+    const venues = await facilityService.getAllVenueByOwnerId(ownerId);
+    const venueIds = venues.map((item) => item._id);
+    const drinks = await Drink.find({ venueId: { $in: venueIds } })
+      .populate("venueId", "name")
+      .lean();
+    return { venues, drinks };
+  });
+}
+
+module.exports.createDrink = async (ownerId, data) => {
+  const created = await Drink.create({
     name: data.name,
     venueId: data.venueId,
     image: data.image,
@@ -12,6 +32,8 @@ module.exports.createDrink = async (data) => {
     supplier: "",
     status: data.status === "inactive" ? "inactive" : "active",
   });
+  xoaBanNhoDoUong(ownerId);
+  return created;
 };
 
 module.exports.getDrinkWithVenueById = async (id) => {
@@ -20,7 +42,7 @@ module.exports.getDrinkWithVenueById = async (id) => {
   }).populate("venueId", "name");
 };
 
-module.exports.updateDrink = async (drinkId, data) => {
+module.exports.updateDrink = async (ownerId, drinkId, data) => {
   const { name, venueId, price, status, image } = data;
   const update = {
     name,
@@ -30,15 +52,15 @@ module.exports.updateDrink = async (drinkId, data) => {
   };
   if (image) update.image = image;
 
-  return await Drink.updateOne({ _id: drinkId }, update);
+  const updated = await Drink.updateOne({ _id: drinkId }, update);
+  xoaBanNhoDoUong(ownerId);
+  return updated;
 };
 
-module.exports.updateDrinkStatus = async (drinkId, status) => {
-  return await Drink.updateOne({ _id: drinkId }, { status });
-};
-
-module.exports.getDrinks = async (find) => {
-  return await Drink.find(find).populate("venueId", "name");
+module.exports.updateDrinkStatus = async (ownerId, drinkId, status) => {
+  const updated = await Drink.updateOne({ _id: drinkId }, { status });
+  xoaBanNhoDoUong(ownerId);
+  return updated;
 };
 
 module.exports.calculateDrinkStats = (drinks) => {
@@ -53,33 +75,6 @@ module.exports.calculateDrinkStats = (drinks) => {
   };
 };
 
-module.exports.buildDrinkFilterQuery = (query, venueIds) => {
-  let find = {};
-
-  // Xử lý tìm kiếm theo tên
-  const objectSearch = searchHelper(query);
-  if (objectSearch.regex) {
-    find.name = objectSearch.regex;
-  }
-
-  // Xử lý trạng thái hoặc tồn kho thấp
-  const status = query.status;
-  if (status === "low") {
-    find.stock = { $lte: 10 };
-  } else if (status === "active" || status === "inactive") {
-    find.status = status;
-  }
-
-  // Xử lý lọc theo venueId
-  const venueIdQuery = query.venueId;
-  if (
-    venueIdQuery &&
-    venueIds.some((id) => String(id) === String(venueIdQuery))
-  ) {
-    find.venueId = venueIdQuery;
-  } else {
-    find.venueId = { $in: venueIds };
-  }
-
-  return find;
-};
+module.exports.danhSachDaNho = danhSachDaNho;
+module.exports.xoaBanNhoDoUong = xoaBanNhoDoUong;
+module.exports.venueIdOf = venueIdOf;

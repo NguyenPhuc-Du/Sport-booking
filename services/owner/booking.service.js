@@ -8,6 +8,7 @@ const { nowInVietnam } = require("../app/slot.service");
 const cache = require("../../helpers/memory-cache");
 const ledger = require("../admin/ledger.service");
 const paginationHelper = require("../../helpers/pagination");
+const { danhSachId, ganKhoang, ganKhoangTien, ganCoSo, tongSoTien } = require("../../helpers/loc-phieu");
 
 const PRICE_TTL = 60 * 1000;
 
@@ -147,15 +148,21 @@ async function getTimelineRows(ownerId, date) {
     .lean();
 
   const slotsByCourt = {};
+  const seen = new Set();
+  let tongTien = 0;
   for (const booking of bookings) {
+    if (!seen.has(booking.code)) {
+      seen.add(booking.code);
+      tongTien += Number(booking.amount) || 0;
+    }
     const key = String(booking.courtId);
     if (!slotsByCourt[key]) slotsByCourt[key] = {};
-    const customer = booking.userId || {};
+    const khach = tenKhach(booking);
     const slot = {
-      name: booking.guestName || customer.fullName || "",
+      name: khach.name,
       id: booking.code,
       shortId: shortCode(booking.code),
-      phone: formatPhone(booking.guestPhone || customer.phone),
+      phone: khach.phone,
       court: booking.courtName || "",
       time: `${booking.timeStart} - ${booking.timeEnd} (${booking.date})`,
       amount: formatMoney(booking.amount),
@@ -193,7 +200,7 @@ async function getTimelineRows(ownerId, date) {
     return String(a.name).localeCompare(String(b.name), "vi");
   });
 
-  return rows;
+  return { rows, thongKe: { soDon: seen.size, tongTien } };
 }
 
 const BOOKING_STATUS_LABEL = {
@@ -213,18 +220,21 @@ function escapeRegex(value) {
 }
 
 function bookingListQuery(venues, query) {
-  const venueIds = venues.map((venue) => venue._id);
-  const find = { facilityId: { $in: venueIds } };
-  const filter = { keyword: "", venueId: "", status: "", dateFrom: "", dateTo: "" };
+  const find = {};
+  const filter = {
+    keyword: "",
+    venueId: "",
+    status: "",
+    dateFrom: "",
+    dateTo: "",
+    minAmount: "",
+    maxAmount: "",
+  };
 
   const keyword = String(query.keyword || "").trim();
   if (keyword) filter.keyword = keyword.slice(0, 80);
 
-  const venueId = String(query.venueId || "");
-  if (venueIds.some((id) => String(id) === venueId)) {
-    find.facilityId = venueId;
-    filter.venueId = venueId;
-  }
+  filter.venueId = ganCoSo(find, "facilityId", venues.map((venue) => venue._id), query.venueId);
 
   const status = String(query.status || "");
   if (Object.prototype.hasOwnProperty.call(BOOKING_STATUS_LABEL, status)) {
@@ -239,11 +249,13 @@ function bookingListQuery(venues, query) {
     dateFrom = dateTo;
     dateTo = swap;
   }
-  if (dateFrom && dateTo) find.date = { $gte: dateFrom, $lte: dateTo };
-  else if (dateFrom) find.date = { $gte: dateFrom };
-  else if (dateTo) find.date = { $lte: dateTo };
+  ganKhoang(find, "date", dateFrom, dateTo);
   filter.dateFrom = dateFrom;
   filter.dateTo = dateTo;
+
+  const range = ganKhoangTien(find, query);
+  filter.minAmount = range.minAmount;
+  filter.maxAmount = range.maxAmount;
 
   return { find, filter };
 }
@@ -267,47 +279,89 @@ async function applyKeyword(find, keyword) {
   find.$or = or;
 }
 
-function mapBookingRow(booking) {
-  const customer = booking.userId || {};
+function tenKhach(booking) {
+  const customer = booking.userId && typeof booking.userId === "object" ? booking.userId : {};
   return {
-    code: booking.code,
     name: booking.guestName || customer.fullName || "",
     phone: formatPhone(booking.guestPhone || customer.phone),
+  };
+}
+
+function mapBookingRow(booking) {
+  const khach = tenKhach(booking);
+  return {
+    code: booking.code,
+    name: khach.name,
+    phone: khach.phone,
     venue: booking.facilityName || "",
     court: booking.courtName || "",
     date: labelDate(booking.date),
     time: `${booking.timeStart} - ${booking.timeEnd}`,
     timeLabel: `${booking.timeStart} - ${booking.timeEnd} (${labelDate(booking.date)})`,
     amount: formatMoney(booking.amount),
+    amountNumber: Number(booking.amount) || 0,
     status: booking.status,
     statusLabel: BOOKING_STATUS_LABEL[booking.status] || booking.status,
   };
 }
 
-async function listAllBookings(ownerId, query = {}) {
+const BOOKING_LIST_SELECT =
+  "code guestName guestPhone facilityName courtName timeStart timeEnd date amount status userId";
+
+async function loadBookingFilter(ownerId, query) {
   const venues = await ownerVenues(ownerId);
   const { find, filter } = bookingListQuery(venues, query);
   await applyKeyword(find, filter.keyword);
+  return { venues, find, filter };
+}
 
-  const total = await Booking.countDocuments(find);
-  const pagination = paginationHelper({ limitPage: 8 }, query, total);
-  const docs = await Booking.find(find)
+const tongTheoLoc = (find) => tongSoTien(Booking, find, "soDon");
+
+function queryDon(find, pagination) {
+  let query = Booking.find(find)
     .populate("userId", "fullName phone")
-    .select(
-      "code guestName guestPhone facilityName courtName timeStart timeEnd date amount status userId",
-    )
-    .sort({ date: -1, timeStart: -1, courtName: 1 })
-    .skip(pagination.skipPage)
-    .limit(pagination.limitPage)
-    .lean();
+    .select(BOOKING_LIST_SELECT)
+    .sort({ date: -1, timeStart: -1, courtName: 1 });
+  if (pagination) query = query.skip(pagination.skipPage).limit(pagination.limitPage);
+  return query.lean();
+}
+
+async function listAllBookings(ownerId, query = {}) {
+  const { venues, find, filter } = await loadBookingFilter(ownerId, query);
+  const tong = await tongTheoLoc(find);
+  const pagination = paginationHelper({ limitPage: 8 }, query, tong.soDon);
+  const docs = tong.soDon ? await queryDon(find, pagination) : [];
 
   return {
     bookings: docs.map(mapBookingRow),
     venues: venues.map((venue) => ({ _id: venue._id, name: venue.name })),
     filter,
     pagination,
-    total,
+    total: tong.soDon,
+    tongTien: tong.tongTien,
+    soDon: tong.soDon,
   };
+}
+
+async function listBookingsForExport(ownerId, query = {}) {
+  const { find } = await loadBookingFilter(ownerId, query);
+  const docs = await queryDon(find);
+  return docs.map(mapBookingRow);
+}
+
+async function findOwnedByCode(ownerId, code) {
+  const codeText = String(code || "").trim();
+  if (!codeText) return null;
+  const venues = await ownerVenues(ownerId);
+  const ids = danhSachId(venues.map((venue) => venue._id));
+  const booking = await Booking.findOne({ code: codeText, facilityId: { $in: ids } })
+    .populate("userId", "fullName phone")
+    .lean();
+  if (!booking) return null;
+  const khach = tenKhach(booking);
+  booking.customerName = khach.name;
+  booking.customerPhone = khach.phone;
+  return booking;
 }
 
 function hourValue(value) {
@@ -530,6 +584,8 @@ module.exports = {
   walkInLimits,
   getTimelineRows,
   listAllBookings,
+  listBookingsForExport,
+  findOwnedByCode,
   listCourtPrices,
   createWalkIn,
   checkIn,

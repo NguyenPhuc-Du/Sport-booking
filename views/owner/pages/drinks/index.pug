@@ -9,14 +9,11 @@ block head
 block main
   +alert-success(2000)
   +alert-error(5000)
-  - const f = typeof filter !== "undefined" ? filter : {}
-  - const pg = typeof pagination !== "undefined" ? pagination : { currentPage: 1, totalPages: 1 }
   - const list = typeof drinks !== "undefined" ? drinks : []
   - const LOW = 10
   - const computed = { total: list.length, active: list.filter((item) => item.status === "active").length, inactive: list.filter((item) => item.status === "inactive").length, lowStock: list.filter((item) => Number(item.stock) <= LOW).length, stockValue: list.reduce((sum, item) => sum + (Number(item.price) || 0) * (Number(item.stock) || 0), 0) }
   - const st = typeof stats !== "undefined" ? stats : computed
   - const fmt = (n) => Number(n || 0).toLocaleString("vi-VN") + "đ"
-  - const qs = (o) => { const p = Object.assign({}, f, o); return Object.keys(p).filter(k => p[k]).map(k => k + "=" + encodeURIComponent(p[k])).join("&"); }
 
   //- ===== TIÊU ĐỀ + HÀNH ĐỘNG =====
   .d-flex.justify-content-between.align-items-start.flex-wrap.gap-3
@@ -61,31 +58,26 @@ block main
         .sz-stat-note.green Theo giá bán hiện tại
 
   //- ===== TAB TRẠNG THÁI =====
-  nav.sz-tabs.mt-4(aria-label="Lọc trạng thái")
-    a.sz-tab(href=`?${qs({ status: "", page: "" })}` class=(!f.status ? "active" : undefined)) Tất cả (#{st.total})
-    a.sz-tab(href=`?${qs({ status: "active", page: "" })}` class=(f.status === "active" ? "active" : undefined)) Đang bán (#{st.active})
-    a.sz-tab(href=`?${qs({ status: "inactive", page: "" })}` class=(f.status === "inactive" ? "active" : undefined)) Ngừng bán (#{st.inactive})
-    a.sz-tab(href=`?${qs({ status: "low", page: "" })}` class=(f.status === "low" ? "active" : undefined)) Sắp hết hàng (#{st.lowStock})
+  nav.sz-tabs.mt-4#drinkTabs(aria-label="Lọc trạng thái")
+    button.sz-tab.active(type="button" data-status="") Tất cả (#{st.total})
+    button.sz-tab(type="button" data-status="active") Đang bán (#{st.active})
+    button.sz-tab(type="button" data-status="inactive") Ngừng bán (#{st.inactive})
+    button.sz-tab(type="button" data-status="low") Sắp hết hàng (#{st.lowStock})
 
   //- ===== CARD DANH SÁCH =====
   .sz-card.sz-list-card.mt-3
     .d-flex.justify-content-between.align-items-end.flex-wrap.gap-3.mb-3
       div
         h2.sz-card-title Danh sách sản phẩm
-        p.sz-card-sub Sửa thông tin món, hoặc bấm nhập kho khi có hàng về
 
-      form.sz-filter(method="GET" action=`${prefixAdmin}/drinks`)
-        if f.status
-          input(type="hidden" name="status" value=f.status)
-        select.sz-input.sz-filter-select(name="venueId" onchange="this.form.submit()")
+      .sz-filter
+        select.sz-input.sz-filter-select#drinkVenue
           option(value="") Tất cả cơ sở
           each v in (typeof venues !== "undefined" ? venues : [])
-            option(value=v._id selected=(String(f.venueId) === String(v._id)))= v.name
+            option(value=String(v._id))= v.name
         .sz-search
           i.bi.bi-search
-          input.sz-input(type="search" name="keyword" placeholder="Tìm tên sản phẩm..." value=f.keyword)
-        button.sz-btn-outline(type="submit") Lọc
-        a.sz-btn-outline(href=`${prefixAdmin}/drinks`) Xóa lọc
+          input.sz-input#drinkKeyword(type="search" placeholder="Gõ tên món..." autocomplete="off")
 
     if list.length
       .sz-table-wrap
@@ -102,7 +94,8 @@ block main
               th.text-end THAO TÁC
           tbody
             each item in drinks
-              tr(class=(item.status === "inactive" ? "is-off" : undefined))
+              - const venueKey = item.venueId && item.venueId._id ? item.venueId._id : item.venueId
+              tr.is-drink-row(class=(item.status === "inactive" ? "is-off" : undefined) data-name=String(item.name || "").toLowerCase() data-venue=String(venueKey || "") data-status=item.status data-stock=item.stock || 0)
                 td
                   .sz-product
                     img.sz-product-img(src=item.image alt=item.name loading="lazy" onerror="this.style.visibility='hidden'")
@@ -138,17 +131,7 @@ block main
                       else
                         button.sz-icon-btn.ok(type="submit" title="Mở bán lại")
                           i.bi.bi-play-circle
-
-      if pg.totalPages > 1
-        nav.sz-pagination(aria-label="Phân trang")
-          if pg.currentPage > 1
-            a.sz-page(href=`?${qs({ page: pg.currentPage - 1 })}`)
-              i.bi.bi-chevron-left
-          - for (let i = 1; i <= pg.totalPages; i++)
-            a.sz-page(href=`?${qs({ page: i })}` class=(i === pg.currentPage ? "active" : undefined))= i
-          if pg.currentPage < pg.totalPages
-            a.sz-page(href=`?${qs({ page: pg.currentPage + 1 })}`)
-              i.bi.bi-chevron-right
+      p#drinkNoMatch.sz-card-sub(hidden) Không có món nào khớp.
     else
       .sz-empty
         i.bi.bi-cup-straw
@@ -165,3 +148,47 @@ block script
         if (!confirm(form.dataset.confirm)) e.preventDefault();
       });
     });
+
+    //- Lọc trên các dòng đã có trong trang. Gõ liên tục không gọi server.
+    (function () {
+      var keywordInput = document.getElementById("drinkKeyword");
+      var venueSelect = document.getElementById("drinkVenue");
+      var tabs = document.getElementById("drinkTabs");
+      var empty = document.getElementById("drinkNoMatch");
+      var rows = Array.prototype.slice.call(document.querySelectorAll(".is-drink-row"));
+      if (!keywordInput || !venueSelect || !tabs) return;
+      var status = "";
+
+      function applyFilter() {
+        var keyword = keywordInput.value.trim().toLowerCase();
+        var venueId = venueSelect.value;
+        var shown = 0;
+        rows.forEach(function (row) {
+          var name = row.getAttribute("data-name") || "";
+          var venue = row.getAttribute("data-venue") || "";
+          var rowStatus = row.getAttribute("data-status") || "";
+          var stock = Number(row.getAttribute("data-stock") || 0);
+          var ok = true;
+          if (keyword && name.indexOf(keyword) === -1) ok = false;
+          if (venueId && venue !== venueId) ok = false;
+          if (status === "active" && rowStatus !== "active") ok = false;
+          if (status === "inactive" && rowStatus !== "inactive") ok = false;
+          if (status === "low" && stock > 10) ok = false;
+          row.classList.toggle("is-hidden-by-filter", !ok);
+          if (ok) shown += 1;
+        });
+        if (empty) empty.hidden = shown !== 0 || rows.length === 0;
+      }
+
+      keywordInput.addEventListener("input", applyFilter);
+      venueSelect.addEventListener("change", applyFilter);
+      tabs.addEventListener("click", function (event) {
+        var button = event.target.closest("button[data-status]");
+        if (!button) return;
+        status = button.getAttribute("data-status") || "";
+        Array.prototype.forEach.call(tabs.querySelectorAll(".sz-tab"), function (tab) {
+          tab.classList.toggle("active", tab === button);
+        });
+        applyFilter();
+      });
+    })();

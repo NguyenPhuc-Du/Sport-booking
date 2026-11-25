@@ -33,24 +33,45 @@ block main
   include _tabs.pug
 
   .sz-card.sz-list-card.mt-3
-    .d-flex.justify-content-between.align-items-end.flex-wrap.gap-3.mb-3
-      div
-        h2.sz-card-title Danh sách phiếu
-        p.sz-card-sub Mỗi phiếu trừ tồn kho ngay khi xuất
-      form.sz-filter(method="GET" action=`${prefixOwner}/drinks/sales`)
+    .mb-3
+      h2.sz-card-title Danh sách phiếu
+      p.sz-card-sub.mb-0 Mỗi phiếu trừ tồn kho ngay khi xuất
+    form.sz-bill-filter(method="GET" action=`${prefixOwner}/drinks/sales`)
+      label.sz-filter-field
+        span Cơ sở
         select.sz-input.sz-filter-select(name="venueId" onchange="this.form.submit()")
           option(value="") Tất cả cơ sở
           each v in (typeof venues !== "undefined" ? venues : [])
             option(value=v._id selected=(String(f.venueId) === String(v._id)))= v.name
+      label.sz-filter-field
+        span Tìm kiếm
         .sz-search
           i.bi.bi-search
           input.sz-input(type="search" name="keyword" placeholder="Mã phiếu, tên, SĐT..." value=f.keyword)
+      label.sz-filter-field
+        span Từ ngày
+        input.sz-input(type="date" name="from" value=f.from || "")
+      label.sz-filter-field
+        span Đến ngày
+        input.sz-input(type="date" name="to" value=f.to || "")
+      label.sz-filter-field
+        span Tiền từ
+        input.sz-input(type="number" name="minAmount" min="0" step="1000" value=f.minAmount || "")
+      label.sz-filter-field
+        span Tiền đến
+        input.sz-input(type="number" name="maxAmount" min="0" step="1000" value=f.maxAmount || "")
+      .sz-filter-actions
         button.sz-btn-outline(type="submit") Lọc
         a.sz-btn-outline(href=`${prefixOwner}/drinks/sales`) Xóa lọc
+        a.sz-btn-outline(href=`${prefixOwner}/drinks/sales/export?${qs({})}`) Xuất Excel
+    .sz-sum
+      span Tổng của bộ lọc
+      strong= fmt(tongTien)
+      span.sz-muted #{soPhieu} phiếu
 
     if list.length
       .sz-table-wrap
-        table.sz-table.sl-split-table#sl-sales-table
+        table.sz-table.sl-split-table#sl-sales-table(data-pdf-base=`${prefixOwner}/drinks/sales/`)
           thead
             tr
               th MÃ PHIẾU
@@ -139,6 +160,7 @@ block script
       const table = document.getElementById("sl-sales-table");
       const dataNode = document.getElementById("sl-sales-data");
       if (!table || !dataNode) return;
+      const pdfBase = table.getAttribute("data-pdf-base") || "";
 
       const sales = JSON.parse(dataNode.textContent || "[]");
       const rows = Array.from(table.querySelectorAll(".sl-row"));
@@ -236,6 +258,11 @@ block script
         meta(root, "Thanh toán", payLabel[sale.paymentMethod] || sale.paymentMethod);
         meta(root, "Trạng thái", statusLabel(sale.status));
         if (sale.note) meta(root, "Ghi chú", sale.note);
+        const pdf = el("a", "sz-btn-outline sl-pdf-btn", "Xuất PDF phiếu này");
+        pdf.href = pdfBase + sale.id + "/pdf";
+        pdf.target = "_blank";
+        pdf.rel = "noopener";
+        root.appendChild(pdf);
         return root;
       }
 
