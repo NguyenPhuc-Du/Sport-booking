@@ -9,56 +9,136 @@ block main
     div
       p.pf-kicker Quản trị hệ thống / Hoa hồng
       h1.pf-title Hoa hồng và đối soát
-      p.pf-sub Tỷ lệ mặc định #{rateLabel}. Mỗi dòng dùng tỷ lệ đã khóa lúc thanh toán. Có thể đánh dấu đã thu hoặc chốt kỳ.
+      p.pf-sub Tỷ lệ mặc định #{rateLabel}. Mỗi dòng dùng tỷ lệ đã khóa lúc thanh toán.
 
-  form.pf-filters(method="get" action="/admin/commissions")
-    select.sz-select(name="cycle")
-      each item in cycles
-        option(value=item.code selected=period.cycle === item.code)= item.label
-    input.sz-input(type="date" name="from" value=period.fromInput)
-    input.sz-input(type="date" name="to" value=period.toInput)
-    button.sz-btn.sz-btn-dark(type="submit") Xem kỳ
+  nav.ad-tabs
+    a(href="/admin/commissions" class=tab !== "cau-hinh" ? "is-on" : "") Đối soát
+    a(href="/admin/commissions?tab=cau-hinh" class=tab === "cau-hinh" ? "is-on" : "") Cấu hình hoa hồng
 
-  section.sz-card.sz-panel
-    if rows.length
-      p.sz-panel-sub #{rows.length} chủ sân có phát sinh từ #{period.fromInput} đến #{period.toInput}.
+  if tab === "cau-hinh" && cauHinh
+    section.sz-card.sz-panel
+      h2 Mức toàn sàn #{cauHinh.mac}
+      p Tỷ lệ mới chỉ áp dụng cho giao dịch phát sinh sau ngày hiệu lực. Giao dịch đã chốt giữ nguyên tỷ lệ lúc thanh toán.
+      form(method="post" action="/admin/commissions/cau-hinh" data-confirm="Lưu tỷ lệ mặc định toàn sàn?")
+        input(type="hidden" name="scope" value="mac-dinh")
+        label Tỷ lệ %
+          input(type="number" name="rate" min="0" max="100" step="0.1" value=cauHinh.macSo required)
+        label Hiệu lực từ
+          input(type="date" name="effectiveFrom" required)
+        label Lý do
+          input(type="text" name="note" maxlength="300")
+        button.sz-btn.sz-btn-green(type="submit") Lưu mức sàn
       .table-responsive
-        table.sz-table.pf-table
+        table.sz-table
           thead
             tr
               th Chủ sân
-              th.pf-num Doanh thu
               th Tỷ lệ
-              th.pf-num Hoa hồng
-              th.pf-num Đã thu
-              th.pf-num Chưa thu
+              th Loại
+              th Hiệu lực
+              th Người sửa
               th
           tbody
-            each row in rows
+            each row in cauHinh.dong
               tr
-                td= row.ownerName
-                td.pf-num= row.revenueLabel
-                td= row.rateLabel
-                td.pf-num= row.feeLabel
-                td.pf-num= row.collectedLabel
-                td.pf-num= row.openLabel
                 td
-                  if row.closed
-                    button.sz-btn.sz-btn-sm(type="button" disabled) Đã chốt
-                  else
-                    form(method="post" action="/admin/commissions/collect")
-                      input(type="hidden" name="ownerId" value=row.ownerId)
-                      input(type="hidden" name="from" value=period.fromInput)
-                      input(type="hidden" name="to" value=period.toInput)
-                      input(type="hidden" name="cycle" value=period.cycle)
-                      button.sz-btn.sz-btn-sm(type="submit") Đánh dấu đã thu
-                    form(method="post" action="/admin/commissions/close" data-confirm=`Chốt kỳ của ${row.ownerName}?`)
-                      input(type="hidden" name="ownerId" value=row.ownerId)
-                      input(type="hidden" name="from" value=period.fromInput)
-                      input(type="hidden" name="to" value=period.toInput)
-                      input(type="hidden" name="cycle" value=period.cycle)
-                      button.sz-btn.sz-btn-green.sz-btn-sm(type="submit") Chốt kỳ
-    else
-      .pf-empty
-        strong Chưa có hoa hồng trong kỳ
-        p Khi có đơn đã thanh toán, chọn lại kỳ rồi tải lại trang.
+                  strong= row.ten
+                  br
+                  small= row.email
+                td= row.tyLe
+                td= row.loai
+                td= row.tu
+                td= row.nguoi
+                td
+                  details
+                    summary Sửa
+                    form(method="post" action="/admin/commissions/cau-hinh" data-confirm="Lưu tỷ lệ riêng cho chủ sân này?")
+                      input(type="hidden" name="scope" value="chu")
+                      input(type="hidden" name="ownerId" value=row.id)
+                      label Tỷ lệ %
+                        input(type="number" name="rate" min="0" max="100" step="0.1" required)
+                      label Hiệu lực từ
+                        input(type="date" name="effectiveFrom" required)
+                      label Lý do
+                        input(type="text" name="note")
+                      button.sz-btn(type="submit") Lưu riêng
+                    form(method="get" action="/admin/commissions")
+                      input(type="hidden" name="tab" value="cau-hinh")
+                      input(type="hidden" name="sua" value=row.id)
+                      label Tỷ lệ muốn xem trước
+                        input(type="number" name="tyLe" min="0" max="100" step="0.1" required)
+                      button.sz-btn(type="submit") Xem trước 30 ngày
+                    form(method="post" action="/admin/commissions/cau-hinh" data-confirm="Đưa chủ sân này về tỷ lệ mặc định?")
+                      input(type="hidden" name="scope" value="chu")
+                      input(type="hidden" name="ownerId" value=row.id)
+                      input(type="hidden" name="keThua" value="1")
+                      input(type="hidden" name="effectiveFrom" value=new Date().toISOString().slice(0, 10))
+                      button.sz-btn(type="submit") Về mặc định
+                    if row.san.length
+                      each san in row.san
+                        form(method="post" action="/admin/commissions/cau-hinh" data-confirm="Ghi đè tỷ lệ cho sân này?")
+                          input(type="hidden" name="scope" value="san")
+                          input(type="hidden" name="ownerId" value=row.id)
+                          input(type="hidden" name="facilityId" value=san.id)
+                          p #{san.ten} — đang #{san.tyLe}
+                          input(type="number" name="rate" min="0" max="100" step="0.1" aria-label="Tỷ lệ sân" required)
+                          input(type="date" name="effectiveFrom" required)
+                          button.sz-btn(type="submit") Lưu sân
+      if cauHinh.xem
+        p Với doanh thu 30 ngày gần nhất #{cauHinh.xem.doanhThu}, hoa hồng sẽ thay đổi từ #{cauHinh.xem.cu} thành #{cauHinh.xem.moi}.
+      h3 Nhật ký thay đổi
+      ul
+        each dong in cauHinh.logs
+          li #{new Date(dong.created_at).toLocaleString("vi-VN")} — #{dong.scope}: #{dong.rate_cu == null ? "—" : Math.round(dong.rate_cu * 1000) / 10 + "%"} → #{dong.rate_moi == null ? "mặc định" : Math.round(dong.rate_moi * 1000) / 10 + "%"}. #{dong.note}
+  else
+    form.pf-filters(method="get" action="/admin/commissions")
+      select.sz-select(name="cycle")
+        each item in cycles
+          option(value=item.code selected=period.cycle === item.code)= item.label
+      input.sz-input(type="date" name="from" value=period.fromInput)
+      input.sz-input(type="date" name="to" value=period.toInput)
+      button.sz-btn.sz-btn-dark(type="submit") Xem kỳ
+
+    section.sz-card.sz-panel
+      if rows.length
+        p.sz-panel-sub #{rows.length} chủ sân có phát sinh từ #{period.fromInput} đến #{period.toInput}.
+        .table-responsive
+          table.sz-table.pf-table
+            thead
+              tr
+                th Chủ sân
+                th.pf-num Doanh thu
+                th Tỷ lệ
+                th.pf-num Hoa hồng
+                th.pf-num Đã thu
+                th.pf-num Chưa thu
+                th
+            tbody
+              each row in rows
+                tr(data-href=`/admin/payments?owner=${row.ownerId}&from=${period.fromInput}&to=${period.toInput}`)
+                  td= row.ownerName
+                  td.pf-num= row.revenueLabel
+                  td= row.rateLabel
+                  td.pf-num= row.feeLabel
+                  td.pf-num= row.collectedLabel
+                  td.pf-num= row.openLabel
+                  td
+                    if row.closed
+                      button.sz-btn.sz-btn-sm(type="button" disabled) Đã chốt
+                    else
+                      form(method="post" action="/admin/commissions/collect")
+                        input(type="hidden" name="ownerId" value=row.ownerId)
+                        input(type="hidden" name="from" value=period.fromInput)
+                        input(type="hidden" name="to" value=period.toInput)
+                        input(type="hidden" name="cycle" value=period.cycle)
+                        button.sz-btn.sz-btn-sm(type="submit") Đánh dấu đã thu
+                      form(method="post" action="/admin/commissions/close" data-confirm=`Chốt kỳ của ${row.ownerName}?`)
+                        input(type="hidden" name="ownerId" value=row.ownerId)
+                        input(type="hidden" name="from" value=period.fromInput)
+                        input(type="hidden" name="to" value=period.toInput)
+                        input(type="hidden" name="cycle" value=period.cycle)
+                        button.sz-btn.sz-btn-green.sz-btn-sm(type="submit") Chốt kỳ
+      else
+        .pf-empty
+          strong Chưa có hoa hồng trong kỳ
+          p Khi có đơn đã thanh toán, chọn lại kỳ rồi tải lại trang.

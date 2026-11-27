@@ -14,7 +14,7 @@ const {
 const policy = require("./rbac-policy");
 const rbac = require("./rbac.service");
 const { vaiTroLuuUser } = require("./user.service");
-const { huyCache, nho } = require("./bo-nho");
+const { huyCache, nho, PHIEN_MS } = require("./bo-nho");
 
 const CODE_PATTERN = /^[A-Z][A-Z0-9_]{1,40}$/;
 
@@ -59,7 +59,7 @@ async function choices() {
 }
 
 async function list() {
-  return nho("roles", 30000, docDanhSachVaiTro);
+  return nho("roles", PHIEN_MS, docDanhSachVaiTro);
 }
 
 async function docDanhSachVaiTro() {

@@ -1,0 +1,193 @@
+extends ../../layouts/admin.pug
+
+block main
+  header.ad-page
+    div
+      h1 Thống kê kinh doanh
+      p.ad-lead Bấm Xem để chạy thống kê. Kết quả giữ 2 phút. Thu là tiền khách thanh toán, chi là hoàn tiền và rút tiền.
+  form.ad-filters(method="get" action="/admin/thong-ke")
+    input(type="hidden" name="xem" value="1")
+    label Từ
+      input(type="date" name="from" value=from)
+    label Đến
+      input(type="date" name="to" value=to)
+    label Năm
+      input(type="number" name="nam" min="2020" max="2030" value=nam)
+    select(name="nhom" aria-label="Cách gom")
+      option(value="thang" selected=nhom === "thang") Theo tháng
+      option(value="quy" selected=nhom !== "thang" && nhom !== "nam") Theo quý
+      option(value="nam" selected=nhom === "nam") Theo năm
+    button.ad-btn(type="submit") Xem
+    if daXem
+      a.ad-btn.is-ghost(href=`/admin/thong-ke?from=${from}&to=${to}&nam=${nam}&nhom=${nhom}&xem=1&lamMoi=1`) Làm mới
+      a.ad-btn.is-ghost(href=`/admin/thong-ke?from=${from}&to=${to}&nam=${nam}&nhom=${nhom}&xem=1&dang=excel`) Xuất Excel
+      a.ad-btn.is-ghost(href=`/admin/thong-ke?from=${from}&to=${to}&nam=${nam}&nhom=${nhom}&xem=1&dang=pdf` target="_blank") Xuất PDF
+  if daXem && luc
+    p.ad-lead Cập nhật lúc #{new Date(luc).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Ho_Chi_Minh" })}
+  if !daXem
+    .ad-empty
+      strong Chưa chạy thống kê
+      p Chọn khoảng ngày rồi bấm Xem. Trang không tự truy vấn khi vừa mở.
+  if daXem && khoang
+    .ad-stats
+      article
+        span Tổng thu
+        strong= khoang.thuText
+      article
+        span Tổng chi
+        strong= khoang.chiText
+      article
+        span Lợi nhuận
+        strong= khoang.loiText
+      article
+        span Số hóa đơn
+        strong= khoang.dem
+    section.ad-sub
+      h2 Tổng tiền hóa đơn từ #{from} đến #{to}
+      p= `${khoang.thuText} thu, ${khoang.chiText} chi, lợi nhuận ${khoang.loiText}.`
+      a.ad-btn.is-ghost(href=`/admin/thong-ke?from=${from}&to=${to}&nam=${nam}&xem=1&dang=excel&bang=khoang`) Excel bảng này
+    if nhom === "thang"
+      section.ad-sub
+        h2 Theo tháng, năm #{nam}
+        .ad-table-wrap
+          table.ad-table
+            thead
+              tr
+                th Kỳ
+                th.ad-num Tổng thu
+                th.ad-num Tổng chi
+                th.ad-num Lợi nhuận
+            tbody
+              each row in thang
+                tr(class=row.nhan === "Tổng cộng" ? "is-tong" : "")
+                  td= row.nhan
+                  td.ad-num= row.thuText
+                  td.ad-num= row.chiText
+                  td.ad-num= row.loiText
+    if nhom !== "nam"
+      section.ad-sub
+        h2 Theo quý, năm #{nam}
+        .ad-chart
+          each row in quy
+            if row.nhan !== "Tổng cộng"
+              div
+                span= row.nhan
+                i(style=`height:${row.cao}px`)
+        .ad-table-wrap
+          table.ad-table
+            thead
+              tr
+                th Kỳ
+                th.ad-num Tổng thu
+                th.ad-num Tổng chi
+                th.ad-num Lợi nhuận
+            tbody
+              each row in quy
+                tr(class=row.nhan === "Tổng cộng" ? "is-tong" : "")
+                  td= row.nhan
+                  td.ad-num= row.thuText
+                  td.ad-num= row.chiText
+                  td.ad-num= row.loiText
+        a.ad-btn.is-ghost(href=`/admin/thong-ke?from=${from}&to=${to}&nam=${nam}&xem=1&dang=excel&bang=quy`) Excel bảng này
+    section.ad-sub
+      h2 So sánh các năm
+      .ad-table-wrap
+        table.ad-table
+          thead
+            tr
+              th Năm
+              th.ad-num Tổng thu
+              th.ad-num Tổng chi
+              th.ad-num Lợi nhuận
+          tbody
+            each row in cacNam
+              tr
+                td= row.nhan
+                td.ad-num= row.thuText
+                td.ad-num= row.chiText
+                td.ad-num= row.loiText
+    section.ad-sub
+      h2 Theo chủ sân và năm
+      p.ad-lead Mỗi dòng là một mã chủ sân. Tên trùng vẫn tách riêng.
+      .ad-table-wrap
+        table.ad-table
+          thead
+            tr
+              th Chủ sân
+              each namCot in chuSan.namCot
+                th.ad-num= namCot
+              th.ad-num Tổng
+          tbody
+            each row in chuSan.dong
+              tr
+                td
+                  strong= row.ten
+                  small.ad-lead= row.phu
+                each o in row.soText
+                  td.ad-num= o
+                td.ad-num= row.tongText
+            tr.is-tong
+              td= chuSan.tong.ten
+              each o in chuSan.tong.soText
+                td.ad-num= o
+              td.ad-num= chuSan.tong.tongText
+      a.ad-btn.is-ghost(href=`/admin/thong-ke?from=${from}&to=${to}&nam=${nam}&xem=1&dang=excel&bang=nguoi`) Excel bảng này
+    section.ad-sub
+      h2 Theo khách hàng và năm
+      .ad-table-wrap
+        table.ad-table
+          thead
+            tr
+              th Khách hàng
+              each namCot in khach.namCot
+                th.ad-num= namCot
+              th.ad-num Tổng
+          tbody
+            each row in khach.dong
+              tr
+                td
+                  strong= row.ten
+                  small.ad-lead= row.phu
+                each o in row.soText
+                  td.ad-num= o
+                td.ad-num= row.tongText
+            tr.is-tong
+              td= khach.tong.ten
+              each o in khach.tong.soText
+                td.ad-num= o
+              td.ad-num= khach.tong.tongText
+      a.ad-btn.is-ghost(href=`/admin/thong-ke?from=${from}&to=${to}&nam=${nam}&xem=1&dang=excel&bang=khach`) Excel bảng này
+    section.ad-sub
+      h2 Theo sân và quý năm #{nam}
+      p.ad-lead QUAN TRỌNG NHẤT: dùng để tính kế hoạch kinh doanh năm sau. Gom theo mã sân.
+      if san.dong.length
+        h3 Sân doanh thu cao nhất
+        ol.ad-drawer-list
+          each row in san.dong.slice(0, 5)
+            li #{row.ten} — #{row.tongText}
+        .ad-table-wrap
+          table.ad-table
+            thead
+              tr
+                th Sân
+                th.ad-num Quý 1
+                th.ad-num Quý 2
+                th.ad-num Quý 3
+                th.ad-num Quý 4
+                th.ad-num Tổng
+            tbody
+              each row in san.dong
+                tr
+                  td= row.ten
+                  each o in row.soText
+                    td.ad-num= o
+                  td.ad-num= row.tongText
+              tr.is-tong
+                td= san.tong.ten
+                each o in san.tong.soText
+                  td.ad-num= o
+                td.ad-num= san.tong.tongText
+        a.ad-btn.is-ghost(href=`/admin/thong-ke?from=${from}&to=${to}&nam=${nam}&xem=1&dang=excel&bang=san`) Excel bảng này
+      else
+        .ad-empty
+          strong Chưa có đơn đặt sân trong năm này

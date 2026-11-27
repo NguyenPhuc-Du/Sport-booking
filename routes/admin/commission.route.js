@@ -20,5 +20,6 @@ router.post(
   validate.close,
   controller.collect,
 );
+router.post("/cau-hinh", authorize("commission:update"), controller.luuCauHinh);
 
 module.exports = router;

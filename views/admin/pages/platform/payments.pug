@@ -4,19 +4,54 @@ include ../../../mixins/phan-trang.pug
 block main
   header.ad-page
     h1 Giao dịch thanh toán
+    p.ad-lead Bấm một dòng để xem hóa đơn ngay bên dưới. Gõ xong rồi bấm Lọc, không tìm từng phím.
   .ad-stats
     each the in stats
       article
         span= the.nhan
         strong= the.giaTri
   form.ad-filters(method="get" action="/admin/payments")
-    input(type="search" name="q" value=q placeholder="Mã, mã đơn hoặc ghi chú" aria-label="Tìm giao dịch")
+    input(type="search" name="q" value=q placeholder="Mã, mã đơn hoặc ghi chú" aria-label="Tìm giao dịch" autocomplete="off")
     label Từ
       input(type="date" name="from" value=from)
     label Đến
       input(type="date" name="to" value=to)
+    select(name="t1" aria-label="Trường thứ nhất")
+      option(value="") Điều kiện 1
+      option(value="amount" selected=t1 === "amount") Số tiền
+      option(value="created_at" selected=t1 === "created_at") Ngày
+      option(value="code" selected=t1 === "code") Mã
+      option(value="booking_code" selected=t1 === "booking_code") Mã đơn
+    select(name="o1" aria-label="Toán tử 1")
+      option(value="gte" selected=!o1 || o1 === "gte") >=
+      option(value="lte" selected=o1 === "lte") <=
+      option(value="gt" selected=o1 === "gt") >
+      option(value="lt" selected=o1 === "lt") <
+      option(value="eq" selected=o1 === "eq") Bằng
+      option(value="ne" selected=o1 === "ne") Khác
+      option(value="contains" selected=o1 === "contains") Chứa
+    input(name="v1" value=v1 placeholder="1000000 hoặc 2026-01-01" aria-label="Giá trị 1")
+    select(name="l2" aria-label="Liên kết")
+      option(value="and" selected=l2 !== "or" && l2 !== "not") Và
+      option(value="or" selected=l2 === "or") Hoặc
+      option(value="not" selected=l2 === "not") Không
+    select(name="t2" aria-label="Trường thứ hai")
+      option(value="") Điều kiện 2
+      option(value="amount" selected=t2 === "amount") Số tiền
+      option(value="created_at" selected=t2 === "created_at") Ngày
+      option(value="code" selected=t2 === "code") Mã
+      option(value="booking_code" selected=t2 === "booking_code") Mã đơn
+    select(name="o2" aria-label="Toán tử 2")
+      option(value="lte" selected=!o2 || o2 === "lte") <=
+      option(value="gte" selected=o2 === "gte") >=
+      option(value="gt" selected=o2 === "gt") >
+      option(value="lt" selected=o2 === "lt") <
+      option(value="eq" selected=o2 === "eq") Bằng
+      option(value="ne" selected=o2 === "ne") Khác
+    input(name="v2" value=v2 placeholder="2000000" aria-label="Giá trị 2")
     button.ad-btn(type="submit") Lọc
     a.ad-btn.is-ghost(href="/admin/payments") Xóa lọc
+    a.ad-btn.is-ghost(href="/admin/payments?t1=amount&o1=gte&v1=1000000&l2=and&t2=amount&o2=lte&v2=2000000") Mẫu 1–2 triệu
   if items.length
     .ad-table-wrap
       table.ad-table
@@ -30,7 +65,19 @@ block main
             th Ghi chú
         tbody
           each row in items
-            tr
+            - const p = new URLSearchParams()
+            - if (q) p.set("q", q)
+            - if (from) p.set("from", from)
+            - if (to) p.set("to", to)
+            - if (t1) p.set("t1", t1)
+            - if (o1) p.set("o1", o1)
+            - if (v1) p.set("v1", v1)
+            - if (t2) p.set("t2", t2)
+            - if (o2) p.set("o2", o2)
+            - if (v2) p.set("v2", v2)
+            - if (l2) p.set("l2", l2)
+            - if (row.id !== chon) p.set("chon", row.id)
+            tr(data-href="/admin/payments?" + p class=row.id === chon ? "is-chon" : "")
               td= row.when
               td.ad-mono= row.code
               td.ad-mono= row.booking
@@ -39,4 +86,27 @@ block main
               td= row.note
     +phanTrang(pagination)
   else
-    p.ad-empty Không có dữ liệu phù hợp
+    .ad-empty
+      strong Không có giao dịch phù hợp
+  if phu
+    section.ad-sub
+      h2 Hóa đơn #{phu.code}
+      .ad-sub-grid
+        div
+          span Thời gian
+          strong= phu.when
+        div
+          span Khách
+          strong= phu.account
+        div
+          span Email
+          strong= phu.email
+        div
+          span Số tiền
+          strong= phu.amount
+        div
+          span Mã đơn
+          strong= phu.booking
+        div
+          span Ghi chú
+          strong= phu.note

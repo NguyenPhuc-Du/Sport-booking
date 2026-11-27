@@ -4,79 +4,440 @@ include ../../../mixins/alert.pug
 block main
   +alert-success(4000)
   +alert-error(5000)
-  header.ad-page
-    div.ad-person
-      span.ad-avatar.ad-avatar-lg= user.fullName.trim().charAt(0).toUpperCase()
-      div
-        p.ad-crumb
-          a(href=`/admin/accounts/${loai}`)= meta.title
-        h1= user.fullName
-        p.ad-lead= user.email
-        span.ad-badge= nhanVaiTro(user.role)
-        span.ad-badge(class=user.status === "active" ? "is-ok" : "is-off")= nhanTrangThai(user.status)
-    .ad-actions
-      if can("user:update")
-        a.ad-btn(href=`/admin/accounts/${loai}/${user._id}/edit`) Sửa
-      if can("user:reset_password")
-        button.ad-btn.is-ghost(type="button" data-open-pass data-action=`/admin/accounts/${loai}/${user._id}/password` data-name=user.fullName) Đặt lại mật khẩu
-      if can("user:lock")
-        form(method="post" action=`/admin/accounts/${loai}/${user._id}/status`)
-          input(type="hidden" name="status" value=(user.status === "active" ? "inactive" : "active"))
-          button.ad-btn.is-ghost(type="submit")= user.status === "active" ? "Khóa" : "Mở"
-      if can("user:update")
-        button.ad-btn.is-danger(type="button" data-open-delete data-action=`/admin/accounts/${loai}/${user._id}/delete` data-name=user.fullName) Xóa
-  .ad-split
-    article.ad-card
-      h2 Thông tin cá nhân
-      p Họ tên: #{user.fullName}
-      p Email: #{user.email}
-      p Điện thoại: #{user.phone}
-    article.ad-card
-      h2 Tài khoản
-      p Trạng thái: #{nhanTrangThai(user.status)}
-      p Ngày tạo: #{user.createdAt ? new Date(user.createdAt).toLocaleString("vi-VN") : "Chưa có"}
-      p Đăng nhập cuối: #{user.last_login_at ? new Date(user.last_login_at).toLocaleString("vi-VN") : "Chưa ghi nhận"}
-  if user.role === "OWNER"
-    article.ad-card
-      h2 Sân
-      if venues.length
-        ul
-          each san in venues
-            li #{san.name} — #{san.address}
-      else
-        p.ad-lead Chưa có sân.
-    article.ad-card
-      h2 Doanh thu và hoa hồng
-      if money.length
-        ul
-          each dong in money
-            li #{dong._id}: #{dong.total}
-      else
-        p.ad-lead Chưa có dòng tiền.
+  if user.role === "OWNER" && hoSo
+    - const goc = `/admin/accounts/${loai}/${user._id}`
+    - const khoaMo = user.status === "active" ? "inactive" : "active"
+    - const khoaNhan = user.status === "active" ? "Khóa" : "Mở khóa"
+    .od
+      nav.od-crumb(aria-label="Đường dẫn")
+        a(href="/admin/dashboard") Quản trị
+        span ›
+        a(href=`/admin/accounts/${loai}`)= meta.title
+        span ›
+        span= user.fullName
+        a.od-back(href=`/admin/accounts/${loai}`)
+          i.bi.bi-arrow-left(aria-hidden="true")
+          |  Quay lại danh sách
+      if user.status !== "active"
+        .od-banner(role="status")
+          i.bi.bi-lock-fill(aria-hidden="true")
+          p
+            strong Tài khoản đang bị khóa.
+            |  Chủ sân không đăng nhập được. Dữ liệu sân và giao dịch vẫn được giữ.
+          if can("user:lock")
+            button.ad-btn.is-ghost(type="button" data-open-lock) Mở khóa
+      header.od-profile
+        span.od-avatar(aria-hidden="true")= user.fullName.trim().charAt(0).toUpperCase()
+        div.od-id
+          h1= user.fullName
+          .od-contact
+            span= user.email
+            button.od-copy(type="button" data-copy=user.email aria-label="Sao chép email")
+              i.bi.bi-copy
+            span= user.phone
+            button.od-copy(type="button" data-copy=user.phone aria-label="Sao chép số điện thoại")
+              i.bi.bi-copy
+          .od-badges
+            span.od-pill(class=user.status === "active" ? "is-ok" : "is-off")= user.status === "active" ? "Đang hoạt động" : "Đã khóa"
+            span.od-pill.is-role= nhanVaiTro(user.role)
+        .od-actions
+          if can("user:update")
+            a.ad-btn(href=`${goc}/edit`) Sửa
+          if can("user:reset_password")
+            button.ad-btn.is-ghost(type="button" data-open-pass data-action=`${goc}/password` data-name=user.fullName data-next=`${goc}?tab=${tab}&ky=${hoSo.ky}`) Đặt lại mật khẩu
+          if can("user:lock")
+            button.ad-btn.is-ghost(type="button" data-open-lock)= khoaNhan
+          if can("user:update")
+            details.od-more
+              summary(aria-label="Thêm thao tác")
+                i.bi.bi-three-dots
+              button.od-menu-danger(type="button" data-open-delete data-action=`${goc}/delete` data-name=user.fullName data-next=`/admin/accounts/${loai}`) Xóa tài khoản
+      .od-kpis
+        each the in hoSo.kpis
+          article.od-kpi
+            span.od-kpi-icon(aria-hidden="true")
+              i(class=`bi ${the.icon}`)
+            div
+              p= the.nhan
+              strong= the.giaTri
+              small= the.phu
+              if the.soSanh
+                em(class=the.soSanh.len ? "is-up" : "is-down")= the.soSanh.chu
+      .od-grid
+        section.od-main
+          nav.od-tabs(aria-label="Nội dung hồ sơ")
+            a(href=`${goc}?ky=${hoSo.ky}` class=tab === "tong-quan" ? "is-on" : "") Tổng quan
+            a(href=`${goc}?tab=san&ky=${hoSo.ky}` class=tab === "san" ? "is-on" : "") Sân
+            a(href=`${goc}?tab=giao-dich&ky=${hoSo.ky}` class=tab === "giao-dich" ? "is-on" : "") Giao dịch
+            a(href=`${goc}?tab=hoat-dong&ky=${hoSo.ky}` class=tab === "hoat-dong" ? "is-on" : "") Hoạt động
+          if tab === "san"
+            if hoSo.sanDangXem
+              a.od-back(href=`${goc}?tab=san&ky=${hoSo.ky}`)
+                i.bi.bi-arrow-left(aria-hidden="true")
+                |  Tất cả sân
+              h2= hoSo.sanDangXem.name
+              p.od-muted= hoSo.sanDangXem.diaChi
+              if hoSo.sanDangXem.courts.length
+                .ad-table-wrap
+                  table.ad-table
+                    thead
+                      tr
+                        th Sân con
+                        th Loại sân
+                        th Trạng thái
+                    tbody
+                      each court in hoSo.sanDangXem.courts
+                        tr
+                          td
+                            strong= court.name
+                            if court.mat
+                              small.od-muted= court.mat
+                          td= court.loai
+                          td
+                            span.od-pill(class=court.trangThai === "Đang mở" ? "is-ok" : "is-off")= court.trangThai
+              else
+                .od-empty
+                  i.bi.bi-grid
+                  p Sân này chưa có sân con.
+              h3 Lượt đặt gần đây
+              if hoSo.sanDangXem.don.length
+                .ad-table-wrap
+                  table.ad-table
+                    thead
+                      tr
+                        th Mã
+                        th Sân con
+                        th Thời gian
+                        th Số tiền
+                        th Trạng thái
+                    tbody
+                      each don in hoSo.sanDangXem.don
+                        tr
+                          td.ad-mono= don.code
+                          td= don.courtName
+                          td= don.luc
+                          td= don.tien
+                          td= don.trangThai
+              else
+                .od-empty
+                  i.bi.bi-calendar
+                  p Chưa có lượt đặt tại sân này.
+            else if venues.length
+              .ad-table-wrap
+                table.ad-table
+                  thead
+                    tr
+                      th Sân
+                      th Loại sân
+                      th Trạng thái
+                      th Lượt đặt trong kỳ
+                      th
+                  tbody
+                    each san in venues
+                      tr
+                        td
+                          a.od-name(href=`${goc}?tab=san&san=${san._id}&ky=${hoSo.ky}`)= san.name
+                          small.od-muted= san.diaChi
+                        td= san.loai
+                        td
+                          span.od-pill(class=san.mo ? "is-ok" : "is-off")= san.trangThai
+                        td= san.luot
+                        td
+                          a.ad-btn.is-ghost(href=`${goc}?tab=san&san=${san._id}&ky=${hoSo.ky}`) Xem
+            else
+              .od-empty
+                i.bi.bi-geo-alt
+                p Chủ sân chưa có sân nào trên hệ thống.
+          else if tab === "giao-dich"
+            if hoSo.giaoDich.length
+              .ad-table-wrap
+                table.ad-table
+                  thead
+                    tr
+                      th Giao dịch
+                      th Mã đặt sân
+                      th Thời gian
+                      th Số tiền
+                  tbody
+                    each dong in hoSo.giaoDich
+                      tr
+                        td= dong.nhan
+                        td.ad-mono= dong.ma || "—"
+                        td
+                          if dong.luc
+                            = dong.luc.chu
+                            small.od-muted= dong.luc.tuongDoi
+                        td= dong.tien
+            else
+              .od-empty
+                i.bi.bi-receipt
+                p Chưa có giao dịch. Số liệu sẽ hiện khi có thanh toán hoặc hoa hồng.
+          else if tab === "hoat-dong"
+            if hoSo.hoatDong.length
+              ol.od-time
+                each muc in hoSo.hoatDong
+                  li
+                    strong= muc.nhan
+                    span #{muc.luc.chu} · #{muc.luc.tuongDoi}
+            else
+              .od-empty
+                i.bi.bi-clock-history
+                p Chưa có mốc hoạt động nào được ghi lại.
+          else
+            .od-chart-head
+              h2 Doanh thu và hoa hồng
+              .od-range(aria-label="Khoảng thời gian")
+                a(href=`${goc}?ky=7` class=hoSo.ky === 7 ? "is-on" : "") 7 ngày
+                a(href=`${goc}?ky=30` class=hoSo.ky === 30 ? "is-on" : "") 30 ngày
+                a(href=`${goc}?ky=365` class=hoSo.ky === 365 ? "is-on" : "") 12 tháng
+            if hoSo.coBieuDo
+              .od-legend
+                span.is-dt Doanh thu
+                span.is-hh Hoa hồng sàn
+              .od-chart(role="img" aria-label=`Biểu đồ ${hoSo.kyNhan}`)
+                each cot in hoSo.bieuDo
+                  .od-col(title=`Doanh thu ${cot.tienDt}, hoa hồng ${cot.tienHh}`)
+                    span.od-bar.is-dt(style=`height:${cot.caoDt}%`)
+                    span.od-bar.is-hh(style=`height:${cot.caoHh}%`)
+                    if cot.hienNhan
+                      small= cot.nhan
+            else
+              .od-empty
+                i.bi.bi-bar-chart
+                p Chưa có doanh thu trong #{hoSo.kyNhan}. Hãy chọn khoảng thời gian khác.
+            h2 Giao dịch gần đây
+            if hoSo.giaoDich.length
+              .ad-table-wrap
+                table.ad-table
+                  thead
+                    tr
+                      th Giao dịch
+                      th Thời gian
+                      th Số tiền
+                  tbody
+                    each dong in hoSo.giaoDich
+                      tr
+                        td
+                          = dong.nhan
+                          if dong.ma
+                            small.od-muted= dong.ma
+                        td
+                          if dong.luc
+                            = dong.luc.chu
+                            small.od-muted= dong.luc.tuongDoi
+                        td= dong.tien
+              a.od-more-link(href=`${goc}?tab=giao-dich&ky=${hoSo.ky}`) Xem giao dịch
+            else
+              .od-empty
+                i.bi.bi-receipt
+                p Chưa có giao dịch gần đây.
+        aside.od-side
+          article.od-card
+            h2 Thông tin liên hệ
+            dl
+              div
+                dt
+                  i.bi.bi-person(aria-hidden="true")
+                  |  Họ tên
+                dd= user.fullName
+              div
+                dt
+                  i.bi.bi-envelope(aria-hidden="true")
+                  |  Email
+                dd= user.email
+              div
+                dt
+                  i.bi.bi-telephone(aria-hidden="true")
+                  |  Số điện thoại
+                dd= user.phone
+          article.od-card
+            h2 Tài khoản
+            dl
+              div
+                dt
+                  i.bi.bi-shield-check(aria-hidden="true")
+                  |  Trạng thái
+                dd= user.status === "active" ? "Đang hoạt động" : "Đã khóa"
+              div
+                dt
+                  i.bi.bi-calendar(aria-hidden="true")
+                  |  Ngày tạo
+                dd
+                  if hoSo.tao
+                    = hoSo.tao.chu
+                    small.od-muted= hoSo.tao.tuongDoi
+                  else
+                    | Chưa có ngày tạo
+              div
+                dt
+                  i.bi.bi-box-arrow-in-right(aria-hidden="true")
+                  |  Đăng nhập cuối
+                dd
+                  if hoSo.dangNhap
+                    = hoSo.dangNhap.chu
+                    small.od-muted= hoSo.dangNhap.tuongDoi
+                  else
+                    | Chưa đăng nhập bằng trang quản trị
+      if can("user:lock") || can("user:update")
+        section.od-danger
+          div
+            h2 Vùng nguy hiểm
+            p Khóa thì chủ sân mất phiên đăng nhập. Xóa chỉ ẩn tài khoản nếu đã có sân, đặt sân hoặc giao dịch.
+          .od-actions
+            if can("user:lock")
+              button.ad-btn.is-ghost(type="button" data-open-lock)= khoaNhan + " tài khoản"
+            if can("user:update")
+              button.ad-btn.is-danger(type="button" data-open-delete data-action=`${goc}/delete` data-name=user.fullName data-next=`/admin/accounts/${loai}`) Xóa tài khoản
+      form#form-khoa(method="post" action=`${goc}/status` hidden)
+        input(type="hidden" name="status" value=khoaMo)
+        input(type="hidden" name="next" value=`${goc}?tab=${tab}&ky=${hoSo.ky}`)
   else
-    article.ad-card
-      h2 Lịch sử đặt sân gần đây
-      if bookings.length
-        .ad-table-wrap
-          table.ad-table
-            thead
-              tr
-                th Mã
-                th Sân
-                th Ngày
-                th Số tiền
-            tbody
-              each don in bookings
-                tr
-                  td.ad-mono= don.code
-                  td= don.facilityName
-                  td #{don.date} #{don.time}
-                  td.ad-num= don.amount
-      else
-        p.ad-lead Chưa có lượt đặt.
+    - const gocKhach = `/admin/accounts/${loai}/${user._id}`
+    - const khoaMo = user.status === "active" ? "inactive" : "active"
+    - const khoaNhan = user.status === "active" ? "Khóa" : "Mở khóa"
+    .od
+      nav.od-crumb(aria-label="Đường dẫn")
+        a(href="/admin/dashboard") Quản trị
+        span ›
+        a(href=`/admin/accounts/${loai}`)= meta.title
+        span ›
+        span= user.fullName
+        a.od-back(href=`/admin/accounts/${loai}`)
+          i.bi.bi-arrow-left(aria-hidden="true")
+          |  Quay lại danh sách
+      if user.status !== "active"
+        .od-banner(role="status")
+          i.bi.bi-lock-fill(aria-hidden="true")
+          p
+            strong Tài khoản đang bị khóa.
+            |  Khách không đăng nhập được. Lịch sử đặt sân vẫn được giữ.
+          if can("user:lock")
+            button.ad-btn.is-ghost(type="button" data-open-lock) Mở khóa
+      header.od-profile
+        span.od-avatar(aria-hidden="true")= user.fullName.trim().charAt(0).toUpperCase()
+        div.od-id
+          h1= user.fullName
+          .od-contact
+            span= user.email
+            button.od-copy(type="button" data-copy=user.email aria-label="Sao chép email")
+              i.bi.bi-copy
+            span= user.phone
+            button.od-copy(type="button" data-copy=user.phone aria-label="Sao chép số điện thoại")
+              i.bi.bi-copy
+          .od-badges
+            span.od-pill(class=user.status === "active" ? "is-ok" : "is-off")= user.status === "active" ? "Đang hoạt động" : "Đã khóa"
+            span.od-pill.is-role= nhanVaiTro(user.role)
+        .od-actions
+          if can("user:update")
+            a.ad-btn(href=`${gocKhach}/edit`) Sửa
+          if can("user:reset_password")
+            button.ad-btn.is-ghost(type="button" data-open-pass data-action=`${gocKhach}/password` data-name=user.fullName data-next=gocKhach) Đặt lại mật khẩu
+          if can("user:lock")
+            button.ad-btn.is-ghost(type="button" data-open-lock)= khoaNhan
+          if can("user:update")
+            details.od-more
+              summary(aria-label="Thêm thao tác")
+                i.bi.bi-three-dots
+              button.od-menu-danger(type="button" data-open-delete data-action=`${gocKhach}/delete` data-name=user.fullName data-next=`/admin/accounts/${loai}`) Xóa tài khoản
+      if hoSo && hoSo.kpis
+        .od-kpis
+          each the in hoSo.kpis
+            article.od-kpi
+              span.od-kpi-icon(aria-hidden="true")
+                i(class=`bi ${the.icon}`)
+              div
+                p= the.nhan
+                strong= the.giaTri
+                small= the.phu
+      .od-grid
+        section.od-main
+          h2 Lịch sử đặt sân gần đây
+          if bookings.length
+            .ad-table-wrap
+              table.ad-table
+                thead
+                  tr
+                    th Mã
+                    th Sân
+                    th Thời gian
+                    th Số tiền
+                    th Trạng thái
+                tbody
+                  each don in bookings
+                    tr
+                      td.ad-mono= don.code
+                      td= don.facilityName
+                      td #{don.date} #{don.time}
+                      td= don.tien
+                      td= don.trangThai
+          else
+            .od-empty
+              i.bi.bi-calendar
+              p Khách này chưa có lượt đặt.
+        aside.od-side
+          article.od-card
+            h2 Thông tin liên hệ
+            dl
+              div
+                dt
+                  i.bi.bi-person(aria-hidden="true")
+                  |  Họ tên
+                dd= user.fullName
+              div
+                dt
+                  i.bi.bi-envelope(aria-hidden="true")
+                  |  Email
+                dd= user.email
+              div
+                dt
+                  i.bi.bi-telephone(aria-hidden="true")
+                  |  Số điện thoại
+                dd= user.phone
+          article.od-card
+            h2 Tài khoản
+            dl
+              div
+                dt
+                  i.bi.bi-shield-check(aria-hidden="true")
+                  |  Trạng thái
+                dd= user.status === "active" ? "Đang hoạt động" : "Đã khóa"
+              div
+                dt
+                  i.bi.bi-calendar(aria-hidden="true")
+                  |  Ngày tạo
+                dd
+                  if hoSo && hoSo.tao
+                    = hoSo.tao.chu
+                    small.od-muted= hoSo.tao.tuongDoi
+                  else
+                    | Chưa có ngày tạo
+              div
+                dt
+                  i.bi.bi-box-arrow-in-right(aria-hidden="true")
+                  |  Đăng nhập cuối
+                dd
+                  if hoSo && hoSo.dangNhap
+                    = hoSo.dangNhap.chu
+                    small.od-muted= hoSo.dangNhap.tuongDoi
+                  else
+                    | Chưa đăng nhập bằng trang quản trị
+      if can("user:lock") || can("user:update")
+        section.od-danger
+          div
+            h2 Vùng nguy hiểm
+            p Khóa thì khách mất phiên đăng nhập. Xóa chỉ ẩn tài khoản nếu đã có lượt đặt hoặc giao dịch.
+          .od-actions
+            if can("user:lock")
+              button.ad-btn.is-ghost(type="button" data-open-lock)= khoaNhan + " tài khoản"
+            if can("user:update")
+              button.ad-btn.is-danger(type="button" data-open-delete data-action=`${gocKhach}/delete` data-name=user.fullName data-next=`/admin/accounts/${loai}`) Xóa tài khoản
+      form#form-khoa(method="post" action=`${gocKhach}/status` hidden)
+        input(type="hidden" name="status" value=khoaMo)
+        input(type="hidden" name="next" value=gocKhach)
 
   dialog.ad-modal#modal-pass
     form(method="post" action="")
+      input(type="hidden" name="next" value="")
       h2 Đặt lại mật khẩu
       p(data-pass-name)
       label Mật khẩu mới
@@ -90,9 +451,19 @@ block main
         button.ad-btn(type="submit") Lưu mật khẩu
   dialog.ad-modal#modal-delete
     form(method="post" action="")
+      input(type="hidden" name="next" value="")
       h2 Xóa tài khoản
       p
+        | Xóa
         strong(data-delete-name)
+        | ? Nếu đã có sân, đặt sân hoặc giao dịch, tài khoản chỉ được ẩn khỏi danh sách, không xóa dữ liệu.
       .ad-modal-actions
         button.ad-btn.is-ghost(type="button" data-close-modal) Hủy
         button.ad-btn.is-danger(type="submit") Xóa
+  dialog.ad-modal#modal-lock
+    form(method="dialog")
+      h2= user.status === "active" ? "Khóa tài khoản" : "Mở khóa tài khoản"
+      p= user.status === "active" ? "Tài khoản sẽ bị đăng xuất và không đăng nhập được cho đến khi được mở lại." : "Tài khoản đăng nhập lại được. Dữ liệu đã lưu không đổi."
+      .ad-modal-actions
+        button.ad-btn.is-ghost(type="button" data-close-modal) Hủy
+        button.ad-btn(type="submit" form="form-khoa")= user.status === "active" ? "Khóa" : "Mở khóa"

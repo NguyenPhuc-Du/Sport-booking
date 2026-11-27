@@ -51,6 +51,7 @@ const bookingSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+bookingSchema.index({ facilityId: 1, createdAt: -1 });
 bookingSchema.index(
   { courtId: 1, date: 1, timeStart: 1 },
   {
