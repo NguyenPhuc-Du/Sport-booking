@@ -3,21 +3,30 @@ include ../../../mixins/alert.pug
 
 block main
   +alert-error(5000)
-  header.ad-page
-    div
-      p.ad-crumb
-        a(href=`/admin/accounts/${loai}`)= title
+  .od
+    nav.od-crumb(aria-label="Đường dẫn")
+      a(href="/admin/dashboard") Quản trị
+      span ›
+      a(href=`/admin/accounts/${loai}`)= title
+      span ›
+      span= user ? "Sửa thông tin" : "Thêm mới"
+      a.od-back(href=`/admin/accounts/${loai}`)
+        i.bi.bi-arrow-left(aria-hidden="true")
+        |  Quay lại danh sách
+    header.od-form-head
       h1= user ? "Sửa thông tin" : "Thêm " + title.toLowerCase()
-  form.ad-form.ad-form-grid(method="post" action=user ? `/admin/accounts/${loai}/${user._id}` : `/admin/accounts/${loai}`)
-    label Họ và tên
-      input(type="text" name="fullName" required value=user ? user.fullName : "")
-    label Email
-      input(type="email" name="email" required value=user ? user.email : "")
-    label Số điện thoại
-      input(type="tel" name="phone" required value=user ? user.phone : "" placeholder="0912345678")
-    if !user
-      label Mật khẩu
-        input(type="password" name="password" required minlength="8" autocomplete="new-password")
-    .ad-modal-actions
-      a.ad-btn.is-ghost(href=`/admin/accounts/${loai}`) Hủy
-      button.ad-btn(type="submit") Lưu
+      p= user ? "Cập nhật họ tên, email và số điện thoại. Mật khẩu đổi ở trang chi tiết." : "Tài khoản mới đăng nhập được ngay sau khi lưu."
+    form.ad-form.ad-form-grid(method="post" action=user ? `/admin/accounts/${loai}/${user._id}` : `/admin/accounts/${loai}`)
+      label Họ và tên
+        input(type="text" name="fullName" required maxlength="80" value=user ? user.fullName : "" autocomplete="name")
+      label Email
+        input(type="email" name="email" required maxlength="120" value=user ? user.email : "" autocomplete="email")
+      label Số điện thoại
+        input(type="tel" name="phone" required value=user ? user.phone : "" placeholder="0912345678" autocomplete="tel")
+      if !user
+        label Mật khẩu
+          input(type="password" name="password" required minlength="8" autocomplete="new-password")
+          small Tối thiểu 8 ký tự.
+      .od-form-actions
+        a.ad-btn.is-ghost(href=`/admin/accounts/${loai}`) Hủy
+        button.ad-btn(type="submit") Lưu

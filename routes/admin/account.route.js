@@ -1,4 +1,5 @@
 const express = require("express");
+const multer = require("multer");
 const controller = require("../../controllers/admin/account.controller");
 const authorize = require("../../middlewares/admin/authorize.middleware");
 const validate = require("../../validates/admin/admin-user.validate");
@@ -6,6 +7,7 @@ const validate = require("../../validates/admin/admin-user.validate");
 const validateAccount = require("../../validates/admin/account.validate");
 
 const router = express.Router();
+const taiLen = multer({ storage: multer.memoryStorage(), limits: { fileSize: 2 * 1024 * 1024 } });
 
 function gan(loai) {
   const base = `/${loai}`;
@@ -17,6 +19,30 @@ function gan(loai) {
   router.post(base, authorize("user:create"), (req, res, next) => {
     req.params.loai = loai;
     return validateAccount.tao(req, res, () => controller.tao(req, res, next));
+  });
+  router.get(`${base}/xuat-excel`, authorize("user:view"), (req, res, next) => {
+    req.params.loai = loai;
+    return controller.xuatExcel(req, res, next);
+  });
+  router.get(`${base}/xuat-pdf`, authorize("user:view"), (req, res, next) => {
+    req.params.loai = loai;
+    return controller.xuatPdf(req, res, next);
+  });
+  router.get(`${base}/mau-excel`, authorize("user:create"), (req, res, next) => {
+    req.params.loai = loai;
+    return controller.mauExcel(req, res, next);
+  });
+  router.post(`${base}/nhap-excel`, authorize("user:create"), taiLen.single("tep"), (req, res, next) => {
+    req.params.loai = loai;
+    return controller.nhapExcel(req, res, next);
+  });
+  router.post(`${base}/hang-loat`, (req, res, next) => {
+    const quyen = (req.access && req.access.permissions) || [];
+    if (!quyen.includes("user:lock") && !quyen.includes("user:update")) {
+      return res.status(403).render("admin/pages/errors/403", { pageTitle: "Không có quyền" });
+    }
+    req.params.loai = loai;
+    return controller.hangLoat(req, res, next);
   });
   router.get(`${base}/:id`, authorize("user:view"), (req, res, next) => {
     req.params.loai = loai;

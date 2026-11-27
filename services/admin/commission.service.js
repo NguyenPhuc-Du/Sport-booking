@@ -5,7 +5,7 @@ const ledger = require("./ledger.service");
 const rate = require("./rate.service");
 const { formatVnd, percentLabel } = require("./present");
 const { CYCLES, byCode, isoDate } = require("./catalog");
-const { nho, huyCache } = require("./bo-nho");
+const { nho, huyCache, PHIEN_MS } = require("./bo-nho");
 
 function endOfDay(date) {
   const copy = new Date(date);
@@ -176,7 +176,7 @@ async function report(period) {
 async function page(query) {
   const period = periodOf(query, "weekly");
   const key = `hh:${period.fromInput}:${period.toInput}:${period.cycle}`;
-  const rows = await nho(key, 45000, () => report(period));
+  const rows = await nho(key, PHIEN_MS, () => report(period));
   return {
     period,
     cycles: CYCLES,
@@ -223,37 +223,6 @@ async function closePeriod(actorId, body) {
 }
 
 /**
- * Cộng các cột số của báo cáo.
- * @param {object[]} rows Dòng reportRow.
- * @returns {object} Tổng đã format.
- */
-function tongHop(rows) {
-  const sum = (key) => rows.reduce((total, row) => total + Number(row[key] || 0), 0);
-  return {
-    revenueLabel: formatVnd(sum("revenue")),
-    feeLabel: formatVnd(sum("fee")),
-    collectedLabel: formatVnd(sum("collected")),
-    openLabel: formatVnd(sum("open")),
-  };
-}
-
-/**
- * Xuất CSV báo cáo hoa hồng.
- * @param {object[]} rows Dòng báo cáo.
- * @returns {string}
- */
-function csv(rows) {
-  const esc = (value) => `"${String(value == null ? "" : value).replace(/"/g, '""')}"`;
-  const header = ["Chủ sân", "Doanh thu", "Tỷ lệ", "Hoa hồng", "Đã thu", "Còn mở", "Trạng thái"];
-  const lines = rows.map((row) =>
-    [row.ownerName, row.revenue, row.rateLabel, row.fee, row.collected, row.open, row.closed ? "Đã chốt" : "Còn mở"]
-      .map(esc)
-      .join(","),
-  );
-  return `\uFEFF${[header.join(","), ...lines].join("\n")}`;
-}
-
-/**
  * Đánh dấu các dòng hoa hồng trong kỳ là đã thu.
  * @param {string} ownerId Id chủ sân.
  * @param {object} query from, to, cycle.
@@ -274,4 +243,4 @@ async function danhDauDaThu(ownerId, query) {
   return result.modifiedCount || 0;
 }
 
-module.exports = { page, closePeriod, tongHop, csv, danhDauDaThu };
+module.exports = { page, closePeriod, danhDauDaThu };

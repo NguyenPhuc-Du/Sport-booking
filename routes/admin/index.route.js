@@ -12,6 +12,7 @@ const roleRoutes = require("./role.route");
 const accountRoutes = require("./account.route");
 const paymentRoutes = require("./payment.route");
 const reportRoutes = require("./report.route");
+const thongKeRoutes = require("./thong-ke.route");
 const { kiemTraCsrf } = require("../../middlewares/admin/csrf.middleware");
 const doThoiGian = require("../../middlewares/admin/timing.middleware");
 
@@ -41,6 +42,7 @@ module.exports = (app) => {
   app.use(PATH + "/payments", paymentRoutes);
   app.use(PATH + "/reconciliation", reportRoutes.reconcile);
   app.use(PATH + "/reports", reportRoutes.reports);
+  app.use(PATH + "/thong-ke", thongKeRoutes);
   app.use(PATH + "/admins", accountRoutes.admins);
   app.use(PATH + "/profile", accountRoutes.profile);
 

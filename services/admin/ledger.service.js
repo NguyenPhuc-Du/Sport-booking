@@ -70,12 +70,16 @@ async function recordPaidBooking(booking) {
     ? await Venue.findById(booking.facilityId).select("owner_id").lean()
     : null;
   const ownerId = venue ? venue.owner_id : null;
-  const share = rate.resolveRate();
-
   const amount = Math.round(Number(booking.amount) || 0);
+  const when = booking.paidAt ? new Date(booking.paidAt) : new Date();
+  let share = rate.resolveRate();
+  try {
+    share = await rate.tyLeCho(ownerId, booking.facilityId, when);
+  } catch (error) {
+    share = rate.resolveRate();
+  }
   const fee = Math.round(amount * share);
   const cash = booking.paymentMethod === "cash";
-  const when = booking.paidAt ? new Date(booking.paidAt) : new Date();
   const rows = [
     {
       type: "payment",

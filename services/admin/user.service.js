@@ -8,7 +8,10 @@ const ledger = require("./ledger.service");
 const { STATUS_CODES } = require("./catalog");
 const policy = require("./rbac-policy");
 const rbac = require("./rbac.service");
-const { huyCache, nho } = require("./bo-nho");
+const Venue = require("../../models/facilities.model");
+const Booking = require("../../models/booking.model");
+const { motDieuKien, ghepHai } = require("./tim-nang-cao");
+const { huyCache, nho, PHIEN_MS } = require("./bo-nho");
 
 const { phanTrang, ganLink } = require("../../helpers/phanTrang");
 const ADMIN_ROLE_CODES = ["SUPER_ADMIN", "ADMIN", "ACCOUNT_ADMIN", "COMMISSION_ADMIN"];
@@ -93,35 +96,101 @@ function rethrowDuplicate(error) {
   throw error;
 }
 
+const TRUONG_TAI_KHOAN = {
+  fullName: "chu",
+  email: "chu",
+  phone: "chu",
+  status: "chu",
+  createdAt: "ngay",
+};
+
 /**
- * Danh sách tài khoản có phân trang. roleCode ép từ route, không tin query khi đã ép.
- * @param {object} query Query đã được controller làm sạch.
- * @param {string|string[]|null} forcedRole Vai trò cố định của trang.
- * @returns {Promise<object>} users và pagination.
+ * Hai điều kiện tìm nâng cao. Thành phố lấy từ sân của chủ sân.
+ * @param {object} query t1, o1, v1, t2, o2, v2, l2.
+ * @returns {Promise<object|null>}
  */
-async function list(query, forcedRole) {
+async function nangCaoTaiKhoan(query) {
+  async function mot(truong, toan, raw) {
+    const giaTri = String(raw || "").trim();
+    if (!truong || !giaTri) return null;
+    if (truong === "thanhPho") {
+      const re = new RegExp(escapeRegex(giaTri), "i");
+      const ids = await Venue.find({ city: re, deleted: { $ne: true } }).distinct("owner_id");
+      return toan === "ne" ? { _id: { $nin: ids } } : { _id: { $in: ids } };
+    }
+    if (truong === "tinh") {
+      const re = new RegExp(escapeRegex(giaTri), "i");
+      const san = await Venue.find({ city: re, deleted: { $ne: true } }).distinct("_id");
+      const ids = await Booking.find({ facilityId: { $in: san } }).distinct("userId");
+      return toan === "ne" ? { _id: { $nin: ids } } : { _id: { $in: ids } };
+    }
+    return motDieuKien(truong, toan, giaTri, TRUONG_TAI_KHOAN[truong]);
+  }
+  const a = await mot(query.t1, query.o1, query.v1);
+  const b = await mot(query.t2, query.o2, query.v2);
+  return ghepHai(a, b, query.l2);
+}
+
+/**
+ * Bộ lọc danh sách. Gộp từ khóa và tìm nâng cao, không nhận object lạ từ query.
+ * @param {object} query Query của trang.
+ * @param {string|string[]|null} forcedRole Vai trò cố định.
+ * @returns {Promise<object>}
+ */
+async function filterCua(query, forcedRole) {
   const q = String(query.q || "").trim();
   const status = STATUS_CODES.includes(query.status) ? query.status : "";
   const roleCode = forcedRole || (/^[A-Z0-9_]+$/.test(query.role || "") ? query.role : "");
-  const filter = {};
-  if (query.ids) filter._id = { $in: query.ids };
-  if (status) filter.status = status;
-  if (roleCode && !Array.isArray(roleCode)) filter.role = roleCode;
-  filter.deleted_at = null;
+  const parts = [{ deleted_at: null }];
+  let ids = query.ids;
+  if (typeof ids === "string") {
+    ids = ids.split(",").map((item) => item.trim()).filter((item) => mongoose.isValidObjectId(item));
+  }
+  if (Array.isArray(ids) && ids.length) parts.push({ _id: { $in: ids } });
+  if (status) parts.push({ status });
+  if (query.ky === "thang") {
+    const month = new Date();
+    month.setDate(1);
+    month.setHours(0, 0, 0, 0);
+    parts.push({ createdAt: { $gte: month } });
+  }
+  if (roleCode && !Array.isArray(roleCode)) parts.push({ role: roleCode });
   if (q) {
     const regex = new RegExp(escapeRegex(q), "i");
-    filter.$or = [{ fullName: regex }, { email: regex }, { phone: regex }];
+    parts.push({ $or: [{ fullName: regex }, { email: regex }, { phone: regex }] });
   }
+  const nang = await nangCaoTaiKhoan(query);
+  if (nang) parts.push(nang);
+  return {
+    filter: parts.length === 1 ? parts[0] : { $and: parts },
+    q,
+    status,
+    roleCode,
+    ky: query.ky === "thang" ? "thang" : "",
+    tim: {
+      t1: query.t1 || "",
+      o1: query.o1 || "",
+      v1: query.v1 || "",
+      t2: query.t2 || "",
+      o2: query.o2 || "",
+      v2: query.v2 || "",
+      l2: query.l2 || "and",
+    },
+  };
+}
+
+async function list(query, forcedRole) {
   const sortField = ["fullName", "email", "createdAt"].includes(query.sort) ? query.sort : "createdAt";
   const dir = query.dir === "asc" ? 1 : -1;
-  const idKey = Array.isArray(query.ids) ? query.ids.map(String).sort().join(".") : "";
+  const idKey = Array.isArray(query.ids) ? query.ids.map(String).sort().join(".") : String(query.ids || "");
+  const tam = await filterCua(query, forcedRole);
   const data = await nho(
-    `users:${query.path || ""}:${roleCode}:${status}:${q}:${query.page}:${query.pageSize}:${sortField}:${dir}:${idKey}`,
-    20000,
+    `users:${query.path || ""}:${tam.roleCode}:${tam.status}:${tam.ky}:${tam.q}:${query.page}:${query.pageSize}:${sortField}:${dir}:${idKey}:${tam.tim.t1}:${tam.tim.o1}:${tam.tim.v1}:${tam.tim.t2}:${tam.tim.o2}:${tam.tim.v2}:${tam.tim.l2}`,
+    PHIEN_MS,
     () =>
       phanTrang({
         model: User,
-        filter,
+        filter: tam.filter,
         sort: { [sortField]: dir },
         page: query.page,
         pageSize: query.pageSize,
@@ -134,17 +203,36 @@ async function list(query, forcedRole) {
     page: data.page,
     pages: data.totalPages,
     total: data.total,
-    q,
-    status,
-    role: Array.isArray(roleCode) ? "" : roleCode,
+    q: tam.q,
+    status: tam.status,
+    ky: tam.ky,
+    sort: sortField,
+    dir: dir === 1 ? "asc" : "desc",
+    pageSize: data.pageSize,
+    role: Array.isArray(tam.roleCode) ? "" : tam.roleCode,
+    ...tam.tim,
     pagination: ganLink(data, path, {
-      q,
-      status,
-      role: Array.isArray(roleCode) ? "" : roleCode,
-      sort: query.sort || "",
-      dir: query.dir || "",
+      q: tam.q,
+      status: tam.status,
+      ky: tam.ky,
+      role: Array.isArray(tam.roleCode) ? "" : tam.roleCode,
+      sort: sortField,
+      dir: dir === 1 ? "asc" : "desc",
+      pageSize: data.pageSize,
+      ...tam.tim,
     }),
   };
+}
+
+/**
+ * Toàn bộ dòng đang lọc, dùng để xuất Excel. Tối đa 2000 dòng.
+ * @param {object} query Cùng bộ lọc với danh sách.
+ * @param {string} forcedRole OWNER hoặc USER.
+ * @returns {Promise<object[]>}
+ */
+async function xuatDanhSach(query, forcedRole) {
+  const { filter } = await filterCua(query, forcedRole);
+  return User.find(filter).sort({ createdAt: -1 }).limit(2000).select("fullName email phone status createdAt").lean();
 }
 
 /**
@@ -370,6 +458,7 @@ async function updateSelf(userId, body) {
 module.exports = {
   vaiTroLuuUser,
   list,
+  xuatDanhSach,
   listAdmins,
   profileOf,
   updateSelf,

@@ -7,10 +7,14 @@ block main
 
   header.pf-head
     div
-      p.pf-kicker Quản trị / Vai trò
+      p.pf-kicker Hệ thống
       h1.pf-title Vai trò
       p.pf-sub Mỗi tài khoản mang một vai trò. Vai trò quyết định người đó được làm gì trên trang quản trị.
     button.sz-btn.sz-btn-green(type="button" data-open="dialog-role") Thêm vai trò
+
+  nav.ad-tabs
+    a(href="/admin/admins") Quản trị viên
+    a.is-on(href="/admin/roles") Vai trò
 
   details.pm-guide
     summary Cách hoạt động

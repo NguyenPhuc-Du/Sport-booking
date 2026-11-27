@@ -1,5 +1,5 @@
 const MenuItem = require("../../models/menu-item.model");
-const { nho } = require("./bo-nho");
+const { nho, PHIEN_MS } = require("./bo-nho");
 
 /**
  * Dựng cây menu mà người dùng được thấy.
@@ -37,7 +37,7 @@ function layMenuTheoQuyen(permissions, items) {
  * Gọi trong middleware nạp menu cho mọi trang admin.
  */
 async function layMenuChoUser(permissions) {
-  const items = await nho("menu", 60000, () => MenuItem.find().sort({ order: 1 }).lean());
+  const items = await nho("menu", PHIEN_MS, () => MenuItem.find().sort({ order: 1 }).lean());
   return layMenuTheoQuyen(permissions, items);
 }
 

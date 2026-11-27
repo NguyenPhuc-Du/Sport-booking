@@ -1,12 +1,12 @@
 const asyncHandler = require("../../middlewares/admin/async-handler");
 const ledger = require("../../services/admin/ledger.service");
 const { CHART_CODES } = require("../../services/admin/catalog");
-const { nho } = require("../../services/admin/bo-nho");
+const { nho, PHIEN_MS } = require("../../services/admin/bo-nho");
 
 const index = asyncHandler(async (req, res) => {
   const range = CHART_CODES.includes(req.query.range) ? req.query.range : "day";
   try {
-    const data = await nho(`dashboard:${range}`, 45000, () => ledger.dashboard(range));
+    const data = await nho(`dashboard:${range}`, PHIEN_MS, () => ledger.dashboard(range));
     return res.render("admin/pages/platform/dashboard", {
       pageTitle: "Tổng quan sàn",
       activeMenu: "dashboard",
@@ -14,7 +14,6 @@ const index = asyncHandler(async (req, res) => {
       loadError: null,
     });
   } catch (error) {
-    console.error("dashboard", error);
     return res.render("admin/pages/platform/dashboard", {
       pageTitle: "Tổng quan sàn",
       activeMenu: "dashboard",

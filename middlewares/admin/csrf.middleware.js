@@ -31,7 +31,7 @@ function ganCsrf(req, res, next) {
 function kiemTraCsrf(req, res, next) {
   if (req.method === "GET" || req.method === "HEAD" || req.method === "OPTIONS") return next();
   const cookie = req.cookies && req.cookies.admin_csrf;
-  const sent = (req.body && req.body._csrf) || req.get("x-csrf-token");
+  const sent = (req.body && req.body._csrf) || req.query._csrf || req.get("x-csrf-token");
   if (cookie && sent && cookie === sent) return next();
   return res.status(403).render("admin/pages/errors/403", {
     pageTitle: "Không có quyền",
