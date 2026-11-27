@@ -1,3 +1,4 @@
+const path = require("path");
 const mongoose = require("mongoose");
 const ExcelJS = require("exceljs");
 const PDFDocument = require("pdfkit");
@@ -8,6 +9,18 @@ const User = require("../../models/user.model");
 const Voucher = require("../../models/finance.model");
 const facilityService = require("./facility.service");
 const cache = require("../../helpers/memory-cache");
+
+const PDF_FONT = path.join(__dirname, "../../public/fonts/NotoSans-Regular.ttf");
+const THEME = {
+  teal: "0F766E",
+  tealSoft: "ECFDF5",
+  ink: "0F172A",
+  muted: "64748B",
+  line: "E2E8F0",
+  soft: "F8FAFC",
+  white: "FFFFFF",
+  profit: "047857",
+};
 
 const VOUCHER_SCOPE_LABEL = {
   court: "Tiền sân",
@@ -602,15 +615,102 @@ async function buildReport(ownerId, query) {
   });
 }
 
-function styleHeader(row) {
-  row.eachCell((cell) => {
-    cell.font = { bold: true };
+function venueLabel(data) {
+  if (!data.filter.venueId) return "Tất cả cơ sở";
+  const found = (data.venues || []).find((v) => String(v._id) === String(data.filter.venueId));
+  return found?.name || "Cơ sở đã chọn";
+}
+
+function amountRangeLabel(filter) {
+  const hasMin = Number.isFinite(filter.amountMin);
+  const hasMax = Number.isFinite(filter.amountMax);
+  if (!hasMin && !hasMax) return "Không giới hạn";
+  if (hasMin && hasMax) return `${formatMoney(filter.amountMin)} → ${formatMoney(filter.amountMax)}`;
+  if (hasMin) return `Từ ${formatMoney(filter.amountMin)}`;
+  return `Đến ${formatMoney(filter.amountMax)}`;
+}
+
+function paintExcelHeader(row, cols) {
+  for (let i = 1; i <= cols; i += 1) {
+    const cell = row.getCell(i);
+    cell.font = { bold: true, color: { argb: `FF${THEME.white}` }, size: 11 };
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: `FF${THEME.teal}` } };
+    cell.alignment = { vertical: "middle", horizontal: i === 1 ? "left" : "right" };
+    cell.border = {
+      top: { style: "thin", color: { argb: `FF${THEME.teal}` } },
+      bottom: { style: "thin", color: { argb: `FF${THEME.teal}` } },
+      left: { style: "thin", color: { argb: `FF${THEME.teal}` } },
+      right: { style: "thin", color: { argb: `FF${THEME.teal}` } },
+    };
+  }
+  row.height = 22;
+}
+
+function paintExcelMoney(cell, value, { bold = false, profit = false } = {}) {
+  cell.value = Number(value || 0);
+  cell.numFmt = '#,##0"đ"';
+  cell.font = {
+    bold,
+    color: { argb: `FF${profit ? THEME.profit : THEME.ink}` },
+    size: 11,
+  };
+  cell.alignment = { horizontal: "right", vertical: "middle" };
+}
+
+function paintExcelStripe(row, cols, index) {
+  if (index % 2 !== 1) return;
+  for (let i = 1; i <= cols; i += 1) {
+    row.getCell(i).fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: `FF${THEME.soft}` },
+    };
+  }
+}
+
+function paintExcelTotal(row, cols) {
+  for (let i = 1; i <= cols; i += 1) {
+    const cell = row.getCell(i);
+    cell.font = { ...(cell.font || {}), bold: true, color: { argb: `FF${THEME.teal}` } };
     cell.fill = {
       type: "pattern",
       pattern: "solid",
-      fgColor: { argb: "FFE2E8F0" },
+      fgColor: { argb: `FF${THEME.tealSoft}` },
     };
+  }
+}
+
+function autoWidth(sheet, widths) {
+  widths.forEach((w, i) => {
+    sheet.getColumn(i + 1).width = w;
   });
+}
+
+function writeExcelBanner(sheet, title, metaRows, colCount) {
+  sheet.mergeCells(1, 1, 1, colCount);
+  const brand = sheet.getCell(1, 1);
+  brand.value = "SPORTZONE";
+  brand.font = { bold: true, size: 12, color: { argb: `FF${THEME.white}` } };
+  brand.fill = { type: "pattern", pattern: "solid", fgColor: { argb: `FF${THEME.teal}` } };
+  brand.alignment = { vertical: "middle", horizontal: "left" };
+  sheet.getRow(1).height = 24;
+
+  sheet.mergeCells(2, 1, 2, colCount);
+  const heading = sheet.getCell(2, 1);
+  heading.value = title;
+  heading.font = { bold: true, size: 16, color: { argb: `FF${THEME.ink}` } };
+  heading.alignment = { vertical: "middle", horizontal: "left" };
+  sheet.getRow(2).height = 28;
+
+  metaRows.forEach((pair, idx) => {
+    const r = 3 + idx;
+    sheet.getCell(r, 1).value = pair[0];
+    sheet.getCell(r, 1).font = { bold: true, color: { argb: `FF${THEME.muted}` }, size: 10 };
+    sheet.mergeCells(r, 2, r, colCount);
+    sheet.getCell(r, 2).value = pair[1];
+    sheet.getCell(r, 2).font = { color: { argb: `FF${THEME.ink}` }, size: 11 };
+  });
+  return 3 + metaRows.length;
 }
 
 async function exportExcel(ownerId, query) {
@@ -618,42 +718,159 @@ async function exportExcel(ownerId, query) {
   const wb = new ExcelJS.Workbook();
   wb.creator = "SportZone";
   wb.created = new Date();
+  const meta = [
+    ["Kỳ báo cáo", data.periodLabel],
+    ["Cơ sở", venueLabel(data)],
+    ["Khoảng tổng tiền", amountRangeLabel(data.filter)],
+    ["Xuất lúc", new Date().toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" })],
+  ];
 
-  const overview = wb.addWorksheet("Tong hop");
-  overview.addRow(["Kỳ", data.periodLabel]);
-  overview.addRow(["Từ ngày", data.filter.dateFrom, "Đến ngày", data.filter.dateTo]);
-  overview.addRow(["Tổng hóa đơn", data.summary.invoiceCount]);
-  overview.addRow(["Tổng thu", data.summary.revenue]);
-  overview.addRow(["Tổng chi", data.summary.expense]);
-  overview.addRow(["Lợi nhuận", data.summary.profit]);
-  overview.addRow([]);
-  overview.addRow([`Năm ${data.quarterMatrix.year}`, "Q1", "Q2", "Q3", "Q4", "Tổng"]);
-  styleHeader(overview.lastRow);
-  [data.quarterMatrix.thu, data.quarterMatrix.chi, data.quarterMatrix.profit].forEach((row) => {
-    overview.addRow([row.label, row.q1, row.q2, row.q3, row.q4, row.total]);
+  // --- Sheet tổng quan ---
+  const overview = wb.addWorksheet("Tổng hợp quý", {
+    views: [{ state: "frozen", ySplit: 12 }],
+  });
+  autoWidth(overview, [28, 16, 16, 16, 16, 18]);
+  let rowIdx = writeExcelBanner(overview, "Báo cáo tài chính · Tổng hợp quý", meta, 6);
+
+  rowIdx += 1;
+  overview.mergeCells(rowIdx, 1, rowIdx, 6);
+  overview.getCell(rowIdx, 1).value = "Chỉ số nhanh";
+  overview.getCell(rowIdx, 1).font = { bold: true, size: 12, color: { argb: `FF${THEME.teal}` } };
+
+  rowIdx += 1;
+  const summaryHeader = overview.getRow(rowIdx);
+  ["Kỳ", "Số hóa đơn", "Tổng thu", "Tổng chi", "Lợi nhuận", ""].forEach((label, i) => {
+    summaryHeader.getCell(i + 1).value = label;
+  });
+  paintExcelHeader(summaryHeader, 5);
+
+  rowIdx += 1;
+  const summaryRow = overview.getRow(rowIdx);
+  summaryRow.getCell(1).value = data.periodLabel;
+  summaryRow.getCell(1).font = { bold: true, color: { argb: `FF${THEME.ink}` } };
+  summaryRow.getCell(2).value = data.summary.invoiceCount;
+  summaryRow.getCell(2).alignment = { horizontal: "right" };
+  paintExcelMoney(summaryRow.getCell(3), data.summary.revenue);
+  paintExcelMoney(summaryRow.getCell(4), data.summary.expense);
+  paintExcelMoney(summaryRow.getCell(5), data.summary.profit, { bold: true, profit: true });
+  summaryRow.fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: `FF${THEME.tealSoft}` },
+  };
+
+  rowIdx += 2;
+  overview.mergeCells(rowIdx, 1, rowIdx, 6);
+  overview.getCell(rowIdx, 1).value = `Tổng hợp thu / chi / lợi nhuận · năm ${data.quarterMatrix.year}`;
+  overview.getCell(rowIdx, 1).font = { bold: true, size: 12, color: { argb: `FF${THEME.teal}` } };
+
+  rowIdx += 1;
+  const qHeader = overview.getRow(rowIdx);
+  [`Năm ${data.quarterMatrix.year}`, "Q1", "Q2", "Q3", "Q4", "Tổng"].forEach((label, i) => {
+    qHeader.getCell(i + 1).value = label;
+  });
+  paintExcelHeader(qHeader, 6);
+
+  [data.quarterMatrix.thu, data.quarterMatrix.chi, data.quarterMatrix.profit].forEach((item, index) => {
+    rowIdx += 1;
+    const row = overview.getRow(rowIdx);
+    row.getCell(1).value = item.label;
+    row.getCell(1).font = {
+      bold: item === data.quarterMatrix.profit,
+      color: { argb: `FF${item === data.quarterMatrix.profit ? THEME.profit : THEME.ink}` },
+    };
+    [item.q1, item.q2, item.q3, item.q4, item.total].forEach((val, i) => {
+      paintExcelMoney(row.getCell(i + 2), val, {
+        bold: i === 4 || item === data.quarterMatrix.profit,
+        profit: item === data.quarterMatrix.profit,
+      });
+    });
+    paintExcelStripe(row, 6, index);
+    if (item === data.quarterMatrix.profit) paintExcelTotal(row, 6);
   });
 
-  const custSheet = wb.addWorksheet("Theo KH");
-  custSheet.addRow(["Khach hang", "SDT", "Tong"]);
-  styleHeader(custSheet.lastRow);
-  [...data.customerStats.rows, data.customerStats.all].forEach((row) => {
-    custSheet.addRow([row.name, row.phone || "", row.total]);
+  // --- Sheet khách hàng ---
+  const custSheet = wb.addWorksheet("Theo khách hàng", {
+    views: [{ state: "frozen", ySplit: 8 }],
+  });
+  autoWidth(custSheet, [36, 18, 18]);
+  rowIdx = writeExcelBanner(custSheet, "Báo cáo tài chính · Theo khách hàng", meta, 3);
+  rowIdx += 1;
+  custSheet.mergeCells(rowIdx, 1, rowIdx, 3);
+  custSheet.getCell(rowIdx, 1).value = `${data.customerStats.totalCount} khách hàng`;
+  custSheet.getCell(rowIdx, 1).font = { bold: true, size: 12, color: { argb: `FF${THEME.teal}` } };
+
+  rowIdx += 1;
+  const custHeader = custSheet.getRow(rowIdx);
+  ["Khách hàng", "SĐT", "Tổng"].forEach((label, i) => {
+    custHeader.getCell(i + 1).value = label;
+  });
+  paintExcelHeader(custHeader, 3);
+  custHeader.getCell(1).alignment = { horizontal: "left", vertical: "middle" };
+
+  data.customerStats.rows.forEach((item, index) => {
+    rowIdx += 1;
+    const row = custSheet.getRow(rowIdx);
+    row.getCell(1).value = item.name;
+    row.getCell(2).value = item.phone || "—";
+    paintExcelMoney(row.getCell(3), item.total);
+    paintExcelStripe(row, 3, index);
   });
 
-  const spSheet = wb.addWorksheet("Theo SP");
-  if (data.productStats.showQuarters) {
-    spSheet.addRow(["San pham", "Q1", "Q2", "Q3", "Q4", "TONG"]);
-    styleHeader(spSheet.lastRow);
-    [...data.productStats.rows, data.productStats.all].forEach((row) => {
-      spSheet.addRow([row.name, row.q1 || 0, row.q2 || 0, row.q3 || 0, row.q4 || 0, row.total]);
+  rowIdx += 1;
+  const custTotal = custSheet.getRow(rowIdx);
+  custTotal.getCell(1).value = data.customerStats.all.name;
+  custTotal.getCell(2).value = "";
+  paintExcelMoney(custTotal.getCell(3), data.customerStats.all.total, { bold: true, profit: true });
+  paintExcelTotal(custTotal, 3);
+
+  // --- Sheet sản phẩm ---
+  const showQ = !!data.productStats.showQuarters;
+  const spCols = showQ ? 6 : 2;
+  const spSheet = wb.addWorksheet("Theo sản phẩm", {
+    views: [{ state: "frozen", ySplit: 8 }],
+  });
+  autoWidth(spSheet, showQ ? [32, 14, 14, 14, 14, 16] : [40, 18]);
+  rowIdx = writeExcelBanner(spSheet, "Báo cáo tài chính · Theo sản phẩm", meta, spCols);
+  rowIdx += 1;
+  spSheet.mergeCells(rowIdx, 1, rowIdx, spCols);
+  spSheet.getCell(rowIdx, 1).value = `${data.productStats.totalCount} sản phẩm`;
+  spSheet.getCell(rowIdx, 1).font = { bold: true, size: 12, color: { argb: `FF${THEME.teal}` } };
+
+  rowIdx += 1;
+  const spHeader = spSheet.getRow(rowIdx);
+  (showQ ? ["Sản phẩm", "Q1", "Q2", "Q3", "Q4", "TỔNG"] : ["Sản phẩm", "TỔNG"]).forEach((label, i) => {
+    spHeader.getCell(i + 1).value = label;
+  });
+  paintExcelHeader(spHeader, spCols);
+  spHeader.getCell(1).alignment = { horizontal: "left", vertical: "middle" };
+
+  data.productStats.rows.forEach((item, index) => {
+    rowIdx += 1;
+    const row = spSheet.getRow(rowIdx);
+    row.getCell(1).value = item.name;
+    if (showQ) {
+      [item.q1, item.q2, item.q3, item.q4, item.total].forEach((val, i) => {
+        paintExcelMoney(row.getCell(i + 2), val, { bold: i === 4 });
+      });
+    } else {
+      paintExcelMoney(row.getCell(2), item.total, { bold: true });
+    }
+    paintExcelStripe(row, spCols, index);
+  });
+
+  rowIdx += 1;
+  const spTotal = spSheet.getRow(rowIdx);
+  spTotal.getCell(1).value = data.productStats.all.name;
+  if (showQ) {
+    const all = data.productStats.all;
+    [all.q1, all.q2, all.q3, all.q4, all.total].forEach((val, i) => {
+      paintExcelMoney(spTotal.getCell(i + 2), val, { bold: true, profit: true });
     });
   } else {
-    spSheet.addRow(["San pham", "Tong"]);
-    styleHeader(spSheet.lastRow);
-    [...data.productStats.rows, data.productStats.all].forEach((row) => {
-      spSheet.addRow([row.name, row.total]);
-    });
+    paintExcelMoney(spTotal.getCell(2), data.productStats.all.total, { bold: true, profit: true });
   }
+  paintExcelTotal(spTotal, spCols);
 
   const buffer = await wb.xlsx.writeBuffer();
   return {
@@ -663,43 +880,272 @@ async function exportExcel(ownerId, query) {
   };
 }
 
+function pdfEnsureSpace(doc, need = 80) {
+  const bottom = doc.page.height - doc.page.margins.bottom;
+  if (doc.y + need <= bottom) return;
+  doc.addPage();
+  doc.y = doc.page.margins.top;
+}
+
+function pdfSectionTitle(doc, left, width, title) {
+  pdfEnsureSpace(doc, 36);
+  doc.fillColor(`#${THEME.teal}`).fontSize(12).text(title, left, doc.y, { width });
+  const y = doc.y + 4;
+  doc
+    .moveTo(left, y)
+    .lineTo(left + 48, y)
+    .lineWidth(2)
+    .strokeColor(`#${THEME.teal}`)
+    .stroke();
+  doc.y = y + 10;
+}
+
+function pdfTable(doc, left, width, headers, rows, aligns) {
+  const colW = headers.map((_, i) => {
+    if (headers.length === 2) return i === 0 ? width * 0.62 : width * 0.38;
+    if (headers.length === 3) return i === 0 ? width * 0.46 : width * 0.27;
+    if (headers.length === 6) return i === 0 ? width * 0.28 : width * 0.144;
+    return width / headers.length;
+  });
+
+  const drawHeader = () => {
+    const y = doc.y;
+    doc.roundedRect(left, y, width, 22, 4).fill(`#${THEME.teal}`);
+    doc.fillColor(`#${THEME.white}`).fontSize(9);
+    let x = left;
+    headers.forEach((h, i) => {
+      doc.text(h, x + 6, y + 6, {
+        width: colW[i] - 12,
+        align: aligns[i] || "left",
+        lineBreak: false,
+      });
+      x += colW[i];
+    });
+    doc.y = y + 22;
+  };
+
+  pdfEnsureSpace(doc, 48);
+  drawHeader();
+
+  rows.forEach((cells, index) => {
+    const heights = cells.map((c, i) =>
+      Math.max(18, doc.heightOfString(String(c ?? ""), { width: colW[i] - 12 }) + 8),
+    );
+    const h = Math.max(...heights, 22);
+    pdfEnsureSpace(doc, h + 4);
+    if (doc.y === doc.page.margins.top) drawHeader();
+
+    const y = doc.y;
+    const isTotal = index === rows.length - 1;
+    if (isTotal) doc.rect(left, y, width, h).fill(`#${THEME.tealSoft}`);
+    else if (index % 2 === 1) doc.rect(left, y, width, h).fill(`#${THEME.soft}`);
+
+    let x = left;
+    cells.forEach((c, i) => {
+      doc
+        .fillColor(isTotal ? `#${THEME.teal}` : `#${THEME.ink}`)
+        .fontSize(isTotal ? 10 : 9)
+        .text(String(c ?? ""), x + 6, y + 5, {
+          width: colW[i] - 12,
+          align: aligns[i] || "left",
+        });
+      x += colW[i];
+    });
+    doc.y = y + h;
+  });
+
+  doc
+    .moveTo(left, doc.y)
+    .lineTo(left + width, doc.y)
+    .lineWidth(0.6)
+    .strokeColor(`#${THEME.line}`)
+    .stroke();
+  doc.y += 14;
+}
+
 async function exportPdf(ownerId, query) {
-  const data = await buildReport(ownerId, query);
-  const doc = new PDFDocument({ margin: 40, size: "A4" });
+  const data = await buildReport(ownerId, { ...query, run: "1" });
+  const doc = new PDFDocument({
+    size: "A4",
+    bufferPages: true,
+    margins: { top: 42, bottom: 48, left: 40, right: 40 },
+    info: {
+      Title: `Báo cáo tài chính ${data.periodLabel}`,
+      Author: "SportZone",
+    },
+  });
   const chunks = [];
   doc.on("data", (c) => chunks.push(c));
-
   const done = new Promise((resolve) => {
     doc.on("end", () => resolve(Buffer.concat(chunks)));
   });
 
-  doc.fontSize(16).text("Bao cao thong ke SportZone", { underline: true });
-  doc.moveDown(0.5);
-  doc.fontSize(11).text(`Tu ${data.filter.dateFrom} den ${data.filter.dateTo}`);
-  doc.text(`Tong HD: ${data.summary.invoiceCount}`);
-  doc.text(`Tong thu: ${data.summary.revenueText}`);
-  doc.text(`Tong chi: ${data.summary.expenseText}`);
-  doc.text(`Loi nhuan: ${data.summary.profitText}`);
-  doc.moveDown();
-  doc.fontSize(13).text(`Bang quy/nam ${data.quarterMatrix.year}`);
-  doc.fontSize(10);
-  [data.quarterMatrix.thu, data.quarterMatrix.chi, data.quarterMatrix.profit].forEach((row) => {
-    doc.text(
-      `${row.label}: Q1=${formatMoney(row.q1)} | Q2=${formatMoney(row.q2)} | Q3=${formatMoney(row.q3)} | Q4=${formatMoney(row.q4)} | Tong=${formatMoney(row.total)}`,
-    );
+  doc.font(PDF_FONT);
+  const left = doc.page.margins.left;
+  const width = doc.page.width - left - doc.page.margins.right;
+
+  // Header banner giống web / phiếu SportZone
+  doc.rect(0, 0, doc.page.width, 92).fill(`#${THEME.teal}`);
+  doc.rect(0, 92, doc.page.width, 4).fill("#10B981");
+  doc.fillColor("#FFFFFF").fontSize(10).text("SPORTZONE", left, 22, {
+    width,
+    align: "center",
+    characterSpacing: 1.6,
   });
-  doc.moveDown();
-  doc.fontSize(13).text("Top san pham theo quy");
-  doc.fontSize(10);
-  data.productStats.rows.slice(0, 15).forEach((row) => {
-    if (data.productStats.showQuarters) {
-      doc.text(
-        `${row.name}: Q1=${formatMoney(row.q1)} Q2=${formatMoney(row.q2)} Q3=${formatMoney(row.q3)} Q4=${formatMoney(row.q4)} Tong=${formatMoney(row.total)}`,
+  doc.fontSize(20).text("Báo cáo tài chính", left, 42, { width, align: "center" });
+  doc.fontSize(11).text(data.periodLabel, left, 68, { width, align: "center" });
+  doc.y = 116;
+
+  // Meta filter
+  const metaPairs = [
+    ["Cơ sở", venueLabel(data)],
+    ["Khoảng tổng tiền", amountRangeLabel(data.filter)],
+    ["Từ ngày → đến ngày", `${data.filter.dateFrom} → ${data.filter.dateTo}`],
+    [
+      "Xuất lúc",
+      new Date().toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" }),
+    ],
+  ];
+  metaPairs.forEach((pair, index) => {
+    const y = doc.y;
+    const h = 20;
+    if (index % 2 === 0) doc.rect(left - 4, y - 2, width + 8, h).fill(`#${THEME.soft}`);
+    doc.fillColor(`#${THEME.muted}`).fontSize(9).text(pair[0], left, y + 2, { width: 130 });
+    doc.fillColor(`#${THEME.ink}`).fontSize(10).text(pair[1], left + 140, y + 2, {
+      width: width - 140,
+      align: "right",
+    });
+    doc.y = y + h;
+  });
+  doc.y += 12;
+
+  // Summary cards
+  pdfSectionTitle(doc, left, width, "Chỉ số nhanh");
+  const cards = [
+    { label: "SỐ HÓA ĐƠN", value: String(data.summary.invoiceCount) },
+    { label: "TỔNG THU", value: data.summary.revenueText },
+    { label: "TỔNG CHI", value: data.summary.expenseText },
+    { label: "LỢI NHUẬN", value: data.summary.profitText, profit: true },
+  ];
+  const gap = 10;
+  const cardW = (width - gap * 3) / 4;
+  const cardY = doc.y;
+  cards.forEach((card, i) => {
+    const x = left + i * (cardW + gap);
+    doc.roundedRect(x, cardY, cardW, 54, 8).fill(`#${THEME.soft}`);
+    doc.roundedRect(x, cardY, cardW, 54, 8).lineWidth(1).strokeColor(`#${THEME.line}`).stroke();
+    doc.fillColor(`#${THEME.muted}`).fontSize(8).text(card.label, x + 10, cardY + 10, {
+      width: cardW - 20,
+    });
+    doc
+      .fillColor(card.profit ? `#${THEME.profit}` : `#${THEME.ink}`)
+      .fontSize(11)
+      .text(card.value, x + 10, cardY + 28, { width: cardW - 20 });
+  });
+  doc.y = cardY + 68;
+
+  // Quarter matrix
+  pdfSectionTitle(
+    doc,
+    left,
+    width,
+    `Tổng hợp thu / chi / lợi nhuận · năm ${data.quarterMatrix.year}`,
+  );
+  pdfTable(
+    doc,
+    left,
+    width,
+    [`${data.quarterMatrix.year}`, "Q1", "Q2", "Q3", "Q4", "Tổng"],
+    [
+      data.quarterMatrix.thu,
+      data.quarterMatrix.chi,
+      data.quarterMatrix.profit,
+    ].map((row) => [
+      row.label,
+      formatMoney(row.q1),
+      formatMoney(row.q2),
+      formatMoney(row.q3),
+      formatMoney(row.q4),
+      formatMoney(row.total),
+    ]),
+    ["left", "right", "right", "right", "right", "right"],
+  );
+
+  // Customers
+  pdfSectionTitle(
+    doc,
+    left,
+    width,
+    `Theo khách hàng · ${data.customerStats.totalCount} khách`,
+  );
+  const custRows = [
+    ...data.customerStats.rows.map((r) => [r.name, r.phone || "—", formatMoney(r.total)]),
+    [data.customerStats.all.name, "", formatMoney(data.customerStats.all.total)],
+  ];
+  pdfTable(doc, left, width, ["Khách hàng", "SĐT", "Tổng"], custRows, [
+    "left",
+    "left",
+    "right",
+  ]);
+
+  // Products
+  pdfSectionTitle(
+    doc,
+    left,
+    width,
+    `Theo sản phẩm · ${data.productStats.totalCount} sản phẩm`,
+  );
+  if (data.productStats.showQuarters) {
+    const prodRows = [
+      ...data.productStats.rows.map((r) => [
+        r.name,
+        formatMoney(r.q1),
+        formatMoney(r.q2),
+        formatMoney(r.q3),
+        formatMoney(r.q4),
+        formatMoney(r.total),
+      ]),
+      [
+        data.productStats.all.name,
+        formatMoney(data.productStats.all.q1),
+        formatMoney(data.productStats.all.q2),
+        formatMoney(data.productStats.all.q3),
+        formatMoney(data.productStats.all.q4),
+        formatMoney(data.productStats.all.total),
+      ],
+    ];
+    pdfTable(doc, left, width, ["Sản phẩm", "Q1", "Q2", "Q3", "Q4", "TỔNG"], prodRows, [
+      "left",
+      "right",
+      "right",
+      "right",
+      "right",
+      "right",
+    ]);
+  } else {
+    const prodRows = [
+      ...data.productStats.rows.map((r) => [r.name, formatMoney(r.total)]),
+      [data.productStats.all.name, formatMoney(data.productStats.all.total)],
+    ];
+    pdfTable(doc, left, width, ["Sản phẩm", "TỔNG"], prodRows, ["left", "right"]);
+  }
+
+  // Footer on each page
+  const range = doc.bufferedPageRange();
+  for (let i = 0; i < range.count; i += 1) {
+    doc.switchToPage(i);
+    const y = doc.page.height - 30;
+    doc
+      .fillColor(`#${THEME.muted}`)
+      .fontSize(8)
+      .text(
+        `SportZone  ·  Báo cáo xuất từ hệ thống  ·  Trang ${i + 1}/${range.count}`,
+        left,
+        y,
+        { width, align: "center", lineBreak: false },
       );
-    } else {
-      doc.text(`${row.name}: Tong=${formatMoney(row.total)}`);
-    }
-  });
+  }
+
   doc.end();
   const buffer = await done;
   return {
