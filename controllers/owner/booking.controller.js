@@ -17,16 +17,16 @@ function listPath(body) {
   const keyword = String(body.keyword || "").trim().slice(0, 80);
   const venueId = String(body.venueId || "").trim();
   const status = String(body.status || "").trim();
-  const dateFrom = String(body.dateFrom || "").trim();
-  const dateTo = String(body.dateTo || "").trim();
   const page = String(body.page || "").trim();
   if (keyword) params.set("keyword", keyword);
   if (/^[a-f0-9]{24}$/i.test(venueId)) params.set("venueId", venueId);
-  if (["pending_payment", "upcoming", "completed", "cancelled"].includes(status)) {
+  if (Object.prototype.hasOwnProperty.call(bookingService.STATUS_LABEL, status)) {
     params.set("status", status);
   }
-  if (/^\d{4}-\d{2}-\d{2}$/.test(dateFrom)) params.set("dateFrom", dateFrom);
-  if (/^\d{4}-\d{2}-\d{2}$/.test(dateTo)) params.set("dateTo", dateTo);
+  for (const key of ["dateFrom", "dateTo"]) {
+    const value = String(body[key] || "").trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) params.set(key, value);
+  }
   if (/^\d+$/.test(page) && Number(page) > 1) params.set("page", String(Number(page)));
   const qs = params.toString();
   return `${systemConfig.prefixOwner}/bookings/list${qs ? `?${qs}` : ""}`;
@@ -44,10 +44,12 @@ module.exports.index = async (req, res) => {
   }
 
   const [year, month, day] = date.split("-");
+  const [maxYear, maxMonth, maxDay] = dateMax.split("-");
   const ownerId = res.locals.user.id;
-  const [timeline, priceRules] = await Promise.all([
+  const [timeline, priceRules, vouchers] = await Promise.all([
     bookingService.getTimelineRows(ownerId, date),
     bookingService.listCourtPrices(ownerId, date),
+    bookingService.listWalkInVouchers(ownerId),
   ]);
 
   res.render("owner/pages/bookings/index", {
@@ -58,9 +60,11 @@ module.exports.index = async (req, res) => {
     dateValue: date,
     dateMin,
     dateMax,
+    dateMaxLabel: `${maxDay}/${maxMonth}/${maxYear}`,
     rows: timeline.rows,
     thongKe: timeline.thongKe,
     priceRules,
+    vouchers,
     walkIn: bookingService.walkInLimits(date),
   });
 };
@@ -68,8 +72,14 @@ module.exports.index = async (req, res) => {
 module.exports.create = async (req, res) => {
   const date = postedDate(req.body);
   try {
-    await bookingService.createWalkIn(res.locals.user.id, req.body);
-    req.flash("success", "Đặt sân tại quầy thành công");
+    const booking = await bookingService.createWalkIn(res.locals.user.id, req.body);
+    const saved = Number(booking && booking.discount) || 0;
+    req.flash(
+      "success",
+      saved
+        ? `Đặt sân tại quầy thành công, đã giảm ${saved.toLocaleString("vi-VN")}đ`
+        : "Đặt sân tại quầy thành công",
+    );
   } catch (error) {
     req.flash("error", error.message || "Đặt sân thất bại");
   }
@@ -117,12 +127,7 @@ module.exports.bookingPdf = async (req, res) => {
   if (drinks.length) phanTien.push(["Tiền nước", tien(booking.drinkTotal)]);
   const [year, month, day] = String(booking.date || "").split("-");
   const ngay = year && month && day ? `${day}/${month}/${year}` : booking.date;
-  const trangThai = {
-    pending_payment: "Chờ thanh toán",
-    upcoming: "Đã đặt lịch",
-    completed: "Đã check-in",
-    cancelled: "Đã hủy",
-  };
+  const trangThai = bookingService.STATUS_LABEL;
   xuatPhieu(res, `${booking.code}.pdf`, {
     tieuDe: "Phiếu đặt sân",
     thongTin: [
@@ -151,7 +156,14 @@ module.exports.bookingPdf = async (req, res) => {
 
 module.exports.checkIn = async (req, res) => {
   const code = String(req.body.code || "").trim();
-  await bookingService.checkIn(res.locals.user.id, code);
+  try {
+    const result = await bookingService.checkIn(res.locals.user.id, code);
+    if (!result || !result.matchedCount) {
+      req.flash("error", "Không check-in được đơn này");
+    }
+  } catch (error) {
+    req.flash("error", error.message || "Check-in thất bại");
+  }
   return afterAction(req, res);
 };
 

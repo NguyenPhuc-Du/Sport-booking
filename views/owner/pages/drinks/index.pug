@@ -89,8 +89,8 @@ block main
               th NHÀ CUNG CẤP
               th GIÁ BÁN
               th GIÁ NHẬP
-              th TỒN KHO
-              th TRẠNG THÁI
+              th.sz-col-pill TỒN KHO
+              th.sz-col-pill TRẠNG THÁI
               th.text-end THAO TÁC
           tbody
             each item in drinks
@@ -105,14 +105,14 @@ block main
                 td
                   strong.sz-price= fmt(Math.floor(Number(item.price || 0) * 130 / 100))
                 td.sz-muted= fmt(item.price)
-                td
+                td.sz-col-pill
                   if item.stock === 0
                     span.sz-stock.out Hết hàng
                   else if item.stock <= LOW
                     span.sz-stock.low #{item.stock} · Sắp hết
                   else
                     span.sz-stock.ok= item.stock
-                td
+                td.sz-col-pill
                   if item.status === "active"
                     span.sz-tag đang bán
                   else

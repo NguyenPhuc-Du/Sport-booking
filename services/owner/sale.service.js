@@ -2,25 +2,18 @@ const Sale = require("../../models/sale.model");
 const Drink = require("../../models/drink.model");
 const facilityService = require("./facility.service");
 const drinkService = require("./drink.service");
+const {
+  listUsableVouchers,
+  consumeVoucherUses,
+  releaseVoucherUses,
+} = require("./voucher-quay.service");
 const searchHelper = require("../../helpers/search");
-const { ganNgayVaTien, ganCoSo, lietKe, tongSoTien, timTheoCoSo } = require("../../helpers/loc-phieu");
+const { applyDateAndAmount, applyVenue, listDocs, sumAmount, findByVenue } = require("../../helpers/loc-phieu");
   
 module.exports.getSaleCatalog = async (ownerId) => {
-  const { venues, drinks } = await drinkService.danhSachDaNho(ownerId);
-
-  const catalog = drinks.map((item) => {
-    return {
-      id: String(item._id),
-      name: item.name,
-      price: Number(item.price) || 0,
-      stock: Number(item.stock) || 0,
-      image: item.image || "",
-      venueId: drinkService.venueIdOf(item.venueId),
-      status: item.status,
-    };
-  });
-
-  return { venues, catalog };
+  const { venues, drinks } = await drinkService.listCachedDrinks(ownerId);
+  const vouchers = await listUsableVouchers(venues.map((venue) => venue._id));
+  return { venues, catalog: drinkService.toCatalog(drinks), vouchers };
 };
 
 module.exports.createWalkInSale = async (ownerId, body) => {
@@ -36,27 +29,40 @@ module.exports.createWalkInSale = async (ownerId, body) => {
       decremented.push(item);
     }
 
-    return await Sale.create({
-      code: `SLZ${Date.now()}`,
-      venueId: body.venueId,
-      venueName: body.venueName,
-      guestName: body.guestName,
-      guestPhone: body.guestPhone,
-      items: body.items,
-      amount: body.amount,
-      paymentMethod: body.paymentMethod,
-      status: "paid",
-      paidAt: new Date(),
-      createdBy: ownerId,
-      note: body.note || "",
-    });
+    const voucherCodes = String(body.voucherCode || "")
+      .split(",")
+      .map((code) => code.trim().toUpperCase())
+      .filter(Boolean);
+    const consumed = await consumeVoucherUses(voucherCodes);
+    try {
+      return await Sale.create({
+        code: `SLZ${Date.now()}`,
+        venueId: body.venueId,
+        venueName: body.venueName,
+        guestName: body.guestName,
+        guestPhone: body.guestPhone,
+        items: body.items,
+        subtotal: Number(body.subtotal) || Number(body.amount) || 0,
+        discount: Number(body.discount) || 0,
+        voucherCode: body.voucherCode || "",
+        amount: body.amount,
+        paymentMethod: body.paymentMethod,
+        status: "paid",
+        paidAt: new Date(),
+        createdBy: ownerId,
+        note: body.note || "",
+      });
+    } catch (error) {
+      await releaseVoucherUses(consumed);
+      throw error;
+    }
   } catch (error) {
     for (const item of decremented) {
       await Drink.updateOne({ _id: item.drinkId }, { $inc: { stock: item.qty } });
     }
     throw error;
   } finally {
-    drinkService.xoaBanNhoDoUong(ownerId);
+    drinkService.clearDrinkCache(ownerId);
   }
 };
 
@@ -73,8 +79,8 @@ module.exports.buildSaleFilter = (query, venueIds) => {
     if (digits) find.$or.push({ guestPhone: new RegExp(digits) });
   }
 
-  const venueId = ganCoSo(find, "venueId", venueIds, query.venueId);
-  const range = ganNgayVaTien(find, query, "paidAt");
+  const venueId = applyVenue(find, "venueId", venueIds, query.venueId);
+  const range = applyDateAndAmount(find, query, "paidAt");
   return {
     find,
     filter: {
@@ -85,11 +91,11 @@ module.exports.buildSaleFilter = (query, venueIds) => {
   };
 };
 
-module.exports.listSales = (find, pagination) => lietKe(Sale, find, pagination);
-module.exports.listAllSales = (find) => lietKe(Sale, find);
-module.exports.tongTheoLoc = (find) => tongSoTien(Sale, find, "soPhieu");
+module.exports.listSales = (find, pagination) => listDocs(Sale, find, pagination);
+module.exports.listAllSales = (find) => listDocs(Sale, find);
+module.exports.totalsForFilter = (find) => sumAmount(Sale, find, "soPhieu");
 
 module.exports.findOwnedSale = async (ownerId, saleId) => {
   const venues = await facilityService.getAllVenueByOwnerId(ownerId);
-  return timTheoCoSo(Sale, saleId, venues.map((item) => item._id));
+  return findByVenue(Sale, saleId, venues.map((item) => item._id));
 };

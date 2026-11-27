@@ -33,6 +33,9 @@ const saleSchema = new mongoose.Schema(
     guestName: { type: String, required: true, trim: true },
     guestPhone: { type: String, default: "" },
     items: { type: [saleItemSchema], required: true },
+    subtotal: { type: Number, default: 0, min: 0 },
+    discount: { type: Number, default: 0, min: 0 },
+    voucherCode: { type: String, default: "" },
     amount: { type: Number, required: true, min: 0 },
     paymentMethod: {
       type: String,

@@ -11,7 +11,7 @@ function salesPath(suffix = "") {
 }
 
 module.exports.index = async (req, res) => {
-    const { venues, drinks } = await drinkService.danhSachDaNho(res.locals.user.id);
+    const { venues, drinks } = await drinkService.listCachedDrinks(res.locals.user.id);
     const stats = drinkService.calculateDrinkStats(drinks);
 
     res.render("owner/pages/drinks/index",{
@@ -96,16 +96,16 @@ module.exports.changeStatus = async (req, res) => {
     }
 }
 
-async function saleLoc(req, res) {
+async function loadSaleFilter(req, res) {
     const venues = await venueService.getAllVenueByOwnerId(res.locals.user.id);
     const venueIds = venues.map((item) => item._id);
     const { find, filter } = saleService.buildSaleFilter(req.query, venueIds);
     return { venues, find, filter };
 }
 
-const CACH_TRA = { cash: "Tiền mặt", vnpay: "Chuyển khoản" };
+const PAY_LABEL = { cash: "Tiền mặt", vnpay: "Chuyển khoản" };
 
-function dongBan(sale) {
+function saleExportRow(sale) {
     const at = sale.paidAt || sale.createdAt;
     return {
         code: sale.code || "",
@@ -113,7 +113,7 @@ function dongBan(sale) {
         guest: sale.guestName || "",
         phone: sale.guestPhone || "",
         venue: sale.venueName || "",
-        pay: CACH_TRA[sale.paymentMethod] || sale.paymentMethod || "",
+        pay: PAY_LABEL[sale.paymentMethod] || sale.paymentMethod || "",
         status: sale.status === "cancelled" ? "Đã hủy" : "Đã thu",
         amount: Number(sale.amount) || 0,
         items: (sale.items || []).map((line) => `${line.name} x${line.qty}`).join(", "),
@@ -121,8 +121,8 @@ function dongBan(sale) {
 }
 
 module.exports.sales = async (req, res) => {
-    const { venues, find, filter } = await saleLoc(req, res);
-    const tong = await saleService.tongTheoLoc(find);
+    const { venues, find, filter } = await loadSaleFilter(req, res);
+    const tong = await saleService.totalsForFilter(find);
     const pagination = paginationHelper({ limitPage: 8 }, req.query, tong.soPhieu);
     const sales = tong.soPhieu ? await saleService.listSales(find, pagination) : [];
 
@@ -140,7 +140,7 @@ module.exports.sales = async (req, res) => {
 
 //[GET] /owner/drinks/sales/export
 module.exports.exportSales = async (req, res) => {
-    const { find } = await saleLoc(req, res);
+    const { find } = await loadSaleFilter(req, res);
     const sales = await saleService.listAllSales(find);
     await taiExcel(res, "phieu-ban.xlsx", [
         { header: "Mã phiếu", key: "code", width: 22 },
@@ -152,14 +152,14 @@ module.exports.exportSales = async (req, res) => {
         { header: "Trạng thái", key: "status", width: 14 },
         { header: "Tổng tiền", key: "amount", width: 14 },
         { header: "Món", key: "items", width: 40 },
-    ], sales.map(dongBan));
+    ], sales.map(saleExportRow));
 };
 
 //[GET] /owner/drinks/sales/:id/pdf
 module.exports.salePdf = async (req, res) => {
     const sale = await saleService.findOwnedSale(res.locals.user.id, req.params.id);
     if (!sale) return res.status(404).type("text/plain").send("Không thấy phiếu bán");
-    const row = dongBan(sale);
+    const row = saleExportRow(sale);
     xuatPhieu(res, `${sale.code}.pdf`, {
         tieuDe: "Phiếu bán nước",
         thongTin: [
@@ -183,13 +183,14 @@ module.exports.salePdf = async (req, res) => {
 
 //[GET] /owner/drinks/sales/create
 module.exports.createSale = async (req, res) => {
-    const { venues, catalog } = await saleService.getSaleCatalog(res.locals.user.id);
+    const { venues, catalog, vouchers } = await saleService.getSaleCatalog(res.locals.user.id);
 
     res.render("owner/pages/drinks/create-sale", {
         pageTitle: "Tạo phiếu bán",
         activeMenu: "drinks",
         venues,
         catalog,
+        vouchers,
     });
 };
 
@@ -197,7 +198,13 @@ module.exports.createSale = async (req, res) => {
 module.exports.createSalePost = async (req, res) => {
     try {
         const sale = await saleService.createWalkInSale(res.locals.user.id, req.body);
-        req.flash("success", `Đã tạo phiếu ${sale.code}`);
+        const saved = Number(sale.discount) || 0;
+        req.flash(
+            "success",
+            saved
+                ? `Đã tạo phiếu ${sale.code}, đã giảm ${saved.toLocaleString("vi-VN")}đ`
+                : `Đã tạo phiếu ${sale.code}`,
+        );
         return res.redirect(salesPath());
     } catch (error) {
         req.flash("error", error.message || "Tạo phiếu bán thất bại");

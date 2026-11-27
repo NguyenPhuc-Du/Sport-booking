@@ -10,7 +10,7 @@ block main
   .d-flex.justify-content-between.align-items-start.flex-wrap.gap-3.mb-4
     div
       h1.sz-title Quản lý Đặt sân & Lịch thi đấu
-      p.sz-subtitle Đặt tại chỗ ngay trên sơ đồ: chọn các ô giờ liền nhau của cùng một sân.
+      p.sz-subtitle Đặt tại chỗ ngay trên sơ đồ, kể cả đặt trước trong 1 tháng. Ô đã có người đặt sẽ bị khóa.
     .d-flex.gap-2.flex-wrap
       a.sz-btn.sz-btn-detail(href=`${prefixOwner}/bookings/list`)
         i.bi.bi-list-ul
@@ -30,6 +30,7 @@ block main
           max=dateMax
           onchange="if (this.value) window.location.search = '?date=' + this.value"
         )
+        p.sz-date-note Đặt trước tối đa đến #{dateMaxLabel}. Ô đã có người đặt trên app hoặc đặt trước sẽ bị khóa.
 
   .sz-card.sz-panel
     .d-flex.justify-content-between.align-items-center.flex-wrap.gap-2.mb-3
@@ -91,14 +92,19 @@ block main
                     data-phone=slot.phone
                     data-court=slot.court
                     data-time=slot.time
+                    data-date=slot.date
+                    data-start=slot.start
                     data-amount=slot.amount
+                    title="Đã có người đặt"
+                    aria-label=`Đã có người đặt: ${slot.name}, ${h}:00`
                   )
                     span= slot.name
-                    small(title=slot.id)= slot.shortId
+                    small(title=slot.id) Đã có người đặt
                 else if canPick
                   button.sz-hour-pick(
                     type="button"
                     data-court=row.id
+                    data-venue=row.venueId
                     data-label=courtLabel
                     data-hour=h
                     aria-pressed="false"
@@ -131,6 +137,7 @@ block main
           span Tổng tiền:
           strong.bk-modal-amount(data-field="amount")
       a#bookingPdf.sz-btn.sz-btn-detail.bk-modal-pdf(href="#" target="_blank" rel="noopener") Xuất PDF đơn này
+      p#checkInHint.bk-walkin-hint.is-warn(hidden)
       form#checkInForm(action=`${prefixOwner}/bookings/check-in` method="POST")
         input(type="hidden" name="code")
         input(type="hidden" name="date" value=dateValue)
@@ -174,10 +181,21 @@ block main
             select#walkInPay.bk-walkin-input(name="paymentMethod")
               option(value="cash") Tiền mặt tại quầy
               option(value="vnpay") Chuyển khoản QR
+        .bk-walkin-grid
+          .bk-walkin-field
+            label.bk-walkin-label(for="walkInVoucherCourt") Voucher tiền sân
+            select#walkInVoucherCourt.bk-walkin-input(name="voucherCourt")
+              option(value="") Không dùng
+          .bk-walkin-field
+            label.bk-walkin-label(for="walkInVoucherOrder") Voucher hoá đơn
+            select#walkInVoucherOrder.bk-walkin-input(name="voucherOrder")
+              option(value="") Không dùng
+        p#walkInVoucherHint.bk-walkin-hint Mỗi loại một mã. Tiền thu đã trừ voucher.
         .bk-walkin-foot
           button.bk-walkin-cancel(type="button" data-close-walkin="true") Hủy
           button.sz-btn.sz-btn-green.bk-walkin-submit(type="submit" disabled=!walkIn.allowed) Xác nhận đặt sân
 
 block script
   script#walkInPriceRules(type="application/json")!= JSON.stringify(priceRules || [])
+  script#walkInVouchers(type="application/json")!= JSON.stringify(vouchers || [])
   script(src="/admin/js/bookings.js")
