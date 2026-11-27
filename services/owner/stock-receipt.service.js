@@ -4,26 +4,15 @@ const facilityService = require("./facility.service");
 const drinkService = require("./drink.service");
 const supplierService = require("./supplier.service");
 const searchHelper = require("../../helpers/search");
-const { ganNgayVaTien, ganCoSo, lietKe, tongSoTien, timTheoCoSo } = require("../../helpers/loc-phieu");
+const { applyDateAndAmount, applyVenue, listDocs, sumAmount, findByVenue } = require("../../helpers/loc-phieu");
 
 module.exports.getReceiptForm = async (ownerId) => {
-  const { venues, drinks } = await drinkService.danhSachDaNho(ownerId);
+  const { venues, drinks } = await drinkService.listCachedDrinks(ownerId);
   const suppliers = (await supplierService.danhSachDaNho(ownerId))
     .filter((item) => item.status === "active")
     .sort((a, b) => String(a.name).localeCompare(String(b.name), "vi"));
 
-  const catalog = drinks.map((item) => {
-    return {
-      id: String(item._id),
-      name: item.name,
-      price: Number(item.price) || 0,
-      costPrice: Number(item.costPrice) || 0,
-      stock: Number(item.stock) || 0,
-      image: item.image || "",
-      venueId: drinkService.venueIdOf(item.venueId),
-      status: item.status,
-    };
-  });
+  const catalog = drinkService.toCatalog(drinks, true);
 
   return { venues, catalog, suppliers };
 };
@@ -74,7 +63,7 @@ module.exports.createReceipt = async (ownerId, body) => {
     }
     throw error;
   } finally {
-    drinkService.xoaBanNhoDoUong(ownerId);
+    drinkService.clearDrinkCache(ownerId);
   }
 };
 
@@ -94,8 +83,8 @@ module.exports.buildReceiptFilter = (query, venueIds) => {
     find.status = status;
   }
 
-  const venueId = ganCoSo(find, "venueId", venueIds, query.venueId);
-  const range = ganNgayVaTien(find, query, "receivedAt");
+  const venueId = applyVenue(find, "venueId", venueIds, query.venueId);
+  const range = applyDateAndAmount(find, query, "receivedAt");
   return {
     find,
     filter: {
@@ -107,13 +96,13 @@ module.exports.buildReceiptFilter = (query, venueIds) => {
   };
 };
 
-module.exports.listReceipts = (find, pagination) => lietKe(StockReceipt, find, pagination);
-module.exports.listAllReceipts = (find) => lietKe(StockReceipt, find);
-module.exports.tongTheoLoc = (find) => tongSoTien(StockReceipt, find, "soPhieu");
+module.exports.listReceipts = (find, pagination) => listDocs(StockReceipt, find, pagination);
+module.exports.listAllReceipts = (find) => listDocs(StockReceipt, find);
+module.exports.totalsForFilter = (find) => sumAmount(StockReceipt, find, "soPhieu");
 
 module.exports.findOwnedReceipt = async (ownerId, receiptId) => {
   const venues = await facilityService.getAllVenueByOwnerId(ownerId);
-  return timTheoCoSo(StockReceipt, receiptId, venues.map((item) => item._id));
+  return findByVenue(StockReceipt, receiptId, venues.map((item) => item._id));
 };
 
 module.exports.cancelReceipt = async (ownerId, receiptId) => {
@@ -157,6 +146,6 @@ module.exports.cancelReceipt = async (ownerId, receiptId) => {
     }
     throw error;
   } finally {
-    drinkService.xoaBanNhoDoUong(ownerId);
+    drinkService.clearDrinkCache(ownerId);
   }
 };

@@ -266,6 +266,20 @@
     color: var(--rf-green-dark);
 }
 
+.sl-discount {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-top: 8px;
+    color: #c2410c;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.sl-discount[hidden] {
+    display: none;
+}
+
 .sl-code {
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     font-weight: 800;

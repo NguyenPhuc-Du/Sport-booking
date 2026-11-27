@@ -6,19 +6,34 @@ const facilityService = require("./facility.service");
 const cache = require("../../helpers/memory-cache");
 const { nho } = require("../../helpers/nho-chu-san");
 
-module.exports.createPriceRule = async (body) => {
-  const { venueId, court, dayType } = body;
+function trimmed(value) {
+  return value ? String(value).trim() : "";
+}
 
-  // Chuẩn bị payload dữ liệu chung
-  const payload = {
-    name: body.name ? body.name.trim() : "",
+function priceFields(body) {
+  return {
+    name: trimmed(body.name),
     pricePerHour: Number(body.pricePerHour) || 0,
-    dayType,
-    timeStart: body.timeStart ? body.timeStart.trim() : "",
-    timeEnd: body.timeEnd ? body.timeEnd.trim() : "",
+    dayType: body.dayType,
+    timeStart: trimmed(body.timeStart),
+    timeEnd: trimmed(body.timeEnd),
   };
+}
 
-  // Nếu không chọn sân cụ thể  thì áp dụng cho tất cả sân thuộc venueId đó
+function missingPriceRule() {
+  return new Error("Bảng giá không tồn tại");
+}
+
+function listedId(value, ids) {
+  if (!value || !ids.some((id) => String(id) === String(value))) return "";
+  return value;
+}
+
+module.exports.createPriceRule = async (body) => {
+  const { venueId, court } = body;
+  const payload = priceFields(body);
+
+  // Không chọn sân: tạo cùng một bảng giá cho mọi sân của cơ sở.
   if (!court) {
     const courts = await Court.find({
       venue_id: venueId,
@@ -36,64 +51,44 @@ module.exports.createPriceRule = async (body) => {
       await PriceRule.insertMany(priceRulesToInsert);
     }
   } else {
-    // Nếu chọn một sân cụ thể thì tạo 1 bản ghi
-    await PriceRule.create({
-      ...payload,
-      court,
-    });
+    await PriceRule.create({ ...payload, court });
   }
   cache.clearCatalog();
 };
 
 module.exports.getPriceRuleById = async (priceRuleId) => {
-  if (!mongoose.Types.ObjectId.isValid(priceRuleId)) {
-    throw new Error("Bảng giá không tồn tại");
-  }
+  if (!mongoose.Types.ObjectId.isValid(priceRuleId)) throw missingPriceRule();
 
   const priceRule = await PriceRule.findOne({
     _id: priceRuleId,
   }).lean();
 
-  if (!priceRule) {
-    throw new Error("Bảng giá không tồn tại");
-  }
+  if (!priceRule) throw missingPriceRule();
 
   return priceRule;
 };
 
 module.exports.updatePriceRule = async (priceRuleId, body) => {
-  const payload = {
-    name: body.name ? body.name.trim() : "",
-    court: body.court,
-    pricePerHour: Number(body.pricePerHour) || 0,
-    dayType: body.dayType,
-    timeStart: body.timeStart ? body.timeStart.trim() : "",
-    timeEnd: body.timeEnd ? body.timeEnd.trim() : "",
-  };
+  const payload = { ...priceFields(body), court: body.court };
 
   const updated = await PriceRule.updateOne({ _id: priceRuleId }, payload, {
     runValidators: true,
   });
 
-  if (!updated.matchedCount) {
-    throw new Error("Bảng giá không tồn tại");
-  }
+  if (!updated.matchedCount) throw missingPriceRule();
 
   cache.clearCatalog();
   return updated;
 };
 
-async function taiTrangBangGia(ownerId, query) {
+async function loadPriceRulePage(ownerId, query) {
   const limit = 10;
   const { court, dayType, status, facility } = query;
 
   const facilities = await facilityService.getAllVenueByOwnerId(ownerId);
   const facilityIds = facilities.map((item) => item._id);
 
-  let currentFacilityId = "";
-  if (facility && facilityIds.some((id) => String(id) === String(facility))) {
-    currentFacilityId = facility;
-  }
+  const currentFacilityId = listedId(facility, facilityIds);
 
   const courts = await Court.find({
     venue_id: currentFacilityId || { $in: facilityIds },
@@ -111,20 +106,19 @@ async function taiTrangBangGia(ownerId, query) {
     find.name = objectSearch.regex;
   }
 
-  let selectedCourt = "";
-  if (court && courtIds.some((id) => String(id) === String(court))) {
-    selectedCourt = String(court);
-    find.court = court;
-  }
+  const pickedCourt = listedId(court, courtIds);
+  const selectedCourt = pickedCourt ? String(pickedCourt) : "";
+  if (pickedCourt) find.court = pickedCourt;
 
-  if (dayType === "weekday" || dayType === "weekend" || dayType === "all") {
-    find.dayType = dayType;
-  }
-  if (status === "active" || status === "inactive") {
-    find.status = status;
-  }
+  if (["weekday", "weekend", "all"].includes(dayType)) find.dayType = dayType;
+  if (["active", "inactive"].includes(status)) find.status = status;
 
-  const totalItems = await PriceRule.countDocuments(find);
+  const courtFilter = { venue_id: { $in: facilityIds }, deleted: false };
+  const [totalItems, courtCount, maintenanceCount] = await Promise.all([
+    PriceRule.countDocuments(find),
+    Court.countDocuments(courtFilter),
+    Court.countDocuments({ ...courtFilter, status: "maintenance" }),
+  ]);
   const totalPages = Math.max(1, Math.ceil(totalItems / limit));
   let currentPage = parseInt(query.page, 10) || 1;
   if (currentPage < 1) currentPage = 1;
@@ -140,16 +134,6 @@ async function taiTrangBangGia(ownerId, query) {
     .skip((currentPage - 1) * limit)
     .limit(limit)
     .lean();
-
-  const courtCount = await Court.countDocuments({
-    venue_id: { $in: facilityIds },
-    deleted: false,
-  });
-  const maintenanceCount = await Court.countDocuments({
-    venue_id: { $in: facilityIds },
-    deleted: false,
-    status: "maintenance",
-  });
 
   return {
     priceRules,
@@ -181,20 +165,16 @@ module.exports.getPriceRuleIndex = (ownerId, query) => {
     query.dayType || "",
     query.status || "",
   ].join(":");
-  return nho(key, () => taiTrangBangGia(ownerId, query));
+  return nho(key, () => loadPriceRulePage(ownerId, query));
 };
 
 module.exports.changeStatusPriceRule = async (priceRuleId, status) => {
-  if (!mongoose.Types.ObjectId.isValid(priceRuleId)) {
-    throw new Error("Bảng giá không tồn tại");
-  }
+  if (!mongoose.Types.ObjectId.isValid(priceRuleId)) throw missingPriceRule();
   if (!["active", "inactive"].includes(status)) {
     throw new Error("Trạng thái không hợp lệ");
   }
   const updated = await PriceRule.updateOne({ _id: priceRuleId }, { status });
-  if (!updated.matchedCount) {
-    throw new Error("Bảng giá không tồn tại");
-  }
+  if (!updated.matchedCount) throw missingPriceRule();
   cache.clearCatalog();
   return updated;
 };

@@ -13,6 +13,8 @@
   var lastFocus = null;
   var checkInForm = document.getElementById("checkInForm");
   var checkInCode = checkInForm.querySelector("[name=code]");
+  var checkInHint = document.getElementById("checkInHint");
+  var openSlot = null;
   var cancelCode = document.querySelector("#cancelForm [name=code]");
   var walkInForm = document.getElementById("walkInForm");
   var openWalkInBtn = document.getElementById("openWalkIn");
@@ -26,6 +28,12 @@
   if (priceNode) {
     try { priceRules = JSON.parse(priceNode.textContent || "[]"); } catch (e) { priceRules = []; }
   }
+  var vouchers = [];
+  var voucherNode = document.getElementById("walkInVouchers");
+  if (voucherNode) {
+    try { vouchers = JSON.parse(voucherNode.textContent || "[]"); } catch (e) { vouchers = []; }
+  }
+  var grossAmount = 0;
 
   var selected = [];
   var hintLock = false;
@@ -299,13 +307,110 @@
       var x = x1 + ((x2 - x1) * i) / steps;
       var y = y1 + ((y2 - y1) * i) / steps;
       var el = document.elementFromPoint(x, y);
-      var btn = el && el.closest ? el.closest(".sz-hour-pick") : null;
+      var btn = el && el.closest ? (el.closest(".sz-hour-pick") || el.closest(".sz-slot")) : null;
       if (btn && btn !== last) {
         found.push(btn);
         last = btn;
       }
     }
     return found;
+  }
+
+  function rawDiscount(voucher, base) {
+    var discount = voucher.discountType === "fixed"
+      ? Number(voucher.discountValue) || 0
+      : Math.round((base * (Number(voucher.discountValue) || 0)) / 100);
+    if (voucher.discountType !== "fixed" && voucher.maxDiscount != null) {
+      discount = Math.min(discount, Number(voucher.maxDiscount) || 0);
+    }
+    return Math.min(Math.max(discount, 0), base);
+  }
+
+  function dayKind(date) {
+    var day = new Date(date + "T00:00:00Z").getUTCDay();
+    return day === 0 || day === 6 ? "weekend" : "weekday";
+  }
+
+  function voucherFits(voucher, venueId, date, timeStart, scope) {
+    if (!voucher || voucher.venueId !== venueId || voucher.applyScope !== scope) return false;
+    if (voucher.dayType && voucher.dayType !== "all" && voucher.dayType !== dayKind(date)) return false;
+    if (voucher.timeStart && voucher.timeEnd) {
+      var minute = toMin(timeStart);
+      if (minute < toMin(voucher.timeStart) || minute >= toMin(voucher.timeEnd)) return false;
+    }
+    return true;
+  }
+
+  function fillVoucherSelect(select, scope, venueId, date, timeStart) {
+    if (!select) return;
+    var current = select.value;
+    select.replaceChildren();
+    var none = document.createElement("option");
+    none.value = "";
+    none.textContent = "Không dùng";
+    select.appendChild(none);
+    vouchers.forEach(function (voucher) {
+      if (!voucherFits(voucher, venueId, date, timeStart, scope)) return;
+      var option = document.createElement("option");
+      option.value = voucher.code;
+      option.textContent = voucher.code + " · " + voucher.name;
+      select.appendChild(option);
+    });
+    var still = Array.prototype.some.call(select.options, function (option) {
+      return option.value === current;
+    });
+    select.value = still ? current : "";
+  }
+
+  function selectedVoucher(id) {
+    var select = document.getElementById(id);
+    if (!select || !select.value) return null;
+    for (var i = 0; i < vouchers.length; i += 1) {
+      if (vouchers[i].code === select.value) return vouchers[i];
+    }
+    return null;
+  }
+
+  function stackCourtQuote(gross) {
+    var courtV = selectedVoucher("walkInVoucherCourt");
+    var orderV = selectedVoucher("walkInVoucherOrder");
+    if (courtV && gross < (Number(courtV.minOrderAmount) || 0)) {
+      return { ok: false, message: "Đơn chưa đủ điều kiện áp dụng mã " + courtV.code };
+    }
+    if (orderV && gross < (Number(orderV.minOrderAmount) || 0)) {
+      return { ok: false, message: "Đơn chưa đủ điều kiện áp dụng mã " + orderV.code };
+    }
+    var courtOff = courtV ? rawDiscount(courtV, gross) : 0;
+    var remain = Math.max(gross - courtOff, 0);
+    var orderOff = orderV ? rawDiscount(orderV, remain) : 0;
+    return {
+      ok: true,
+      discount: courtOff + orderOff,
+      payable: Math.max(gross - courtOff - orderOff, 0),
+    };
+  }
+
+  function paintVoucherQuote() {
+    var hint = document.getElementById("walkInVoucherHint");
+    var amount = document.getElementById("walkInAmount");
+    var quote = stackCourtQuote(grossAmount);
+    if (!quote.ok) {
+      if (amount) amount.value = "";
+      if (hint) {
+        hint.textContent = quote.message;
+        hint.classList.add("is-warn");
+      }
+      setError(quote.message);
+      return false;
+    }
+    if (amount) amount.value = String(quote.payable);
+    if (hint) {
+      hint.classList.remove("is-warn");
+      hint.textContent = quote.discount
+        ? "Giảm " + formatMoney(quote.discount) + ". Khách thanh toán " + formatMoney(quote.payable) + "."
+        : "Mỗi loại một mã. Tiền thu đã trừ voucher.";
+    }
+    return true;
   }
 
   function applyRange(range) {
@@ -334,10 +439,51 @@
     }
     if (amount) amount.value = String(priced.total);
     if (hint) hint.textContent = priced.message;
-    return true;
+    grossAmount = priced.total;
+    var dateInput = document.getElementById("bookingDate");
+    var venueBtn = document.querySelector('.sz-hour-pick[data-court="' + range.court + '"]');
+    fillVoucherSelect(
+      document.getElementById("walkInVoucherCourt"),
+      "court",
+      venueBtn ? venueBtn.dataset.venue || "" : "",
+      dateInput ? dateInput.value : "",
+      range.start,
+    );
+    fillVoucherSelect(
+      document.getElementById("walkInVoucherOrder"),
+      "order",
+      venueBtn ? venueBtn.dataset.venue || "" : "",
+      dateInput ? dateInput.value : "",
+      range.start,
+    );
+    return paintVoucherQuote();
+  }
+
+  function canCheckInNow(date, timeStart) {
+    if (!date || !timeStart) return false;
+    var now = vietnamNow();
+    if (date > now.date) return false;
+    if (date < now.date) return true;
+    return timeStart <= now.time;
+  }
+
+  function syncCheckIn(slot) {
+    if (!slot || !checkInForm) return;
+    var done = slot.dataset.status === "completed";
+    var ready = canCheckInNow(slot.dataset.date, slot.dataset.start);
+    checkInForm.hidden = done || !ready;
+    if (!checkInHint) return;
+    if (!done && !ready) {
+      checkInHint.hidden = false;
+      checkInHint.textContent = "Chưa tới giờ. Check-in từ " + (slot.dataset.start || "") + ".";
+    } else {
+      checkInHint.hidden = true;
+      checkInHint.textContent = "";
+    }
   }
 
   function openModal(slot) {
+    openSlot = slot;
     fields.code.textContent = show(slot.dataset.code);
     fields.customer.textContent = show(slot.dataset.customer);
     fields.phone.textContent = show(slot.dataset.phone);
@@ -350,7 +496,7 @@
     }
     checkInCode.value = slot.dataset.code || "";
     cancelCode.value = slot.dataset.code || "";
-    checkInForm.hidden = slot.dataset.status === "completed";
+    syncCheckIn(slot);
     lastFocus = document.activeElement;
     modal.classList.add("is-open");
     modal.setAttribute("aria-hidden", "false");
@@ -360,6 +506,7 @@
   }
 
   function closeModal() {
+    openSlot = null;
     modal.classList.remove("is-open");
     modal.setAttribute("aria-hidden", "true");
     lockBody();
@@ -435,6 +582,18 @@
     });
   }
 
+  ["walkInVoucherCourt", "walkInVoucherOrder"].forEach(function (id) {
+    var select = document.getElementById(id);
+    if (!select) return;
+    select.addEventListener("change", function () {
+      if (!grossAmount) return;
+      if (paintVoucherQuote()) {
+        hintLock = false;
+        refreshBar();
+      }
+    });
+  });
+
   if (walkInForm) {
     walkInForm.addEventListener("submit", function (event) {
       var range = selectionRange();
@@ -481,6 +640,12 @@
     for (var i = 0; i < path.length; i += 1) {
       var btn = path[i];
       if (btn === drag.startBtn) continue;
+      if (btn.classList.contains("sz-slot")) {
+        flash(btn);
+        setError("Ô này đã có người đặt, không đặt chồng được.");
+        drag.blocked = true;
+        return;
+      }
       if (btn.disabled) {
         flash(btn);
         setError("Ô này chưa có bảng giá, không chọn nhảy qua được.");
@@ -520,6 +685,9 @@
   });
 
   lockStartedSlots();
-  setInterval(lockStartedSlots, 30000);
+  setInterval(function () {
+    lockStartedSlots();
+    if (modal.classList.contains("is-open")) syncCheckIn(openSlot);
+  }, 30000);
   refreshBar();
 })();

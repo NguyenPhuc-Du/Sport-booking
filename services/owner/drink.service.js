@@ -2,7 +2,7 @@ const Drink = require("../../models/drink.model");
 const facilityService = require("./facility.service");
 const { nho, xoa } = require("../../helpers/nho-chu-san");
 
-function xoaBanNhoDoUong(ownerId) {
+function clearDrinkCache(ownerId) {
   xoa(ownerId ? `owner:drinks:${ownerId}` : "owner:drinks:");
 }
 
@@ -10,7 +10,20 @@ function venueIdOf(value) {
   return String(value && value._id ? value._id : value || "");
 }
 
-function danhSachDaNho(ownerId) {
+function toCatalog(drinks, withCostPrice = false) {
+  return drinks.map((item) => ({
+    id: String(item._id),
+    name: item.name,
+    price: Number(item.price) || 0,
+    ...(withCostPrice ? { costPrice: Number(item.costPrice) || 0 } : {}),
+    stock: Number(item.stock) || 0,
+    image: item.image || "",
+    venueId: venueIdOf(item.venueId),
+    status: item.status,
+  }));
+}
+
+function listCachedDrinks(ownerId) {
   return nho(`owner:drinks:${ownerId}`, async () => {
     const venues = await facilityService.getAllVenueByOwnerId(ownerId);
     const venueIds = venues.map((item) => item._id);
@@ -32,7 +45,7 @@ module.exports.createDrink = async (ownerId, data) => {
     supplier: "",
     status: data.status === "inactive" ? "inactive" : "active",
   });
-  xoaBanNhoDoUong(ownerId);
+  clearDrinkCache(ownerId);
   return created;
 };
 
@@ -53,28 +66,28 @@ module.exports.updateDrink = async (ownerId, drinkId, data) => {
   if (image) update.image = image;
 
   const updated = await Drink.updateOne({ _id: drinkId }, update);
-  xoaBanNhoDoUong(ownerId);
+  clearDrinkCache(ownerId);
   return updated;
 };
 
 module.exports.updateDrinkStatus = async (ownerId, drinkId, status) => {
   const updated = await Drink.updateOne({ _id: drinkId }, { status });
-  xoaBanNhoDoUong(ownerId);
+  clearDrinkCache(ownerId);
   return updated;
 };
 
 module.exports.calculateDrinkStats = (drinks) => {
-  return {
-    total: drinks.length,
-    active: drinks.filter((item) => item.status === "active").length,
-    inactive: drinks.filter((item) => item.status === "inactive").length,
-    lowStock: drinks.filter((item) => Number(item.stock) <= 10).length,
-    stockValue: drinks.reduce((sum, item) => {
-      return sum + (Number(item.price) || 0) * (Number(item.stock) || 0);
-    }, 0),
-  };
+  const stats = { total: drinks.length, active: 0, inactive: 0, lowStock: 0, stockValue: 0 };
+  for (const item of drinks) {
+    if (item.status === "active") stats.active += 1;
+    if (item.status === "inactive") stats.inactive += 1;
+    if (Number(item.stock) <= 10) stats.lowStock += 1;
+    stats.stockValue += (Number(item.price) || 0) * (Number(item.stock) || 0);
+  }
+  return stats;
 };
 
-module.exports.danhSachDaNho = danhSachDaNho;
-module.exports.xoaBanNhoDoUong = xoaBanNhoDoUong;
+module.exports.listCachedDrinks = listCachedDrinks;
+module.exports.clearDrinkCache = clearDrinkCache;
 module.exports.venueIdOf = venueIdOf;
+module.exports.toCatalog = toCatalog;

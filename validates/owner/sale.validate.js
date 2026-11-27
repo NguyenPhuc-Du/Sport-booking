@@ -1,6 +1,8 @@
 const Drink = require("../../models/drink.model");
 const facilityService = require("../../services/owner/facility.service");
 const systemConfig = require("../../config/system");
+const { nowInVietnam, quotePrice } = require("../../services/app/slot.service");
+const { assertVoucherScopes } = require("../../services/owner/voucher-quay.service");
 
 function back(req, res) {
   return res.redirect(
@@ -90,12 +92,40 @@ module.exports.createPost = async (req, res, next) => {
     });
   }
 
+  const voucherCodes = ["voucherDrink", "voucherOrder"]
+    .map((field) => String(req.body[field] || "").trim().toUpperCase())
+    .filter(Boolean);
+  const now = nowInVietnam();
+  let quote;
+  try {
+    await assertVoucherScopes(
+      voucherCodes,
+      ["drink", "order"],
+      "Phiếu bán nước chỉ áp dụng voucher đồ uống và hoá đơn",
+    );
+    quote = await quotePrice({
+      courtPrice: 0,
+      drinks: items,
+      drinkTotal: amount,
+      date: now.date,
+      timeStart: now.time,
+      venueId: venue._id,
+      voucherCodes,
+    });
+  } catch (error) {
+    req.flash("error", error.message || "Voucher không hợp lệ");
+    return back(req, res);
+  }
+
   req.body.venueId = venue._id;
   req.body.venueName = venue.name;
   req.body.guestName = guestName;
   req.body.guestPhone = phone;
   req.body.items = items;
-  req.body.amount = amount;
+  req.body.subtotal = amount;
+  req.body.discount = quote.discount || 0;
+  req.body.voucherCode = quote.voucherCode || "";
+  req.body.amount = quote.amount;
   req.body.note = req.body.note ? req.body.note.trim().slice(0, 200) : "";
   req.body.paymentMethod = req.body.paymentMethod === "vnpay" ? "vnpay" : "cash";
   next();

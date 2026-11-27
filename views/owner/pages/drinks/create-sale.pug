@@ -76,6 +76,22 @@ block main
             h3.sz-card-title.mb-2 Giỏ hàng
             #cartList.sl-cart-list
               p#cartEmpty.sl-cart-empty Chưa có món nào. Chọn sản phẩm bên trái.
+            .row.g-3.mt-2
+              .col-12
+                label.sz-label(for="voucherDrink") Voucher đồ uống
+                select#voucherDrink.sz-input(name="voucherDrink")
+                  option(value="") Không dùng
+              .col-12
+                label.sz-label(for="voucherOrder") Voucher hoá đơn
+                select#voucherOrder.sz-input(name="voucherOrder")
+                  option(value="") Không dùng
+            p#saleVoucherHint.sz-hint Mỗi loại một mã. Tổng thu đã trừ voucher.
+            .sl-total
+              span Tạm tính
+              strong#saleSubtotal 0đ
+            .sl-discount#saleDiscountRow(hidden)
+              span Giảm voucher
+              strong#saleDiscount 0đ
             .sl-total
               span Tổng thu
               strong#saleTotal 0đ
@@ -87,6 +103,7 @@ block main
 
 block script
   script#saleCatalog(type="application/json")!= JSON.stringify(products)
+  script#saleVouchers(type="application/json")!= JSON.stringify(vouchers || [])
   script.
     (function () {
       var $ = function (id) { return document.getElementById(id); };
@@ -101,6 +118,13 @@ block script
       var cartEmpty = $("cartEmpty");
       var itemsInput = $("saleItems");
       var totalEl = $("saleTotal");
+      var subtotalEl = $("saleSubtotal");
+      var discountRow = $("saleDiscountRow");
+      var discountEl = $("saleDiscount");
+      var voucherHint = $("saleVoucherHint");
+      var vouchers = [];
+      try { vouchers = JSON.parse($("saleVouchers").textContent || "[]"); } catch (e) { vouchers = []; }
+      var voucherError = "";
 
       function productsOfVenue() {
         var venueId = venueEl.value;
@@ -173,13 +197,140 @@ block script
         renderCart();
       }
 
+      function toMin(value) {
+        var parts = String(value || "00:00").slice(0, 5).split(":");
+        return Number(parts[0]) * 60 + Number(parts[1] || 0);
+      }
+
+      function rawDiscount(voucher, base) {
+        var discount = voucher.discountType === "fixed"
+          ? Number(voucher.discountValue) || 0
+          : Math.round((base * (Number(voucher.discountValue) || 0)) / 100);
+        if (voucher.discountType !== "fixed" && voucher.maxDiscount != null) {
+          discount = Math.min(discount, Number(voucher.maxDiscount) || 0);
+        }
+        return Math.min(Math.max(discount, 0), base);
+      }
+
+      function saleDayKind() {
+        var parts = new Intl.DateTimeFormat("en-CA", {
+          timeZone: "Asia/Ho_Chi_Minh",
+          weekday: "short",
+        }).formatToParts(new Date());
+        var found = parts.find(function (part) { return part.type === "weekday"; });
+        var name = found ? found.value : "";
+        return name === "Sat" || name === "Sun" ? "weekend" : "weekday";
+      }
+
+      function saleNowMinutes() {
+        var parts = new Intl.DateTimeFormat("en-GB", {
+          timeZone: "Asia/Ho_Chi_Minh",
+          hour: "2-digit",
+          minute: "2-digit",
+          hourCycle: "h23",
+        }).formatToParts(new Date());
+        var get = function (type) {
+          var found = parts.find(function (part) { return part.type === type; });
+          return found ? found.value : "00";
+        };
+        return toMin(get("hour") + ":" + get("minute"));
+      }
+
+      function voucherFitsSale(voucher, scope) {
+        if (!voucher || voucher.venueId !== venueEl.value || voucher.applyScope !== scope) return false;
+        if (voucher.dayType && voucher.dayType !== "all" && voucher.dayType !== saleDayKind()) return false;
+        if (voucher.timeStart && voucher.timeEnd) {
+          var minute = saleNowMinutes();
+          if (minute < toMin(voucher.timeStart) || minute >= toMin(voucher.timeEnd)) return false;
+        }
+        return true;
+      }
+
+      function fillSaleVouchers() {
+        ["voucherDrink", "voucherOrder"].forEach(function (id) {
+          var select = $(id);
+          if (!select) return;
+          var scope = id === "voucherDrink" ? "drink" : "order";
+          var current = select.value;
+          select.replaceChildren();
+          var none = document.createElement("option");
+          none.value = "";
+          none.textContent = "Không dùng";
+          select.appendChild(none);
+          vouchers.forEach(function (voucher) {
+            if (!voucherFitsSale(voucher, scope)) return;
+            var option = document.createElement("option");
+            option.value = voucher.code;
+            option.textContent = voucher.code + " · " + voucher.name;
+            select.appendChild(option);
+          });
+          var still = Array.prototype.some.call(select.options, function (option) {
+            return option.value === current;
+          });
+          select.value = still ? current : "";
+        });
+      }
+
+      function chosenVoucher(id) {
+        var select = $(id);
+        if (!select || !select.value) return null;
+        for (var i = 0; i < vouchers.length; i += 1) {
+          if (vouchers[i].code === select.value) return vouchers[i];
+        }
+        return null;
+      }
+
+      function cartLines() {
+        return cart.map(function (row) {
+          var product = findProduct(row.id);
+          return product ? { id: product.id, price: product.price, qty: row.qty } : null;
+        }).filter(Boolean);
+      }
+
+      function quoteSale(subtotal) {
+        var drinkV = chosenVoucher("voucherDrink");
+        var orderV = chosenVoucher("voucherOrder");
+        var lines = cartLines();
+        var drinkBase = subtotal;
+        if (drinkV) {
+          var allowed = drinkV.productIds || [];
+          drinkBase = lines.reduce(function (sum, line) {
+            if (allowed.length && allowed.indexOf(String(line.id)) === -1) return sum;
+            return sum + line.price * line.qty;
+          }, 0);
+          if (drinkBase <= 0) return { ok: false, message: "Giỏ không có đồ uống đủ điều kiện áp mã " + drinkV.code };
+          if (drinkBase < (Number(drinkV.minOrderAmount) || 0)) {
+            return { ok: false, message: "Đơn chưa đủ điều kiện áp dụng mã " + drinkV.code };
+          }
+        }
+        if (orderV && subtotal < (Number(orderV.minOrderAmount) || 0)) {
+          return { ok: false, message: "Đơn chưa đủ điều kiện áp dụng mã " + orderV.code };
+        }
+        var drinkOff = drinkV ? rawDiscount(drinkV, drinkBase) : 0;
+        var remain = Math.max(subtotal - drinkOff, 0);
+        var orderOff = orderV ? rawDiscount(orderV, remain) : 0;
+        return { ok: true, discount: drinkOff + orderOff, payable: Math.max(subtotal - drinkOff - orderOff, 0) };
+      }
+
       function syncItems() {
         var amount = 0;
         cart.forEach(function (row) {
           var product = findProduct(row.id);
           if (product) amount += product.price * row.qty;
         });
-        totalEl.textContent = fmt(amount);
+        var quote = quoteSale(amount);
+        voucherError = quote.ok ? "" : quote.message;
+        var payable = quote.ok ? quote.payable : amount;
+        var discount = quote.ok ? quote.discount : 0;
+        if (subtotalEl) subtotalEl.textContent = fmt(amount);
+        if (discountRow) discountRow.hidden = !discount;
+        if (discountEl) discountEl.textContent = fmt(discount);
+        totalEl.textContent = fmt(payable);
+        if (voucherHint) {
+          voucherHint.textContent = voucherError || (discount
+            ? "Giảm " + fmt(discount) + ". Khách thanh toán " + fmt(payable) + "."
+            : "Mỗi loại một mã. Tổng thu đã trừ voucher.");
+        }
         itemsInput.value = JSON.stringify(cart.map(function (row) {
           return { drinkId: row.id, qty: row.qty };
         }));
@@ -324,8 +475,13 @@ block script
 
       venueEl.addEventListener("change", function () {
         cart = [];
+        fillSaleVouchers();
         renderCatalog();
         renderCart();
+      });
+      ["voucherDrink", "voucherOrder"].forEach(function (id) {
+        var select = $(id);
+        if (select) select.addEventListener("change", syncItems);
       });
 
       $("saleForm").addEventListener("submit", function (e) {
@@ -337,6 +493,7 @@ block script
         if (phone && !/^0\d{9}$/.test(phone)) { $("guestPhone").classList.add("is-invalid"); bad = true; }
         else { $("guestPhone").classList.remove("is-invalid"); }
         if (!cart.length) { bad = true; alert("Chưa chọn sản phẩm nào"); }
+        if (voucherError) { bad = true; alert(voucherError); }
         var overStock = cart.some(function (row) {
           var product = findProduct(row.id);
           return !product || !Number.isInteger(row.qty) || row.qty < 1 || row.qty > product.stock;
@@ -348,6 +505,7 @@ block script
         if (bad) e.preventDefault();
       });
 
+      fillSaleVouchers();
       renderCatalog();
       renderCart();
     })();

@@ -4,32 +4,22 @@ const Court = require("../../models/court.model");
 const PriceRule = require("../../models/price-rule.model");
 const User = require("../../models/user.model");
 const facilityService = require("./facility.service");
-const { nowInVietnam } = require("../app/slot.service");
+const { nowInVietnam, expireStablePending, quotePrice } = require("../app/slot.service");
+const {
+  advanceDateMax,
+  listUsableVouchers,
+  assertVoucherScopes,
+  consumeVoucherUses,
+  releaseVoucherUses,
+} = require("./voucher-quay.service");
 const cache = require("../../helpers/memory-cache");
 const ledger = require("../admin/ledger.service");
 const paginationHelper = require("../../helpers/pagination");
-const { danhSachId, ganKhoang, ganKhoangTien, ganCoSo, tongSoTien } = require("../../helpers/loc-phieu");
+const { objectIds, applyRange, applyAmountRange, applyVenue, sumAmount } = require("../../helpers/loc-phieu");
 
 const PRICE_TTL = 60 * 1000;
 
-const HOURS = [
-  "06",
-  "07",
-  "08",
-  "09",
-  "10",
-  "11",
-  "12",
-  "13",
-  "14",
-  "15",
-  "16",
-  "17",
-  "18",
-  "19",
-  "20",
-  "21",
-];
+const HOURS = Array.from({ length: 16 }, (_, index) => String(index + 6).padStart(2, "0"));
 const DATE_MIN = "2026-10-20";
 
 function formatPhone(phone) {
@@ -51,6 +41,11 @@ function shortCode(code) {
 
 async function ownerVenues(ownerId) {
   return facilityService.getAllVenueByOwnerId(ownerId);
+}
+
+async function ownerVenueIds(ownerId) {
+  const venues = await ownerVenues(ownerId);
+  return venues.map((venue) => venue._id);
 }
 
 async function timelineCourts(venues) {
@@ -103,8 +98,12 @@ function nextBookableStart(now) {
 function walkInLimits(date) {
   const now = nowInVietnam();
   const blocked = { allowed: false, startMin: "06:00", endMin: "07:00" };
+  const horizon = advanceDateMax(now.date);
   if (date < now.date) {
     return { ...blocked, reason: "Không thể đặt sân trong quá khứ" };
+  }
+  if (date > horizon) {
+    return { ...blocked, reason: "Chỉ được đặt trước trong vòng 1 tháng" };
   }
   if (date > now.date) {
     return { allowed: true, startMin: "06:00", endMin: "07:00", reason: "" };
@@ -119,11 +118,13 @@ function walkInLimits(date) {
 
 function resolveDate(queryDate) {
   const today = nowInVietnam().date;
-  const dateMax = today < DATE_MIN ? DATE_MIN : today;
+  const horizon = advanceDateMax(today);
+  const dateMax = horizon < DATE_MIN ? DATE_MIN : horizon;
+  const todayOrMin = today < DATE_MIN ? DATE_MIN : today;
 
   let date = queryDate || "";
 
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) date = dateMax;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) date = todayOrMin;
   if (date < DATE_MIN) date = DATE_MIN;
   if (date > dateMax) date = dateMax;
 
@@ -131,6 +132,7 @@ function resolveDate(queryDate) {
 }
 
 async function getTimelineRows(ownerId, date) {
+  await expireStablePending();
   const venues = await ownerVenues(ownerId);
   const venueIds = venues.map((venue) => venue._id);
   const courts = await timelineCourts(venues);
@@ -157,14 +159,16 @@ async function getTimelineRows(ownerId, date) {
     }
     const key = String(booking.courtId);
     if (!slotsByCourt[key]) slotsByCourt[key] = {};
-    const khach = tenKhach(booking);
+    const customer = customerOf(booking);
     const slot = {
-      name: khach.name,
+      name: customer.name || "Đã có người đặt",
       id: booking.code,
       shortId: shortCode(booking.code),
-      phone: khach.phone,
+      phone: customer.phone,
       court: booking.courtName || "",
       time: `${booking.timeStart} - ${booking.timeEnd} (${booking.date})`,
+      date: booking.date,
+      start: booking.timeStart,
       amount: formatMoney(booking.amount),
       status: booking.status,
     };
@@ -175,6 +179,7 @@ async function getTimelineRows(ownerId, date) {
 
   const rows = courts.map((court) => ({
     id: String(court._id),
+    venueId: String(court.venue_id || ""),
     name: court.name,
     venue: court.venueName,
     status: court.status === "active" ? "open" : "maintenance",
@@ -234,7 +239,7 @@ function bookingListQuery(venues, query) {
   const keyword = String(query.keyword || "").trim();
   if (keyword) filter.keyword = keyword.slice(0, 80);
 
-  filter.venueId = ganCoSo(find, "facilityId", venues.map((venue) => venue._id), query.venueId);
+  filter.venueId = applyVenue(find, "facilityId", venues.map((venue) => venue._id), query.venueId);
 
   const status = String(query.status || "");
   if (Object.prototype.hasOwnProperty.call(BOOKING_STATUS_LABEL, status)) {
@@ -249,11 +254,11 @@ function bookingListQuery(venues, query) {
     dateFrom = dateTo;
     dateTo = swap;
   }
-  ganKhoang(find, "date", dateFrom, dateTo);
+  applyRange(find, "date", dateFrom, dateTo);
   filter.dateFrom = dateFrom;
   filter.dateTo = dateTo;
 
-  const range = ganKhoangTien(find, query);
+  const range = applyAmountRange(find, query);
   filter.minAmount = range.minAmount;
   filter.maxAmount = range.maxAmount;
 
@@ -279,7 +284,7 @@ async function applyKeyword(find, keyword) {
   find.$or = or;
 }
 
-function tenKhach(booking) {
+function customerOf(booking) {
   const customer = booking.userId && typeof booking.userId === "object" ? booking.userId : {};
   return {
     name: booking.guestName || customer.fullName || "",
@@ -288,11 +293,11 @@ function tenKhach(booking) {
 }
 
 function mapBookingRow(booking) {
-  const khach = tenKhach(booking);
+  const customer = customerOf(booking);
   return {
     code: booking.code,
-    name: khach.name,
-    phone: khach.phone,
+    name: customer.name,
+    phone: customer.phone,
     venue: booking.facilityName || "",
     court: booking.courtName || "",
     date: labelDate(booking.date),
@@ -315,9 +320,9 @@ async function loadBookingFilter(ownerId, query) {
   return { venues, find, filter };
 }
 
-const tongTheoLoc = (find) => tongSoTien(Booking, find, "soDon");
+const totalsForFilter = (find) => sumAmount(Booking, find, "soDon");
 
-function queryDon(find, pagination) {
+function queryBookings(find, pagination) {
   let query = Booking.find(find)
     .populate("userId", "fullName phone")
     .select(BOOKING_LIST_SELECT)
@@ -328,9 +333,9 @@ function queryDon(find, pagination) {
 
 async function listAllBookings(ownerId, query = {}) {
   const { venues, find, filter } = await loadBookingFilter(ownerId, query);
-  const tong = await tongTheoLoc(find);
+  const tong = await totalsForFilter(find);
   const pagination = paginationHelper({ limitPage: 8 }, query, tong.soDon);
-  const docs = tong.soDon ? await queryDon(find, pagination) : [];
+  const docs = tong.soDon ? await queryBookings(find, pagination) : [];
 
   return {
     bookings: docs.map(mapBookingRow),
@@ -345,22 +350,21 @@ async function listAllBookings(ownerId, query = {}) {
 
 async function listBookingsForExport(ownerId, query = {}) {
   const { find } = await loadBookingFilter(ownerId, query);
-  const docs = await queryDon(find);
+  const docs = await queryBookings(find);
   return docs.map(mapBookingRow);
 }
 
 async function findOwnedByCode(ownerId, code) {
   const codeText = String(code || "").trim();
   if (!codeText) return null;
-  const venues = await ownerVenues(ownerId);
-  const ids = danhSachId(venues.map((venue) => venue._id));
+  const ids = objectIds(await ownerVenueIds(ownerId));
   const booking = await Booking.findOne({ code: codeText, facilityId: { $in: ids } })
     .populate("userId", "fullName phone")
     .lean();
   if (!booking) return null;
-  const khach = tenKhach(booking);
-  booking.customerName = khach.name;
-  booking.customerPhone = khach.phone;
+  const customer = customerOf(booking);
+  booking.customerName = customer.name;
+  booking.customerPhone = customer.phone;
   return booking;
 }
 
@@ -443,6 +447,20 @@ async function listCourtPrices(ownerId, date) {
   }));
 }
 
+async function listWalkInVouchers(ownerId) {
+  return listUsableVouchers(await ownerVenueIds(ownerId));
+}
+
+function postedVoucherCodes(body, fields) {
+  return [
+    ...new Set(
+      fields
+        .map((field) => String(body[field] || "").trim().toUpperCase())
+        .filter(Boolean),
+    ),
+  ];
+}
+
 function fail(message) {
   const error = new Error(message);
   error.status = 400;
@@ -455,8 +473,13 @@ async function createWalkIn(ownerId, body) {
     throw fail("Vui lòng chọn sân");
 
   const posted = String(body.date || "");
-  const { date } = resolveDate(posted);
-  if (posted !== date) throw fail("Ngày đặt không hợp lệ");
+  const { date, dateMax } = resolveDate(posted);
+  if (posted !== date) {
+    const iso = /^\d{4}-\d{2}-\d{2}$/.test(posted);
+    if (iso && posted > dateMax) throw fail("Chỉ được đặt trước trong vòng 1 tháng");
+    if (iso && posted < date) throw fail("Không thể đặt sân trong quá khứ");
+    throw fail("Ngày đặt không hợp lệ");
+  }
 
   const timeStart = hourValue(body.timeStart);
   const timeEnd = hourValue(body.timeEnd);
@@ -489,16 +512,33 @@ async function createWalkIn(ownerId, body) {
   }).lean();
   if (!court) throw fail("Sân không tồn tại hoặc đang bảo trì");
 
-  const amount = quoteRange(
+  const courtPrice = quoteRange(
     await rulesForCourt(court._id, date),
     timeStart,
     timeEnd,
   );
-  if (amount == null) throw fail("Khung giờ chưa có bảng giá");
+  if (courtPrice == null) throw fail("Khung giờ chưa có bảng giá");
+
+  const voucherCodes = postedVoucherCodes(body, ["voucherCourt", "voucherOrder"]);
+  await assertVoucherScopes(
+    voucherCodes,
+    ["court", "order"],
+    "Đặt sân tại quầy chỉ áp dụng voucher tiền sân và hoá đơn",
+  );
+  const quote = await quotePrice({
+    courtPrice,
+    drinks: [],
+    drinkTotal: 0,
+    date,
+    timeStart,
+    venueId: court.venue_id,
+    voucherCodes,
+  });
 
   const venue = venues.find(
     (item) => String(item._id) === String(court.venue_id),
   );
+  await expireStablePending();
   const overlap = await Booking.findOne({
     courtId: court._id,
     date,
@@ -508,9 +548,10 @@ async function createWalkIn(ownerId, body) {
   })
     .select("_id")
     .lean();
-  if (overlap) throw fail("Khung giờ đã có đơn đặt");
+  if (overlap) throw fail("Khung giờ này đã có người đặt");
 
   const user = await User.findOne({ phone }).select("_id").lean();
+  const consumed = await consumeVoucherUses(quote.voucherCodes);
 
   try {
     const booking = await Booking.create({
@@ -528,9 +569,10 @@ async function createWalkIn(ownerId, body) {
       timeStart,
       timeEnd,
       time: `${timeStart} - ${timeEnd}`,
-      courtPrice: amount,
-      discount: 0,
-      amount,
+      courtPrice,
+      discount: quote.discount,
+      amount: quote.amount,
+      voucherCode: quote.voucherCode || "",
       paymentMethod: body.paymentMethod === "cash" ? "cash" : "vnpay",
       paidAt: new Date(),
       bookedAt: new Intl.DateTimeFormat("vi-VN").format(new Date()),
@@ -540,26 +582,35 @@ async function createWalkIn(ownerId, body) {
     } catch (error) {
       console.error(error);
     }
+    return booking;
   } catch (error) {
-    if (error.code === 11000) throw fail("Khung giờ vừa được đặt");
+    await releaseVoucherUses(consumed);
+    if (error.code === 11000) throw fail("Khung giờ này đã có người đặt");
     throw error;
   }
 }
 
 async function checkIn(ownerId, code) {
-  const venueIds = (await ownerVenues(ownerId)).map((venue) => venue._id);
+  const venueIds = await ownerVenueIds(ownerId);
+  const booking = await Booking.findOne({
+    code,
+    facilityId: { $in: venueIds },
+    status: { $in: ["pending_payment", "upcoming"] },
+  }).select("date timeStart");
+  if (!booking) return { matchedCount: 0 };
+  const now = nowInVietnam();
+  const tooEarly = booking.date > now.date || (booking.date === now.date && booking.timeStart > now.time);
+  if (tooEarly) {
+    throw fail(`Chưa tới giờ check-in. Chỉ check-in từ ${booking.timeStart} ngày ${labelDate(booking.date)}`);
+  }
   return Booking.updateOne(
-    {
-      code,
-      facilityId: { $in: venueIds },
-      status: { $in: ["pending_payment", "upcoming"] },
-    },
+    { _id: booking._id, status: { $in: ["pending_payment", "upcoming"] } },
     { $set: { status: "completed", statusLabel: "HOÀN THÀNH" } },
   );
 }
 
 async function cancel(ownerId, code) {
-  const venueIds = (await ownerVenues(ownerId)).map((venue) => venue._id);
+  const venueIds = await ownerVenueIds(ownerId);
   const booking = await Booking.findOne({
     code,
     facilityId: { $in: venueIds },
@@ -580,6 +631,7 @@ async function cancel(ownerId, code) {
 
 module.exports = {
   HOURS,
+  STATUS_LABEL: BOOKING_STATUS_LABEL,
   resolveDate,
   walkInLimits,
   getTimelineRows,
@@ -587,6 +639,7 @@ module.exports = {
   listBookingsForExport,
   findOwnedByCode,
   listCourtPrices,
+  listWalkInVouchers,
   createWalkIn,
   checkIn,
   cancel,

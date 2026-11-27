@@ -284,11 +284,30 @@ tr.is-hidden-by-filter {
     line-height: 1.3;
 }
 
+.sz-table th.sz-col-pill,
+.sz-table td.sz-col-pill {
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
 /* Stock pill */
-.sz-stock {
-    display: inline-block;
-    padding: 3px 12px;
+.sz-stock,
+.sz-table .sz-tag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 28px;
+    padding: 0 12px;
     border-radius: 999px;
+    line-height: 1;
+    white-space: nowrap;
+    text-align: center;
+    vertical-align: middle;
+    box-sizing: border-box;
+}
+
+.sz-stock {
     font-size: 12px;
     font-weight: 700;
 }
